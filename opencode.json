@@ -1,0 +1,55 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "wogd_ddsp": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\marku\\Documents\\GitHub\\artqcid\\ai-projects\\wogd-ddsp-trainer\\.venv\\Scripts\\python.exe",
+        "C:\\Users\\marku\\Documents\\GitHub\\artqcid\\ai-projects\\wogd-ddsp-trainer\\wogd_ddsp_mcp_server.py"
+      ],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "external_directory": "allow",
+    "bash": "allow",
+    "read": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "task": "allow",
+    "todowrite": "allow",
+    "question": "allow",
+    "webfetch": "allow"
+  },
+  "instructions": ["AGENTS.md"],
+  "agent": {
+    "general": {
+      "model": "opencode/nemotron-3.5-lightning-free",
+      "permission": {
+        "wogd_ddsp_query_code_wiki": "allow",
+        "wogd_ddsp_query_code_rag": "allow",
+        "wogd_ddsp_get_rag_chunk": "allow"
+      }
+    },
+    "explore": {
+      "model": "opencode/nemotron-3.5-lightning-free",
+      "permission": {
+        "wogd_ddsp_query_code_wiki": "allow",
+        "wogd_ddsp_query_code_rag": "allow",
+        "wogd_ddsp_get_rag_chunk": "allow"
+      }
+    },
+    "compaction": {
+      "model": "opencode/nemotron-3.5-lightning-free"
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "keep": {
+      "tokens": 15000
+    },
+    "buffer": 20000
+  }
+}

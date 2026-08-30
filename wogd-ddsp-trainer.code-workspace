@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "wogd-ddsp-trainer",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "files.autoSave": "onFocusChange"
+  }
+}

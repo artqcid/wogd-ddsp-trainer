@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / web UI
+node_modules/
+webui/dist/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# RAG runtime database (rebuild via index_project_code)
+wogd_ddsp.db
+
+# Logs
+*.log

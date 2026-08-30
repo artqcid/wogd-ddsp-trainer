@@ -1,0 +1,29 @@
+# RAG ignore patterns for the wogd-ddsp-trainer RAG index.
+# Entries can be glob patterns or directory prefixes (ending with "/").
+# Matching files/dirs are excluded from indexing.
+#
+# Keep this minimal: only exclude generated/derived content and large vendored
+# dependencies so the index stays focused on real source + docs.
+
+# Build / virtualenv / Python caches
+build/
+dist/
+out/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node front-end dependencies / build output
+node_modules/
+webui/dist/
+webui/node_modules/
+
+# Tooling / editors
+.vscode/
+.idea/
+
+# Runtime artifacts
+*.log
+*.db
+wogd_ddsp.db
