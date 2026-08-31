@@ -113,7 +113,7 @@ project language for identifiers, docstrings and agent-facing material._
 - **Python:** PEP 8; format with `black` / `ruff format`; lint with
   `ruff check`. Match existing style in files you touch.
 - **Web UI:** follow the framework's lint/style conventions (ESLint / Prettier
-  for Vue/React + Vite).
+  for Vue 3 + Vite).
 - **Tests:** `pytest` for Python/backend/training; Vitest for the web UI.
 - Never add comments unless they explain otherwise non-obvious logic.
 - Do not commit unless explicitly asked. Keep diffs focused.

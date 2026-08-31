@@ -31,6 +31,28 @@ Before every task (read/edit/build):
 
 The **MCP-First workflow** section below provides the full RAG tooling reference.
 
+### Planning tiers (mandatory for milestone work)
+
+Three files drive milestone execution; keep them in sync:
+
+1. **`doc/plan.md`** — meta plan (milestones, decisions, risks). High-level only.
+2. **`doc/checklist.md`** — status: which milestone tasks are open/done.
+3. **`doc/implementation/mN-*.md`** — granular, ordered steps per milestone
+   (one step = one small, self-contained task, roughly one subagent task) plus
+   an append-only `## History` (what was done + how) and a `## BUGS` reference
+   section.
+
+When working on a milestone, open the matching `doc/implementation/mN-*.md`
+first; it is the working document for that phase. Mark steps `[x]` and append
+to `## History` as work proceeds.
+
+### Bug tracking (single source of truth, no redundancy)
+
+- `doc/bugs.md` is the **only** place a bug is described in full.
+- Bug IDs (`BUG-<id>`) are assigned only there (increment `next_id`).
+- Every other document (implementation plans, `log.md`) references bugs by
+  `BUG-<id>` only. Never duplicate a full bug record across files.
+
 ### Todo-first workflow + Autopilot (gated by explicit plan approval)
 
 - **No permission prompts.** All tools are allowed (edit, bash, read, glob,
@@ -128,7 +150,8 @@ A task is complete only when ALL of the following hold:
 `wogd-ddsp-trainer` is a **web UI training application for DDSP-based speech
 synthesis models**. It exposes a browser UI to prepare datasets, configure and
 run DDSP training, monitor progress, and synthesize/inference vocal output.
-Python backend (PyTorch, FastAPI) + web frontend (Vue/React + Vite).
+Python backend (PyTorch + torchaudio, FastAPI) + web frontend
+(Vue 3 + Vite + Pinia).
 Full detail: `doc/architecture.md`.
 
 ## Role & Delegation Model
@@ -180,6 +203,9 @@ All project knowledge is ALWAYS kept in sync across stores with clear roles:
 **Deterministic Sync Workflow:**
 - After every completed task: update `doc/log.md` + `doc/index.md` + run
   `index_project_code`.
+- Keep the repo-root `README.md` in sync: whenever a knowledge update lands in
+  `doc/` (milestones, workflow, install/training usage), reflect it in
+  `README.md` too (it is the GitHub-facing summary).
 - If drift is detected between stores, resolve by treating `doc/` as the
   authoritative source and updating RAG from it.
 
@@ -189,9 +215,11 @@ All project knowledge is ALWAYS kept in sync across stores with clear roles:
   `mcp.wogd_ddsp` (venv python: `.venv\Scripts\python.exe`).
 - **Primary navigation:** `doc/index.md` (LLM-Wiki catalog, first place to look).
 - Checklist: `doc/checklist.md` (open tasks, short descriptions).
+- Implementation plans: `doc/implementation/mN-*.md` (granular steps per milestone + history).
+- Bug ledger: `doc/bugs.md` (single source of truth; `BUG-<id>` entries).
 - Chronological log: `doc/log.md` (append-only, newest first).
-- Draft plan: `doc/plan.md`.
-- UI/product requirements: `doc/ui-requirements.md` (binds ALL roles; DDSP phases, coupling, mock-data seam).
+- Meta plan: `doc/plan.md` (milestones M1-M8, decisions).
+- UI/product requirements: `doc/ui-requirements.md` (binds ALL roles; app shell, coupling, mock-data seam).
 - Detailed knowledge: `doc/architecture.md` (read directly).
 - Coding rules: `doc/coding-standards.md`.
 - Test strategy: `doc/test-strategy.md`.

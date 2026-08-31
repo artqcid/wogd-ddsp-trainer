@@ -26,14 +26,14 @@ per-item test points are listed in `doc/checklist.md`._
 - **Fast + deterministic:** unit tests must run in CI/dev without real audio
   files, GPU, or network (mock / fixture everything external).
 - **Deterministic seeds:** PyTorch training/feature tests set fixed seeds and
-  CPU-only where possible so results are reproducible.
+  use CPU-only where possible so results are reproducible.
 
 ## 2. Test pyramid
 
 1. **Unit tests (most):** functions/classes in isolation - feature extraction,
    batching, model forward, loss computation, server endpoints, Vue components.
 2. **Integration tests:** dataset->model->loss roundtrip, FastAPI service with
-   test client + mocked training backend, WebSocket status flow.
+   test client + mocked training backend, REST run lifecycle.
 3. **End-to-end smoke (few):** tiny synthetic dataset trains for a few steps,
    checkpoint saved and reloaded, synthesis produces non-empty audio.
 
@@ -46,15 +46,15 @@ per-item test points are listed in `doc/checklist.md`._
 
 ## 4. Mocking strategy
 
-- **Audio I/O:** no real files in unit tests. Use tiny in-memory numpy/torch
-  tensors or fixture wav snippets (`tests/fixtures/`); stub torchaudio
+- **Audio I/O:** no real files in unit tests. Use tiny in-memory numpy/TF
+  tensors or fixture wav snippets (`tests/fixtures/`); stub librosa/soundfile
   decode/save where possible.
 - **Feature extraction:** mock or inject lightweight F0/loudness estimators;
   test DSP math with hand-computed expected values.
 - **GPU:** train tests run on `cpu`; guard CUDA-only paths with
   `@pytest.mark.parametrize` over device or a fixture that skips without GPU.
 - **Server:** use FastAPI `TestClient` with mocked training/inference
-  services; WebSocket tests with a mocked runner.
+  services and a mocked Celery runner (no live worker needed).
 - **Network:** no live downloads; datasets are cached fixtures.
 
 ## 5. Commands
@@ -67,4 +67,4 @@ per-item test points are listed in `doc/checklist.md`._
 ## 6. What is NOT auto-tested (manual)
 
 - Subjective synthesis quality / voice similarity (listen test).
-- GPU performance and real-time streaming experience.
+- GPU performance and real-time synthesis experience.

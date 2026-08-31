@@ -23,7 +23,7 @@ test strategy: `doc/test-strategy.md`._
   `pytest` (Python) and `vitest` (web UI) must pass. These are the
   Definition-of-Done checks (see `AGENTS.md`).
 - **R2 - Reproducible env:** the Python venv (`.venv/`) is the single source
-  for dependencies; the front-end (Vue/React + Vite) lives under `webui/`.
+  for dependencies; the front-end (Vue 3 + Vite) lives under `webui/`.
 - **R3 - Run + hot reload:** it must always be possible to start the FastAPI
   backend and the Vite dev server and see changes live.
 
@@ -61,7 +61,7 @@ npm run dev
 ```
 
 - Backend on `http://127.0.0.1:8000` (OpenAPI at `/docs`).
-- Vite dev server proxies `/api` and `/ws` to the backend during development.
+- Vite dev server proxies `/api` to the backend during development.
 
 ## 5. Training / inference notes
 
