@@ -59,12 +59,14 @@ python -m venv .venv
 # Then install the package + dev deps:
 .venv\Scripts\python.exe -m pip install -e ".[dev]" --no-deps
 .venv\Scripts\python.exe -m pip install "librosa>=0.11" "soundfile>=0.13" `
-  "fastapi>=0.115" "celery>=5.4" "redis>=5.0" "ruff>=0.6" "pytest>=8.0" `
-  "pytest-cov>=5.0"
+  "torchcrepe==0.0.24" "praat-parselmouth==0.4.7" "fastapi>=0.115" `
+  "celery>=5.4" "redis>=5.0" "ruff>=0.6" "pytest>=8.0" "pytest-cov>=5.0"
 ```
 
-> **Note:** `neutone_sdk` is deferred to M3.4 (see `doc/bugs.md` BUG-1); `rmvpe`
-> is sourced from GitHub (M2). See `doc/oss-dependencies.md`.
+> **Note:** `neutone_sdk` is deferred to M3.4 (see `doc/bugs.md` BUG-1). F0
+> extraction uses a factory (`dataset/features.get_f0_extractor`):
+> **CREPE-PyTorch** (`torchcrepe`, MIT) primary + **parselmouth** (GPLv3) CPU
+> fallback. See `doc/oss-dependencies.md`.
 
 ### 1.5 Frontend setup (web UI)
 
@@ -132,6 +134,8 @@ Once available, install instructions will go here.
 ## 3. Using the software for training
 
 `<TODO M2-M5: the training pipeline and web UI are not implemented yet>`
+(The dataset-prep module is in — `dataset/` ingestion + F0/loudness features,
+split + cache. Training loop (M3), backend (M4) and UI (M5) are still ahead.)
 
 The intended workflow:
 

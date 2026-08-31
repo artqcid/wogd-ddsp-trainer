@@ -33,11 +33,13 @@ Apache-2.0 public release.
 | numpy | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | yes | all OSI |
 | librosa | ISC | yes | |
 | soundfile | BSD-3-Clause | yes | `libsndfile` binding |
+| torchcrepe | MIT | yes | CREPE-PyTorch, primary F0 extractor (GPU/ML) |
+| praat-parselmouth | GPL-3.0 | yes (copyleft) | CPU F0 fallback; GPL copyleft — see action item 3 |
 | fastapi | MIT | yes | |
 | uvicorn | BSD-3-Clause | yes | |
 | celery | BSD-3-Clause | yes | |
 | redis (redis-py) | MIT | yes | |
-| rmvpe (GitHub) | to-verify | pending | see M1.7; canonical PyTorch repo's license must be confirmed |
+| rmvpe (GitHub) | n/a | dropped | **replaced by torchcrepe + parselmouth** for M2 (py3.14/torch2.13 fragility); not a dependency |
 | neutone_sdk | LGPL + "Other/Proprietary" classifier | **verify** | **deferred from M1; resolve before M3.4 (export)** — see below |
 | onnxruntime (if via rmvpe) | MIT | yes | only if rmvpe requires it |
 
@@ -62,10 +64,18 @@ Apache-2.0 public release.
 
 ## Action items
 
-1. **rmvpe (M1.7):** confirm the exact upstream repo + its license before
-   first use in M2 (feature extraction).
-2. **neutone_sdk (M3.4):** metadata lists `License: LGPL` with an
+1. **rmvpe (resolved at M2):** dropped as a dependency. F0 extraction uses the
+   strategy/factory `dataset/features.get_f0_extractor` — CREPE-PyTorch
+   (`torchcrepe`, MIT) as primary/ML + parselmouth (GPLv3) as CPU fallback.
+1. **neutone_sdk (M3.4):** metadata lists `License: LGPL` with an
    `Other/Proprietary License` classifier. Confirm the effective license of the
    `neutone_sdk` PyPI package (and the Neutone SDK / Qosmos codebase) before
    adopting it as an export dependency. If it is not clearly OSI-approved, plan
    the export path (M3.4) around TorchScript/ONNX directly instead.
+3. **praat-parselmouth (M2):** GPL-3.0 distribution unit (PyPI package). In
+   scope because CPU F0 is only an *optional fallback* behind the factory seam
+   (not the primary extractor, not required for core runtime). Before any
+   Apache-2.0 redistribution that includes the parselmouth fallback, confirm
+   GPL/Apache-2.0 compatibility of that distribution (e.g. ship the fallback
+   behind an optional extra, or invoke in a separate process). The primary F0
+   path (torchcrepe, MIT) is unaffected.

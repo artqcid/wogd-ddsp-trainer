@@ -3,6 +3,33 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M2 Dataset prep implemented
+
+**Creation:** M2 complete (parallel subagent delegation). Audio ingestion,
+feature extraction (F0 factory), train/val split + on-disk cache, tests.
+Design per `doc/implementation/m2-dataset-prep.md` + `architecture.md`.
+- Files: `dataset/io.py` (load/resample-mono-16k/peak-normalize),
+  `dataset/features.py` (F0 factory + loudness + normalize + `.npy` export),
+  `dataset/loader.py` (read precomputed `.npy`), `dataset/split.py`
+  (deterministic local-RNG split), `dataset/cache.py` (on-disk `FeatureCache`
+  + `cached_feature_loader`), tests in `tests/test_{io,features,split,cache}.py`.
+- **F0 decision (user's architecture recommendation):** strategy/factory
+  `get_f0_extractor` — **CREPE-PyTorch (`torchcrepe`, MIT) primary/ML** for
+  dataset prep + training (GPU); **parselmouth (Praat, GPLv3) CPU fallback**
+  for fast unit-tests / local CI / UI preview. Unit tests are parselmouth-only
+  (CREPE downloads weights → non-deterministic). `rmvpe` dropped (py3.14 /
+  torch 2.13 fragility).
+- Deps added to `pyproject.toml`: `torchcrepe==0.0.24`,
+  `praat-parselmouth==0.4.7`.
+- `doc/oss-dependencies.md` — torchcrepe (MIT) + praat-parselmouth (GPL-3.0)
+  added; rmvpe resolved/dropped; parselmouth GPL copyleft note added (fallback
+  is behind the factory seam, not the primary path).
+- `doc/architecture.md` — F0 factory decision recorded (tech stack + pipeline).
+- `doc/checklist.md` — M2.1-M2.4 marked done.
+- `doc/implementation/m2-dataset-prep.md` — steps `[x]` + History.
+
+**Status:** M2 done; checks green (`pytest` 36 passed, `ruff` clean).
+
 ## 2026-08-31 - M1 Scaffold implemented
 
 **Creation:** M1 complete. Repo structure (`dataset/ model/ train/ inference/

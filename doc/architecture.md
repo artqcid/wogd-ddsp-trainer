@@ -46,8 +46,12 @@ Building blocks (planned directory layout):
 - Python 3 runtime; **PyTorch + torchaudio** for the DDSP model + training
   (self-owned DDSP core; `magenta/ddsp` is only a spec reference, not a
   dependency - see `related-work.md`).
-- F0 extraction via **RMVPE** (or CREPE-PyTorch / parselmouth); librosa +
-  soundfile for audio I/O and DSP features.
+- F0 extraction via a **strategy/factory** (`dataset/features.get_f0_extractor`):
+  **CREPE-PyTorch (`torchcrepe`) = primary/ML** extractor for dataset prep +
+  training (GPU), **parselmouth (Praat) = lightweight CPU fallback** for fast
+  unit-tests / local CI / UI preview. `loudness_db` via librosa; `soundfile`
+  + librosa for audio I/O. (`rmvpe` was the earlier plan primary but was
+  dropped for py3.14/torch2.13 fragility — see `oss-dependencies.md`.)
 - FastAPI + uvicorn for the web backend; **Celery + Redis** for asynchronous
   training/synthesis jobs; **TensorBoard** for training monitoring.
 - Vue 3 + Vite (+ Pinia) for the web UI (control panel: REST + TensorBoard
@@ -57,9 +61,9 @@ Building blocks (planned directory layout):
 ## Training pipeline
 
 1. **Dataset prep:** ingest source audio -> 16 kHz mono -> per-frame features
-   (`f0_hz` + `f0_confidence` via RMVPE or CREPE-PyTorch/parselmouth,
-   `loudness_db` via librosa). Harmonic amplitude and aperiodicity are decoder
-   outputs, not precomputed features.
+   (`f0_hz` + `f0_confidence` via the F0 factory — CREPE-PyTorch primary /
+   parselmouth fallback, `loudness_db` via librosa). Harmonic amplitude and
+   aperiodicity are decoder outputs, not precomputed features.
 2. **Batching:** chunk into fixed-length frames + features; normalization.
 3. **Model forward:** (optional encoder) -> oscillator + filtered-noise decoder
    -> reconstructed audio; loss = multi-scale spectral loss.

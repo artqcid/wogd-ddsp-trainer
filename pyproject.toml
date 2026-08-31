@@ -19,6 +19,10 @@ dependencies = [
     "numpy>=2.2",
     "librosa>=0.11",
     "soundfile>=0.13",
+    # F0 extraction: CREPE-PyTorch (torchcrepe, ML primary on GPU) + parselmouth
+    # (lightweight CPU fallback for tests/CI/UI preview). See M2.2 + architecture.md.
+    "torchcrepe==0.0.24",
+    "praat-parselmouth==0.4.7",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "celery>=5.4",

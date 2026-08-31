@@ -41,11 +41,12 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M2 - Dataset prep
 
-- [ ] **M2.1** Audio ingestion + resampling to 16 kHz mono + level normalization.
-- [ ] **M2.2** Feature extraction: `f0_hz`, `f0_confidence`, `loudness_db`
-      (RMVPE/librosa) + per-feature normalization.
-- [ ] **M2.3** Train/validation split + caching dataset module.
-- [ ] **M2.4** Dataset tests.
+- [x] **M2.1** Audio ingestion + resampling to 16 kHz mono + level normalization.
+- [x] **M2.2** Feature extraction: `f0_hz`, `f0_confidence`, `loudness_db`
+      (F0 via factory: CREPE-PyTorch primary / parselmouth fallback; loudness
+      via librosa) + per-feature normalization + `.npy` export/load.
+- [x] **M2.3** Train/validation split + caching dataset module.
+- [x] **M2.4** Dataset tests (ingestion, features, split, cache).
 
 ## Milestone M3 - Model + training
 
