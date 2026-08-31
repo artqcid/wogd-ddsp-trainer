@@ -4,9 +4,10 @@ A web UI training application for **DDSP-based speech synthesis** models. It
 exposes a browser UI to prepare datasets, configure and run DDSP training,
 monitor progress (TensorBoard), and synthesize/export vocal output.
 
-**Status:** scaffold phase — milestones M1-M8 planned, not yet implemented.
-Roadmap: [`doc/plan.md`](doc/plan.md) · open tasks:
-[`doc/checklist.md`](doc/checklist.md).
+**Status:** scaffold phase — **M1 done** (repo structure, Python venv with
+PyTorch CUDA, Vue+Vite+Pinia web scaffold, checks green). Milestones M2-M8
+planned, not yet implemented. Roadmap: [`doc/plan.md`](doc/plan.md) · open
+tasks: [`doc/checklist.md`](doc/checklist.md).
 
 - **Stack:** Python + PyTorch + torchaudio (self-owned DDSP core) · FastAPI +
   Celery/Redis · Vue 3 + Vite + Pinia.
@@ -51,10 +52,19 @@ Recommended extensions: Python (ms-python.python), Vue/Volar.
 
 ```pwsh
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt   # or: -e . with pyproject.toml
+# CUDA-enabled torch/torchaudio (cp314 wheels are NOT on PyPI — must use the
+# PyTorch CUDA index):
+.venv\Scripts\python.exe -m pip install torch==2.13.0 torchaudio==2.11.0 `
+  --index-url https://download.pytorch.org/whl/cu130
+# Then install the package + dev deps:
+.venv\Scripts\python.exe -m pip install -e ".[dev]" --no-deps
+.venv\Scripts\python.exe -m pip install "librosa>=0.11" "soundfile>=0.13" `
+  "fastapi>=0.115" "celery>=5.4" "redis>=5.0" "ruff>=0.6" "pytest>=8.0" `
+  "pytest-cov>=5.0"
 ```
 
-`<TODO M1.2: requirements.txt / pyproject.toml not created yet>`
+> **Note:** `neutone_sdk` is deferred to M3.4 (see `doc/bugs.md` BUG-1); `rmvpe`
+> is sourced from GitHub (M2). See `doc/oss-dependencies.md`.
 
 ### 1.5 Frontend setup (web UI)
 
@@ -92,7 +102,8 @@ proxies `/api` to the backend.
 cd webui && npx vitest run && cd ..
 ```
 
-`<TODO M1: test/build scaffolding not implemented yet>`
+All four checks are green for the current M1 scaffold (`ruff check`,
+`ruff format --check`, `pytest`, `vitest`).
 
 ### 1.8 VS Code tasks
 

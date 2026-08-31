@@ -36,6 +36,7 @@ _See `log.md` for the chronological append-only changelog._
 ## Operations & Quality
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)
 - [`workspace-workflow.md`](./workspace-workflow.md) - Setup/run/workflow: venv, ruff/pytest, uvicorn, Vite hot-reload
+- [`oss-dependencies.md`](./oss-dependencies.md) - OSS dependency/license review (M1.6.2): every dep OSI-approved, neutone_sdk/rmvpe flagged
 
 ## Wiki Meta
 - [`code_wiki.md`](./code_wiki.md) - Auto-generated symbol index (MCP-only, never read directly)

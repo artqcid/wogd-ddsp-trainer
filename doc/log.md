@@ -3,6 +3,28 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M1 Scaffold implemented
+
+**Creation:** M1 complete. Repo structure (`dataset/ model/ train/ inference/
+server/` + `tests/`), `pyproject.toml`, `.venv` (Python 3.14), webui scaffold
+(Vue 3 + Vite + Pinia), VSCode tasks, OSS dependency review. All DoD checks
+green (`ruff check`, `ruff format --check`, `pytest`, `vitest`).
+- Files: `pyproject.toml`, `webui/` (Vue/Vite/Pinia app, `ApiClient` +
+  `MockApiClient` mock-data seam, HealthView, Vitest tests), `tests/`.
+- env: torch 2.13.0+cu130 + torchaudio 2.11.0+cu130 installed from
+  `download.pytorch.org/whl/cu130` (RTX 3060 detected, mixed precision OK).
+- `doc/oss-dependencies.md` — new OSS dependency/license review (M1.6.2);
+  all runtime/dev/frontend deps OSI-approved; `neutone_sdk` + `rmvpe`
+  flagged as to-verify.
+- `doc/bugs.md` — **BUG-1** (neutone_sdk pinned numpy<2.3 no cp314 Windows
+  wheel on py3.14; deferred to M3.4).
+- `doc/checklist.md` — M1.1-M1.7 marked done.
+- `doc/implementation/m1-scaffold.md` — steps marked `[x]` + History
+  (torch cu130 install, `pip install -e . --no-deps`, neutone_sdk/rmvpe
+  sourcing, ruff excludes `wogd_ddsp_mcp_server.py`).
+
+**Status:** M1 done; checks green; index rebuilt; lint clean.
+
 ## 2026-08-31 - Preset management added (FAST/NORMAL/QUALITY + custom)
 
 **Creation:** Added preset management to the docs, placed as early as possible

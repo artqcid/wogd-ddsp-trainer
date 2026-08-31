@@ -20,21 +20,22 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M1 - Scaffold
 
-- [ ] **M1.1** Repo structure: `dataset/`, `model/`, `train/`, `inference/`,
+- [x] **M1.1** Repo structure: `dataset/`, `model/`, `train/`, `inference/`,
       `server/`, `webui/`, `tests/`.
-- [ ] **M1.2** Python venv (`pyproject.toml` / `requirements.txt`) with
+- [x] **M1.2** Python venv (`pyproject.toml` / `requirements.txt`) with
       torch + torchaudio, RMVPE (F0), librosa, soundfile, FastAPI, uvicorn,
       Celery, redis, neutone_sdk; `ruff` + `pytest` wired.
-- [ ] **M1.3** Vue 3 + Vite (+ Pinia) web scaffold with a health check; Vitest
+      (neutone_sdk deferred to M3.4 — BUG-1; RMVPE sourced from GitHub.)
+- [x] **M1.3** Vue 3 + Vite (+ Pinia) web scaffold with a health check; Vitest
       smoke test.
-- [ ] **M1.4** End-to-end check commands green (`ruff check`, `pytest`, `vitest`).
-- [ ] **M1.5** `.vscode/tasks.json` with `build-debug`, `build-release`,
+- [x] **M1.4** End-to-end check commands green (`ruff check`, `pytest`, `vitest`).
+- [x] **M1.5** `.vscode/tasks.json` with `build-debug`, `build-release`,
       `e2e-test`, `start-application-debug`, `start-application-release` (as
       soon as the M1 build process/artifacts exist).
-- [ ] **M1.6** `LICENSE` (Apache-2.0) + open-source dependency review: only
+- [x] **M1.6** `LICENSE` (Apache-2.0) + open-source dependency review: only
       OSI-approved OSS deps (incl. Wavesurfer.js, BSD-3-Clause); nothing that
       blocks OSS publication or requires paid licenses.
-- [ ] **M1.7** Dependency sourcing: clone needed libs from
+- [x] **M1.7** Dependency sourcing: clone needed libs from
       `C:\Users\marku\Documents\GitHub\thirdParty` when present there;
       venv-first, reuse global libs via workspace config only when sufficient.
 

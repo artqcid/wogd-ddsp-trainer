@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wogd-ddsp-trainer"
+version = "0.1.0"
+description = "Web UI training application for DDSP-based speech synthesis models"
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "Apache-2.0" }
+dependencies = [
+    # Core stack. torch/torchaudio are pinned and MUST be installed from the
+    # PyTorch CUDA index (`https://download.pytorch.org/whl/cu130`), because the
+    # CUDA-enabled cp314 wheels are not published to PyPI (see M1.2 install cmd
+    # in doc/implementation/m1-scaffold.md).
+    "torch==2.13.0",
+    "torchaudio==2.11.0",
+    "numpy>=2.2",
+    "librosa>=0.11",
+    "soundfile>=0.13",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "celery>=5.4",
+    "redis>=5.0",
+    # NOTE: neutone_sdk is intentionally deferred (not in core deps). It pins
+    # numpy<2.3 which has NO cp314 Windows wheel on PyPI -> source build fails on
+    # Python 3.14/Windows. Reintroduced in M3.4 (model export). See BUG-<id> in
+    # doc/bugs.md and doc/implementation/m1-scaffold.md.
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[tool.setuptools]
+packages = [
+    "dataset",
+    "model",
+    "train",
+    "inference",
+    "server",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["."]
+# The RAG/MCP tooling server is a standalone script (not part of the app
+# package) with its own long-line/#noqa style; exclude it from lint + format.
+exclude = ["wogd_ddsp_mcp_server.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra"

@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 1`
+`next_id: 2`
 
 ## Bug template (copy for each new bug)
 
@@ -49,7 +49,25 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Open bugs
 
-_None yet._
+## BUG-1 - neutone_sdk pinned numpy<2.3 has no cp314 Windows wheel (py3.14)
+- status: open
+- milestone: M3 (export, M3.4)
+- affected: M1.2
+- found-in: M1.2 dependency install
+- severity: major
+- description: `neutone_sdk` (1.5.2) requires `numpy<2.3.0,>=1.21.6`. On Python
+  3.14/Windows, numpy 2.2.x has NO cp314 wheel on PyPI (only an sdist), so pip
+  attempts a Meson/source build which fails (`sccache clang cannot compile`);
+  `neutone_sdk` cannot be installed into the current 3.14+cu130 environment.
+  Additionally its metadata lists `License: LGPL` + an `Other/Proprietary`
+  classifier — the OSI status must be verified before adoption.
+- reproduction: `pip install neutone_sdk` on `.venv` (py3.14) -> build error.
+- resolution: (open) Deferred to M3.4. Reintroduce once a numpy-cp314-compatible
+  `neutone_sdk` release exists, or plan M3.4 export around TorchScript/ONNX
+  directly if the license is not OSI-approved.
+- history:
+  - 2026-08-31 — recorded; neutone_sdk removed from M1 core deps
+    (pyproject.toml comment + M1.2 note + `../oss-dependencies.md`).
 
 ## Fixed bugs
 
