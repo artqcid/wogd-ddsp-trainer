@@ -38,7 +38,7 @@ _Granular plan for milestone M3. Meta plan: [`../plan.md`](../plan.md); status:
       `architecture.md` VRAM tier table).
       Files: `model/losses.py`.
       Verify: loss returns a finite scalar.
-- [ ] **M3.1.4** **[IMPLEMENT]** Add `n_noise_bins: int = 32` to `DDSPConfig`
+- [x] **M3.1.4** **[IMPLEMENT]** Add `n_noise_bins: int = 32` to `DDSPConfig`
       so the parameter is persisted in checkpoints and can be restored on resume.
       Update `DDSPModel.__init__` to read `n_noise_bins` from `config` instead of
       the current hardcoded default.
