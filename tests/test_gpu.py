@@ -1,10 +1,9 @@
-"""Unit tests for train.suggest — GPU detection, vram tiers, parameter presets. CPU-only deterministic; CUDA
-tests are guarded with @pytest.mark.skipif."""
+"""Unit tests for train.suggest — GPU detection, vram tiers, parameter presets.
+CPU-only deterministic; CUDA tests are guarded with @pytest.mark.skipif."""
 
 from __future__ import annotations
 
 import pytest
-
 import torch
 
 from train import (
@@ -15,7 +14,6 @@ from train import (
     suggest_for_host,
     vram_tier,
 )
-
 
 # ---------------------------------------------------------------------------
 # vram_tier boundary semantics
@@ -52,12 +50,15 @@ def test_vram_tier_ultra() -> None:
     assert vram_tier(64.0) == "ultra"
 
 
-@pytest.mark.parametrize("vram,expected", [
-    (2.0, "low"),
-    (4.0, "mid"),
-    (8.0, "high"),
-    (12.0, "ultra"),
-])
+@pytest.mark.parametrize(
+    "vram,expected",
+    [
+        (2.0, "low"),
+        (4.0, "mid"),
+        (8.0, "high"),
+        (12.0, "ultra"),
+    ],
+)
 def test_vram_tier_roundtrip(vram: float, expected: str) -> None:
     assert vram_tier(vram) == expected
 
@@ -139,7 +140,7 @@ def test_propose_presets_low_max_hidden_128() -> None:
     bounds = propose_parameters(2.0)  # low → max_hidden=256
     presets = propose_presets(bounds)
 
-    assert presets["FAST"]["hidden_size"] == 64   # 256 * 0.25
+    assert presets["FAST"]["hidden_size"] == 64  # 256 * 0.25
     assert presets["NORMAL"]["hidden_size"] == 128
     assert presets["QUALITY"]["hidden_size"] == 256
 
@@ -148,7 +149,7 @@ def test_propose_presets_ultra_max_hidden_1024() -> None:
     bounds = propose_parameters(16.0)  # ultra → max_hidden=1024
     presets = propose_presets(bounds)
 
-    assert presets["FAST"]["hidden_size"] == 256   # 1024 * 0.25
+    assert presets["FAST"]["hidden_size"] == 256  # 1024 * 0.25
     assert presets["NORMAL"]["hidden_size"] == 512  # 1024 * 0.5
     assert presets["QUALITY"]["hidden_size"] == 1024
 
@@ -177,7 +178,9 @@ def test_detect_gpus_with_cuda() -> None:
         assert isinstance(g["name"], str)
         assert isinstance(g["total_vram_gb"], (int, float))
         assert g["total_vram_gb"] > 0
-        assert g["available_vram_gb"] is None or (isinstance(g["available_vram_gb"], (int, float)) and g["available_vram_gb"] >= 0)
+        assert g["available_vram_gb"] is None or (
+            isinstance(g["available_vram_gb"], (int, float)) and g["available_vram_gb"] >= 0
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -192,13 +195,20 @@ def test_suggest_for_host_shape() -> dict:
     assert set(result.keys()) == {"gpus", "tier", "bounds", "presets"}
 
     if result["gpus"] is not None and len(result["gpus"]) > 0:
-        assert set(result["tier"]) == {"low", "mid", "high", "ultra"} or result["tier"] in {"low", "mid", "high", "ultra"}
+        assert set(result["tier"]) == {"low", "mid", "high", "ultra"} or result["tier"] in {
+            "low",
+            "mid",
+            "high",
+            "ultra",
+        }
         assert result["bounds"] is not None
         assert isinstance(result["bounds"], ParameterBounds)
         assert set(result["presets"].keys()) == {"FAST", "NORMAL", "QUALITY"}
     else:
         # No GPU path: all None.
-        assert all(v is None for v in (result["gpus"], result["tier"], result["bounds"], result["presets"]))
+        assert all(
+            v is None for v in (result["gpus"], result["tier"], result["bounds"], result["presets"])
+        )
 
     return result
 

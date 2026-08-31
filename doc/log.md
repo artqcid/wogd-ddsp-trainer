@@ -3,6 +3,32 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M3 Tests grün (8 -> 0 Fails)
+
+**Update:** [`m3-model-training.md`](implementation/m3-model-training.md).
+Alle M3-Unit-/Integrationstests laufen jetzt (pytest 77 passed, 1 GPU-skip;
+ruff clean). Behobene Root-Causes (subagent task_ids in History):
+- `assert_allclose` `atol`-only → PyTorch-2-`rtol` (Test-Fix, 3x).
+- Forward-Nondeterminismus in `FilteredNoiseSynth` (global RNG) → feste
+  `noise_buffer` (Generator nur in `__init__`, forward = Tensor-Slice) —
+  macht auch ONNX-Export möglich (kein `CustomObjArgument` im FX-Graph).
+- Checkpoint-Config-Mismatch → `config` wird im Checkpoint persistiert,
+  `load_model_from_checkpoint` rekonstruiert das Modell daraus.
+- TorchScript: `SimpleReverb` dynamische Python-Kontrolle → Kernel-Buffer +
+  `F.conv1d(padding="same")` (statisch/tracebar); Export-Test erwartete
+  fälschlich Dict statt Audio-Tensor.
+- `render_to_file`: torchaudio 2.11 → torchcodec (nicht installiert); auf
+  `soundfile` umgestellt (bereits deklariert).
+- `train_step_reduces_loss`: 2 Steps + Rauschen-Target flaky → Null-Target
+  über 80 Steps.
+- Ruff-Cleanup vorbestehender M3-Testdateien (E501/I001/Format).
+- Beobachtung: D-Subagent-Rewrite scheiterte am bekannten
+  Small-Context-Tool-Abbruch (`Duplicate tool_call_id`, cancelled tasks) und
+  hinterließ fehlerhaften Zwischencode — durch Primary-Verifikation
+  gefangen und neu delegiert.
+
+**Status:** M3.5.x `[x]`; Meta-Plan/Checklist M3-Abschluss.
+
 ## 2026-08-31 - TOON-Konvention für Subagent-Delegations-Prompts
 
 **Update:** `AGENTS.md` (Subagent rules). Neue verbindliche Konvention: Der

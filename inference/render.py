@@ -13,12 +13,18 @@ def load_model_from_checkpoint(
 ) -> DDSPModel:
     """Load a DDSP model from a training checkpoint.
 
-    The checkpoint must contain a ``"model_state_dict"`` key (as written by
-    :mod:`train.trainer`). Ignores other keys such as ``"step"``.
+    The checkpoint may carry a ``"config"`` dict (as written by
+    :mod:`train.trainer`) used to rebuild the model with the correct
+    architecture. An explicit ``config`` argument takes precedence; otherwise
+    the checkpoint's stored config is used, falling back to ``DDSPConfig()``.
     """
-    cfg = config if config is not None else DDSPConfig()
+    state = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    cfg = config
+    if cfg is None and "config" in state:
+        cfg = DDSPConfig(**state["config"])
+    if cfg is None:
+        cfg = DDSPConfig()
     model = DDSPModel(cfg)
-    state = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     model.load_state_dict(state["model_state_dict"])
     model.eval()
     return model
@@ -66,10 +72,11 @@ def render_to_file(
         # Average across batch into a single mono channel.
         audio = audio.mean(dim=0, keepdim=True)
     if audio.dim() == 1:
-        audio = audio.unsqueeze(dim=0)
-    import torchaudio as _ta
+        audio = audio.unsqueeze(dim=0)  # (1, T) channels-first
+    audio = audio.T  # soundfile expects (frames, channels)
+    import soundfile as _sf
 
-    _ta.save(out_path, audio, sample_rate)
+    _sf.write(out_path, audio, sample_rate)
     return out_path
 
 

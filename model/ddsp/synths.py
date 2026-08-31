@@ -104,8 +104,10 @@ class SimpleReverb(nn.Module):
     """Lightweight differentiable reverb via a finite feedforward comb filter.
 
     Approximates an infinite feedback comb with a finite cascade of decay taps
-    applied through a length-T FIR impulse response via conv1d. Fully vectorized
-    and exportable.
+    applied through a length-T FIR impulse response via conv1d. The impulse
+    response is materialized once as a fixed module buffer at init time and
+    sliced per-call in a trace-friendly way (no Python-bool on tensors, no
+    in-place scatter, no min() on runtime lengths).
     """
 
     def __init__(
@@ -120,7 +122,18 @@ class SimpleReverb(nn.Module):
         self.decay = decay
         self.n_delays = n_delays
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Fixed maximum FIR length (trace-independent of the runtime T).
+        # Tap k sits at sample offset k * delay_samples with weight decay**k,
+        # k in [0, n_delays). The last used tap index is (n_delays - 1),
+        # so the kernel needs room up to that offset.
+        max_kernel_len = self.n_delays * self.delay_samples + 1
+        kernel = torch.zeros(max_kernel_len)
+        index_arange = torch.arange(self.n_delays, dtype=torch.int64)
+        values_arange = torch.arange(self.n_delays, dtype=kernel.dtype)
+        kernel[index_arange * self.delay_samples] = self.decay**values_arange
+        self.register_buffer("kernel", kernel)
+
+    def forward(self, x):
         """Apply comb filter reverb to audio.
 
         Args:
@@ -134,29 +147,16 @@ class SimpleReverb(nn.Module):
         if original_ndim == 1:
             x = x.unsqueeze(0)
 
-        B, T = x.shape
-        device = x.device
-        dtype = x.dtype
+        # Fixed FIR impulse response, sliced/centred for this input length.
+        kernel = self.kernel.to(dtype=x.dtype)  # (L,)
+        kernel_2d = kernel.reshape(1, 1, -1)  # (1, 1, L)
 
-        # Build length-T FIR impulse response with n_delays taps.
-        # tap k sits at sample offset k * delay_samples with weight decay**k.
-        n_delays = min(self.n_delays, max(1, (T - 1) // self.delay_samples + 1))
-        indices = torch.arange(n_delays, device=device, dtype=torch.int64) * self.delay_samples
-        valid = indices < T
-        indices = indices[valid]
-        values = (self.decay ** torch.arange(n_delays, device=device, dtype=dtype))[valid]
-        kernel = torch.zeros(T, device=device, dtype=dtype)
-        kernel[indices] = values
-
-        # conv1d over (B, 1, T) with kernel (1, 1, T) -> pad so output length == T.
-        x_2d = x.unsqueeze(1)  # (B, 1, T)
-        kernel_2d = kernel.unsqueeze(0).unsqueeze(0)  # (1, 1, T)
+        # 'same' padding keeps the output length equal to the input length T.
         out = torch.nn.functional.conv1d(
-            x_2d,
+            x.unsqueeze(1),
             kernel_2d,
-            padding=(T - 1,),
-        )  # (B, 1, 2 * T - 1) -> keep trailing T samples
-        out = out[:, :, -T:]  # (B, 1, T)
+            padding="same",
+        )  # (B, 1, T)
         out = out.squeeze(1)  # (B, T)
 
         # Restore original dimensionality
@@ -174,9 +174,12 @@ class FilteredNoiseSynth(nn.Module):
     via upsampling of the energy envelope.
     """
 
-    def __init__(self, hop_length: int = 128) -> None:
+    def __init__(self, hop_length: int = 128, max_noise_len: int = 1 << 20) -> None:
         super().__init__()
         self.hop_length = hop_length
+        generator = torch.Generator().manual_seed(0)
+        noise_buffer = torch.randn(max_noise_len, generator=generator)
+        self.register_buffer("noise_buffer", noise_buffer)
 
     def forward(
         self,
@@ -216,8 +219,9 @@ class FilteredNoiseSynth(nn.Module):
         )  # (B, 1, n_samples)
         amp_audio = amp_audio.squeeze(1)  # (B, n_samples)
 
-        # Generate white noise at audio rate
-        noise = torch.randn(B, n_samples, device=device, dtype=dtype)
+        # Generate white noise at audio rate from deterministic buffer.
+        noise = self.noise_buffer[:n_samples].to(device=device, dtype=dtype)
+        noise = noise.unsqueeze(0).expand(B, n_samples)
 
         # Apply amplitude envelope
         audio = noise * amp_audio  # (B, n_samples)

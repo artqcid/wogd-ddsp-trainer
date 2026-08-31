@@ -1,4 +1,5 @@
-"""Unit tests for spectral losses — MultiScaleSpectralLoss + compute_spectral_loss. Deterministic, CPU only."""
+"""Unit tests for spectral losses — MultiScaleSpectralLoss + compute_spectral_loss.
+Deterministic, CPU only."""
 
 from __future__ import annotations
 
@@ -61,7 +62,7 @@ def test_compute_spectral_loss_equals_module() -> None:
     direct = compute_spectral_loss(a, b)
     module = MultiScaleSpectralLoss()(a, b)
 
-    torch.testing.assert_allclose(direct, module, atol=1e-6)
+    torch.testing.assert_allclose(direct, module, atol=1e-6, rtol=1e-7)
 
 
 def test_compute_spectral_loss_custom_scales() -> None:
@@ -72,4 +73,4 @@ def test_compute_spectral_loss_custom_scales() -> None:
     direct = compute_spectral_loss(a, b, fft_sizes=[256, 512])
     module = MultiScaleSpectralLoss(fft_sizes=[256, 512])(a, b)
 
-    torch.testing.assert_allclose(direct, module, atol=1e-6)
+    torch.testing.assert_allclose(direct, module, atol=1e-6, rtol=1e-7)

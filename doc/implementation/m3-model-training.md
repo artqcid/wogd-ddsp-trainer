@@ -76,10 +76,10 @@ _Granular plan for milestone M3. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M3.5 Tests
 
-- [ ] **M3.5.1** Model forward test (CPU, fixed seed).
-- [ ] **M3.5.2** Loss test (finite, decreases on synthetic case).
-- [ ] **M3.5.3** Training smoke test (few steps, checkpoint save/reload).
-- [ ] **M3.5.4** Inference/export smoke test.
+- [x] **M3.5.1** Model forward test (CPU, fixed seed).
+- [x] **M3.5.2** Loss test (finite, decreases on synthetic case).
+- [x] **M3.5.3** Training smoke test (few steps, checkpoint save/reload).
+- [x] **M3.5.4** Inference/export smoke test.
 
 ## BUGS
 
@@ -91,4 +91,49 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
-- (none yet)
+- **2026-08-31 — M3 tests green (8 -> 0 failures).** All M3 unit/integration
+  tests now pass: `pytest` 77 passed (1 GPU-skipped), `ruff check` + `ruff
+  format --check` clean on app+tests. Primary-agent delegation (subagent
+  task_ids in parentheses):
+  - **assert_allclose API:** `atol`-only calls raised `ValueError` on PyTorch
+    2.x; added `rtol` to `test_losses.py` (2x) + `test_model.py` (1x)
+    (`ses_fa9def0d4ffeplbmlHgJhZ8hou`).
+  - **Forward determinism:** `FilteredNoiseSynth` consumed the global RNG each
+    `forward` -> bit-different audio per call. First fixed with a per-call
+    `torch.Generator` (`ses_fa9dedba2ffeyf08iV8H9FO5q8`), then (for ONNX
+    exportability) refactored to a registered deterministic `noise_buffer`
+    (slice in forward; generator only in `__init__`) so no `CustomObjArgument`
+    leaks into the FX graph (`ses_fa9d4b448ffeKvgjwGK6X7LyKK`).
+    `test_deterministic_forward` + `test_export_onnx` green.
+  - **Checkpoint config mismatch:** `load_model_from_checkpoint` built the
+    default (large) model, failing on small checkpoints. Now persists
+    `config` (via `dataclasses.asdict`) in `Trainer.save_checkpoint` and
+    rebuilds the model from it in the loader (checkpoint-written test also
+    saves config). `test_load_model_from_checkpoint` green
+    (`ses_fa9dc81eaffeeajr7AijoK5QYl` + retry).
+  - **TorchScript export:** `SimpleReverb`'s dynamic Python control flow
+    (Python-bool + in-place scatter) broke tracing. Rewrote as a fixed
+    kernel buffer + `F.conv1d(..., padding="same")` (static/traceable);
+    separate dtype-fix for the kernel index tensor
+    (`ses_fa9d798acffe6dPaBwZf6xRIEE`, `ses_fa9d924d7ffeqhY8lc7b5bvoZk`).
+    Also fixed the export test, which wrongly expected a dict key from
+    `torch.jit.load` (the traced artifact returns a single audio tensor)
+    (`ses_fa9d65ab1ffektGDwNFLSel0Ba`).
+  - **`render_to_file` / torchcodec:** torchaudio 2.11 routes WAV writing
+    through uninstalled `torchcodec`; switched to the already-declared
+    `soundfile` (`_sf.write`, channels-first->frames-first transpose)
+    (`ses_fa9d650c8ffeByiymYDxxz5LqG`).
+  - **`train_step_reduces_loss` flakiness:** 2 steps vs a random-noise target
+    never decreased reliably; switched to a fixed zero target over 80 steps
+    (loss genuinely shrinks toward silence) (`ses_fa9dec99effeKz3tfbgfThfh81`).
+  - **Ruff clean-up of pre-existing M3 test files:** E501 long docstrings /
+    I001 import order / format in `test_gpu.py`, `test_losses.py`,
+    `test_model.py` (`ses_fa9d318f5ffeTFyUF7tDNuJLbR`).
+
+  Note: the D-subagent's first `SimpleReverb` rewrite hit the workspace's
+  known small-context tool-abort failure mode (`Duplicate tool_call_id`,
+  cancelled tasks) and left partially-broken code (`torch.clamp(int,int,
+  tensor)`, 2-tuple `conv1d` padding); caught during primary verification and
+  re-delegated. This is the M(3) test-verification gap from the earlier
+  unexecuted test generation — not a scope regression of M3.1-M3.4, which
+  were already committed in b22572c.

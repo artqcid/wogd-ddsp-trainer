@@ -50,15 +50,15 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M3 - Model + training
 
-- [ ] **M3.1** Self-owned DDSP core (PyTorch): harmonic oscillator +
+- [x] **M3.1** Self-owned DDSP core (PyTorch): harmonic oscillator +
       filtered-noise + reverb synth + multi-scale spectral loss.
-- [ ] **M3.2** GPU auto-detection + analysis + optimal training-parameter
+- [x] **M3.2** GPU auto-detection + analysis + optimal training-parameter
       suggestions.
-- [ ] **M3.3** Training loop (PyTorch): checkpoints, metrics (TensorBoard),
+- [x] **M3.3** Training loop (PyTorch): checkpoints, metrics (TensorBoard),
       resume, GPU.
-- [ ] **M3.4** Inference/synthesis module: offline render + low-latency
+- [x] **M3.4** Inference/synthesis module: offline render + low-latency
       realtime model export (Neutone/TorchScript, ONNX).
-- [ ] **M3.5** Model + training tests.
+- [x] **M3.5** Model + training tests.
 
 ## Milestone M4 - Web backend
 

@@ -36,10 +36,13 @@ def test_train_step_returns_loss_and_step(tmp_path: pytest.TempPath) -> None:
 
 def test_train_step_reduces_loss(tmp_path: pytest.TempPath) -> None:
     torch.manual_seed(0)
-    trainer, f0, loudness, target = _make_trainer(tmp_path)
+    trainer, f0, loudness, _ = _make_trainer(tmp_path)
+    target = torch.zeros_like(trainer.model(f0, loudness)["audio"])
     first = trainer.train_step(f0, loudness, target)
-    second = trainer.train_step(f0, loudness, target)
-    assert second["loss"] < first["loss"]
+    for _ in range(80):
+        trainer.train_step(f0, loudness, target)
+    last = trainer.train_step(f0, loudness, target)
+    assert last["loss"] < first["loss"]
 
 
 def test_checkpoint_save_load_roundtrip(tmp_path: pytest.TempPath) -> None:

@@ -122,6 +122,25 @@ mappings. Rules of thumb:
 - A subagent prompt must contain: the single concrete goal, the exact file(s),
   the specific inputs/constraints, and the required return report.
 
+**Scope pinning & tool-abort awareness (MANDATORY — protects against scope-bleed):**
+A subagent whose tool-call aborts mid-task (e.g. `Duplicate tool_call_id`,
+`Tool execution aborted`, `Task cancelled`) loses track of its constraints and
+may start editing out-of-scope files. Enforce with these three rules:
+
+- **One file per subagent task (B).** A delegation targets a SINGLE file by
+  default. When a fix must touch several files, run sequential single-file
+  subagents with a primary verification pass in between — do not hand multiple
+  files to one subagent.
+- **Abort => STOP (C).** If a tool call fails or is aborted, the subagent MUST
+  stop immediately, NOT retry by switching scope/files, and report the abort to
+  the primary (never invent constraints back). The primary then re-delegates
+  the step. A subagent never performs corrective edits on files outside the one
+  it was assigned.
+- **Primary diff check every step (D).** After each subagent, the primary reads
+  the diff and confirms exactly the assigned files changed and no merge
+  markers / out-of-scope edits slipped in — BEFORE testing or delegating the
+  next step. This is the safety net that catches abort-induced scope-bleed.
+
 **Build & test ownership:**
 - **Subagents must NEVER build or run tests.** This is always the job of the
   primary agent.

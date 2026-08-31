@@ -1,4 +1,5 @@
 import os
+from dataclasses import asdict
 
 import pytest
 import torch
@@ -22,7 +23,14 @@ def _model_and_inputs(
     f0 = torch.full((1, 16), 220.0)
     loudness = torch.rand(1, 16).log()
     cpt_path = os.path.join(str(tmp_path), "cpt.pt")
-    torch.save({"model_state_dict": model.state_dict(), "step": 3}, cpt_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "step": 3,
+            "config": asdict(model.config),
+        },
+        cpt_path,
+    )
     return model, f0, loudness, cpt_path
 
 
@@ -63,8 +71,9 @@ def test_export_torchscript(tmp_path: pytest.TempPath) -> None:
     assert os.path.exists(out_path)
     loaded = torch.jit.load(out_path)
     out = loaded(_torch_input(), _torch_input())
-    assert "audio" in out
-    assert out["audio"].isfinite().all()
+    assert isinstance(out, torch.Tensor)
+    assert out.numel() > 0
+    assert torch.isfinite(out).all()
 
 
 def test_export_onnx(tmp_path: pytest.TempPath) -> None:
