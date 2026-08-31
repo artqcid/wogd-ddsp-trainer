@@ -11,6 +11,7 @@ Provides:
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from contextlib import suppress
@@ -19,6 +20,7 @@ from typing import Protocol
 
 import torch
 from celery import Celery
+from torch.utils.data import DataLoader
 
 from dataset.cache import FeatureCache
 from inference.render import load_model_from_checkpoint, render_to_file
@@ -142,6 +144,27 @@ def build_tensors(
                     loudness_t = loudness_t.unsqueeze(0)
                 return f0_t, loudness_t, target_t
 
+    if dataset_id is None:
+        logging.warning("no dataset_id provided, using synthetic data")
+    else:
+        has_f0 = f0 is not None if "f0" in locals() else False
+        has_loudness = loudness is not None if "loudness" in locals() else False
+        has_audio = audio is not None if "audio" in locals() else False
+        if "cache" in locals() and not cache.exists("train"):
+            logging.warning(
+                "cache not found for dataset_id=%s, using synthetic data",
+                dataset_id,
+            )
+        else:
+            logging.warning(
+                "missing expected keys in cache for dataset_id=%s "
+                "(missing f0=%s, loudness=%s, audio=%s), using synthetic data",
+                dataset_id,
+                has_f0,
+                has_loudness,
+                has_audio,
+            )
+
     torch.manual_seed(0)
     f0 = torch.full((1, 16), 220.0, dtype=torch.float32)
     loudness = torch.rand(1, 16, dtype=torch.float32).log()
@@ -179,7 +202,30 @@ def run_training_job(run_id: str) -> dict:
             trainer_loader.load_checkpoint(str(latest))
             model.eval()
 
-        f0, loudness, target = build_tensors(model, run.get("dataset_id"))
+        dataset_id = run.get("dataset_id")
+
+        # Data loading branch: real DataLoader when a valid dataset_id is
+        # provided and the cache on disk exists; otherwise fall back to a
+        # single-batch synthetic tensor via build_tensors() (which also owns
+        # the M4.7.1 warning logging).
+        data_loader: DataLoader | None = None
+        f0: torch.Tensor | None = None
+        loudness: torch.Tensor | None = None
+        target: torch.Tensor | None = None
+
+        if dataset_id is not None:
+            from server.paths import datasets_dir
+
+            cache_path = datasets_dir() / dataset_id
+            if cache_path.exists():
+                from dataset.loader import DDSPDataset
+
+                ds = DDSPDataset(str(cache_path), key="train", seq_len=64000)
+                data_loader = DataLoader(ds, batch_size=1, shuffle=True)
+            else:
+                f0, loudness, target = build_tensors(model, dataset_id)
+        else:
+            f0, loudness, target = build_tensors(model, None)
 
         trainer = Trainer(model, tcfg)
         trainer._checkpoint_dir = str(checkpoint_dir)
@@ -204,7 +250,10 @@ def run_training_job(run_id: str) -> dict:
 
         stop_requested = False
         try:
-            summary = trainer.run(f0, loudness, target, stop_event=stop_event)
+            if data_loader is not None:
+                summary = trainer.run(data_loader=data_loader, stop_event=stop_event)
+            else:
+                summary = trainer.run(f0, loudness, target, stop_event=stop_event)
             stop_requested = stop_event.is_set()
             status = "stopped" if stop_requested else "completed"
         except Exception as exc:  # noqa: BLE001

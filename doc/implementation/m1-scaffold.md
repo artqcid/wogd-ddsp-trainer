@@ -92,9 +92,7 @@ _Granular plan for milestone M1. Meta plan: [`../plan.md`](../plan.md); status:
 
 _References only; full records in [`../bugs.md`](../bugs.md)._
 
-- `BUG-1` — neutone_sdk pinned numpy<2.3 lacks cp314 Windows wheel (py3.14). Open.
-
-- (none)
+- `BUG-1` — neutone_sdk pinned numpy<2.3 lacks cp314 Windows wheel (py3.14). wont-fix.
 
 ## History
 

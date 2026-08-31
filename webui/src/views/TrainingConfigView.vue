@@ -15,26 +15,30 @@ const validationResult = ref(null)
 const isClamping = ref(false)
 const clampMessages = ref([])
 const trainingSpeed = ref('NORMAL')
+const decoderType = ref('gru')
+const useReverb = ref(true)
 const gpuInfo = ref(null)
 const showVramWarning = ref(false)
 const vramAdjustmentParams = ref(null)
 
 const presetOptions = computed(() => {
-  const builtin = presets.value.filter(p => p.type === 'builtin' || p.type === 'autovc' || p.type === 'dsp-autoencoder')
-  const custom = presets.value.filter(p => p.type === 'custom')
+  const builtin = presets.value.filter(p => p.is_builtin === true)
+  const custom = presets.value.filter(p => p.is_builtin !== true)
   return { builtin, custom }
 })
 
 const currentParams = computed(() => {
-  const p = selectedPreset.value?.parameters || {}
+  const p = selectedPreset.value?.params || {}
   return {
     learning_rate: learningRate.value,
     batch_size: batchSize.value,
     epochs: epochs.value,
-    hidden_size: p.hidden_dim ?? 256,
+    hidden_size: p.hidden_size ?? 256,
     stft_scales: 3,
     mixed_precision: p.mixed_precision ?? 'required',
     gradient_checkpointing: p.gradient_checkpointing ?? 'optional',
+    decoder_type: p.decoder_type ?? 'gru',
+    use_reverb: p.use_reverb ?? true,
   }
 })
 
@@ -51,43 +55,13 @@ const gpuDisplay = computed(() => {
 
 function applyPreset(preset) {
   selectedPreset.value = preset
-  if (preset?.parameters) {
-    learningRate.value = preset.parameters.learning_rate ?? 0.001
-    batchSize.value = preset.parameters.batch_size ?? 32
-    epochs.value = preset.parameters.epochs ?? 100
-
-    const dims = ['hidden_dim', 'encoder_dim', 'decoder_dim', 'postnet_dim']
-    const clamped = []
-    const gpuBounds = {
-      hiddenDim: 256,
-      encoderDim: 256,
-      decoderDim: 256,
-      postnetDim: 256,
-      sampleRate: 48000,
-      nHarmonics: 64,
-      nTrees: 100
-    }
-    dims.forEach(dim => {
-      const val = preset.parameters[dim]
-      if (val !== undefined && val > gpuBounds[dim]) {
-        clamped.push({ dim, original: val, clamped: gpuBounds[dim] })
-      }
-    })
-
-    if (preset.type === 'custom' && clamped.length > 0) {
-      isClamping.value = true
-      clampMessages.value = clamped.map(c =>
-        `${c.dim.replace('_', ' ')} clamped from ${c.original} to ${c.clamped}`
-      )
-    } else {
-      isClamping.value = false
-      clampMessages.value = []
-    }
-  } else {
-    isClamping.value = false
-    clampMessages.value = []
+  isClamping.value = false
+  clampMessages.value = []
+  if (preset?.params) {
+    learningRate.value = preset.params.learning_rate ?? 0.001
+    batchSize.value = preset.params.batch_size ?? 32
+    epochs.value = preset.params.epochs ?? 100
   }
-
   validateCurrentConfig()
 }
 
@@ -119,9 +93,9 @@ function acceptVramAdjustment() {
   if (adj.hidden_size !== undefined) {
     selectedPreset.value = {
       ...selectedPreset.value,
-      parameters: {
-        ...selectedPreset.value.parameters,
-        hidden_dim: adj.hidden_size,
+      params: {
+        ...selectedPreset.value.params,
+        hidden_size: adj.hidden_size,
       }
     }
   }
@@ -158,13 +132,12 @@ async function handleStartTraining() {
     training_speed: trainingSpeed.value,
     preset: selectedPreset.value?.name || null,
     parameters: {
-      hidden_dim: selectedPreset.value?.parameters?.hidden_dim ?? 128,
-      encoder_dim: selectedPreset.value?.parameters?.encoder_dim ?? 128,
-      decoder_dim: selectedPreset.value?.parameters?.decoder_dim ?? 128,
-      postnet_dim: selectedPreset.value?.parameters?.postnet_dim ?? 128,
-      sample_rate: selectedPreset.value?.parameters?.sample_rate ?? 44100,
-      n_harmonics: selectedPreset.value?.parameters?.n_harmonics ?? 32,
-      n_trees: selectedPreset.value?.parameters?.n_trees ?? 50
+      hidden_size: selectedPreset.value?.params?.hidden_size ?? 256,
+      stft_scales: selectedPreset.value?.params?.stft_scales ?? 3,
+      mixed_precision: selectedPreset.value?.params?.mixed_precision ?? 'required',
+      gradient_checkpointing: selectedPreset.value?.params?.gradient_checkpointing ?? 'optional',
+      decoder_type: selectedPreset.value?.params?.decoder_type ?? 'gru',
+      use_reverb: selectedPreset.value?.params?.use_reverb ?? true,
     }
   }
   try {
@@ -222,7 +195,7 @@ async function handleStartTraining() {
               :key="preset.name"
               :value="preset.name"
             >
-              {{ preset.name }} ({{ preset.type }})
+              {{ preset.name }}
             </option>
           </optgroup>
           <optgroup label="Custom Presets" v-if="presetOptions.custom.length">
@@ -271,6 +244,23 @@ async function handleStartTraining() {
     </div>
 
     <div class="config-section">
+      <h3>Decoder</h3>
+      <div class="form-group">
+        <label for="decoder-type">Decoder Type</label>
+        <select id="decoder-type" v-model="decoderType" data-testid="decoder-type">
+          <option value="gru">GRU</option>
+          <option value="rnn">RNN</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="useReverb" data-testid="use-reverb" />
+          Enable Reverb
+        </label>
+      </div>
+    </div>
+
+    <div class="config-section">
       <h3>Training Speed</h3>
       <div class="radio-group" data-testid="training-speed">
         <label>
@@ -281,7 +271,7 @@ async function handleStartTraining() {
             data-testid="speed-FAST"
             @change="onSpeedChange('FAST')"
           />
-          FAST (25% VRAM)
+          FAST (0.5x hidden_size, max speed)
         </label>
         <label>
           <input
@@ -291,7 +281,7 @@ async function handleStartTraining() {
             data-testid="speed-NORMAL"
             @change="onSpeedChange('NORMAL')"
           />
-          NORMAL (50% VRAM)
+          NORMAL (0.75x, default)
         </label>
         <label>
           <input
@@ -301,7 +291,7 @@ async function handleStartTraining() {
             data-testid="speed-QUALITY"
             @change="onSpeedChange('QUALITY')"
           />
-          QUALITY (75% VRAM)
+          QUALITY (0.9x, best quality)
         </label>
       </div>
     </div>
@@ -384,15 +374,14 @@ async function handleStartTraining() {
         epochs: epochs,
         target_mode: targetMode,
         training_speed: trainingSpeed,
-        parameters: {
-          hidden_dim: selectedPreset?.parameters?.hidden_dim ?? 128,
-          encoder_dim: selectedPreset?.parameters?.encoder_dim ?? 128,
-          decoder_dim: selectedPreset?.parameters?.decoder_dim ?? 128,
-          postnet_dim: selectedPreset?.parameters?.postnet_dim ?? 128,
-          sample_rate: selectedPreset?.parameters?.sample_rate ?? 44100,
-          n_harmonics: selectedPreset?.parameters?.n_harmonics ?? 32,
-          n_trees: selectedPreset?.parameters?.n_trees ?? 50
-        }
+         parameters: {
+           hidden_size: selectedPreset?.params?.hidden_size ?? 256,
+           stft_scales: selectedPreset?.params?.stft_scales ?? 3,
+           mixed_precision: selectedPreset?.params?.mixed_precision ?? 'required',
+           gradient_checkpointing: selectedPreset?.params?.gradient_checkpointing ?? 'optional',
+           decoder_type: selectedPreset?.params?.decoder_type ?? 'gru',
+           use_reverb: selectedPreset?.params?.use_reverb ?? true,
+         }
       }"
       @close="showDialog = false"
       @save="(payload) => {
@@ -448,4 +437,5 @@ async function handleStartTraining() {
 .popup-box h4 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--text-primary); }
 .popup-box p { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.25rem; }
 .popup-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+.checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
 </style>

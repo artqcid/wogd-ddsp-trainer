@@ -65,8 +65,9 @@ _Granular plan for milestone M6. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M6.2 Docs
 
-- [ ] **M6.2.1** Finalize docs: architecture, workflow, UI requirements,
-      implementation plans up-to-date.
+- [x] **M6.2.1** Finalize docs: architecture, workflow, UI requirements,
+      implementation plans up-to-date. _(Note: additional doc updates were
+      performed during the M1–M6 review on 2026-08-31; see History.)_
 
 ### M6.3 Error handling
 
@@ -107,10 +108,12 @@ _Granular plan for milestone M6. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M6.5 Output enhancer
 
-- [ ] **M6.5.1** Integrate a native PyTorch vocoder enhancer (NSF-HiFiGAN) to
-      lift raw DDSP output quality.
-- [ ] **M6.5.2** (Optional/experimental) shallow-diffusion post-processing.
-- [ ] **M6.5.3** Enhancer tests + docs.
+_Deferred from M6 to M7 (decision recorded in `checklist.md`). Tracked in
+`implementation/m7-experimental.md` as M7.0. Do not implement here._
+
+- [ ] **M6.5.1** ~~Integrate NSF-HiFiGAN~~ → **moved to M7.0.1**
+- [ ] **M6.5.2** ~~Shallow-diffusion~~ → **moved to M7.0.2**
+- [ ] **M6.5.3** ~~Enhancer tests + docs~~ → **moved to M7.0.3**
 
 ### M6.6 VSCode debug/release start verification
 
@@ -137,7 +140,7 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
   **status: fixed** (named import).
 - `BUG-4` — Training Speed (FAST/NORMAL/QUALITY) fehlt als separater Parameter;
   UI zeigt fake-GPU statt echter GPU; keine Preset+Speed-VRAM-Validierung.
-  **status: fixed** (M6.5 — BUG-4).
+  **status: fixed** (M6 — BUG-4 fix).
 
 ## History
 

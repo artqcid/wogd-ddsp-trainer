@@ -3,6 +3,74 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M3.6 DataLoader + M5.8 Preset/BUG fixes + M5.8.5 Decoder/Reverb UI + M4.7 warning logs
+
+**Update:** Implemented all findings from the M1–M6 review across 3 milestones.
+Plan approval: user said "ja, beachte die agent rules genau".
+
+- **M3.6 DataLoader (4 steps):** (a) Contract decision documented in `architecture.md`:
+  `Trainer` accepts a `DataLoader`, wraps `DDSPDataset` from `FeatureCache`.
+  (b) `DDSPDataset` in `dataset/loader.py` — PyTorch Dataset chunking merged
+  FeatureCache arrays into 64000-sample segments (task_id: `ses_fa6abbdd7ffen5j5XgKR2TcV2E`).
+  (c) `Trainer.run()` gets optional `data_loader` parameter with `itertools.cycle`
+  wrapping (task_id: `ses_fa6a49f34ffe7yMWYBpvzQMoRC`). (d) `server/tasks.py::run_training_job`
+  uses DataLoader when cache exists, falls back to `build_tensors()` (task_id:
+  `ses_fa6a05195ffeT14uMMaIO4rQcO`). +5 tests `test_loader.py`.
+- **M5.8.1-4 BUG-5 / BUG-6 fixes:** `fixtures.js` aligned to DDSP schema
+  (`is_builtin`, `params`, `hidden_size`, `step-*.pt`) (task_id:
+  `ses_fa6ac07ebffeYtkAwYn1seHmlA`). `TrainingConfigView.vue` updated:
+  preset filter by `is_builtin`, DDSP field names (`hidden_size`, etc.),
+  speed labels `0.5x`/`0.75x`/`0.9x` instead of VRAM %, dead AutoVC clamping
+  block removed (task_id: `ses_fa6abe82effeYqw67zgoXK68Sw`).
+- **M5.8.5 Decoder/Reverb UI:** `DDSPConfig` gained `decoder_type` and
+  `use_reverb` (task_id: `ses_fa6a043a8fferuT5nmFOgOI9PN`). `DDSPCore`
+  conditionally creates/applies reverb (task_id: `ses_fa69c536effePtfqpxXvfKaUJg`).
+  `TrainingConfigView.vue` has decoder-type `<select>` and reverb checkbox
+  (task_id: `ses_fa69c40eeffef4LIZJMiJRI295`).
+- **M4.7.1:** `build_tensors()` emits `logging.warning` when falling back to
+  synthetic data (task_id: `ses_fa6a4868cffeNOlsGWvRoq32pP`).
+- **M4.7.2:** completed implicitly via M3.6.4 (DataLoader replaces single-batch
+  dummy in `run_training_job`).
+- **M3.1.4 `n_noise_bins`:** checkpoint round-trip fix — added to `DDSPConfig`.
+
+**Verify:** ruff 0, pytest 156/1 (5 new loader tests), vitest 23/23,
+ruff format 91/91, wiki lint clean.
+
+## 2026-08-31 - M1–M6 full review: 18 findings documented across all implementation plans
+
+**Update:** Full project review (fachlich + technisch, Frontend + Backend).
+18 findings filed across all milestones; improvements added to implementation
+plans as additional requirements (no code changes):
+
+- **BUG-5 filed** (open): Preset-schema drift — frontend fixtures/views use
+  AutoVC field names (`hidden_dim`, `type: 'autovc'`) instead of the DDSP
+  backend schema (`hidden_size`, `is_builtin`). Fix steps: `m5-webui.md` M5.8.1–M5.8.3.
+- **BUG-6 filed** (open): Training Speed labels in UI show wrong VRAM percentages
+  (25/50/75%) instead of actual speed-modifier factors (0.5×/0.75×/0.9×). Fix:
+  `m5-webui.md` M5.8.4.
+- **`bugs.md`:** `next_id` 5→7; BUG-4 moved from "Open" to "Fixed" section.
+- **`m3-model-training.md`:** M3.1–M3.4 steps marked `[x]` (were implemented but
+  not ticked); M3.1.4 added (`n_noise_bins` into `DDSPConfig`); M3.6 added (real
+  `DataLoader` — 4 sub-steps, blocker for M7.1 F0-override).
+- **`m4-backend.md`:** M4.7 added (`build_tensors()` silent-fallback warning-log +
+  DataLoader wiring, dependent on M3.6).
+- **`m5-webui.md`:** M5.8 added (5 sub-steps: fixture alignment, preset-filter fix,
+  DDSP payload fix, speed-label fix, decoder-type/reverb-toggle UI controls).
+- **`m6-polish.md`:** M6.2.1 closed `[x]`; M6.5 marked deferred/redirect to M7.0;
+  BUG-4 reference corrected (was `M6.5 — BUG-4`, now `M6 — BUG-4 fix`).
+- **`m7-experimental.md`:** M7.0 added (Output Enhancer NSF-HiFiGAN, deferred from
+  M6.5, 4 sub-steps); M7.3.0 added (Reverb IR research blocker — trainable vs.
+  fixed reverb decision); prerequisite block added before M7.1.
+- **`m1-scaffold.md`:** BUGS section cleaned (orphan `(none)` removed; BUG-1
+  status updated to `wont-fix`).
+- **`m2-dataset-prep.md`:** frontmatter `status: draft → implemented`; BUGS section
+  updated with A-weighted loudness open question (RMS-dB vs. A-weighting).
+- **`architecture.md`:** Status section updated (M1–M6 done, M7/M8 open); new
+  "Known open items" subsection lists all 7 actionable findings with plan
+  cross-references.
+
+**Verify:** wiki lint clean, `index_project_code` ran (9 files reindexed).
+
 ## 2026-08-31 - BUG-4 (Training Speed / GPU / VRAM validation) implemented
 
 **BUG-4** (three related deficiencies): (a) Training Speed FAST/NORMAL/QUALITY

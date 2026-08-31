@@ -25,6 +25,42 @@ _Granular plan for milestone M7. Meta plan: [`../plan.md`](../plan.md); status:
 
 ## Steps
 
+> **Prerequisites for M7 (must be completed first):**
+> - M3.6 (real DataLoader) must be done before M7.1 F0-override can work
+>   correctly on real multi-file datasets.
+> - M7.0 Output Enhancer (see below) is independent and can be done in parallel
+>   with M7.1–M7.4.
+> - For M7.3 IR Injection: see the research step M7.3.0 — the current
+>   `SimpleReverb` is a fixed FIR filter with no trainable parameters. IR
+>   injection only makes sense if the reverb is made trainable. This must be
+>   clarified before M7.3 is implemented.
+
+### M7.0 Output Enhancer (deferred from M6.5)
+
+_Moved from M6.5 to M7 (decision recorded in `checklist.md` and
+`implementation/m6-polish.md`). Independent of M7.1–M7.4; can be worked on
+in parallel._
+
+- [ ] **M7.0.1** **[RESEARCH]** Evaluate NSF-HiFiGAN integration options:
+      - Option A: Use the original NSF-HiFiGAN PyTorch implementation as a
+        post-processing step after DDSP rendering (offline only).
+      - Option B: Train a lightweight vocoder jointly with the DDSP model.
+      - Option C: Use a pre-trained HiFiGAN/BigVGAN checkpoint as a fixed
+        post-processor.
+      Document the decision in `architecture.md` and `experimental-ddsp.md`.
+      Consider VRAM budget: the enhancer must fit on 6 GB alongside DDSP
+      inference (Option A is most likely feasible).
+- [ ] **M7.0.2** **[IMPLEMENT — after M7.0.1]** Integrate the chosen enhancer
+      as an optional post-processing step in `inference/render.py`.
+      Files: `inference/render.py`, potentially `inference/enhancer.py`.
+      Verify: renders a short audio clip through DDSP + enhancer without error.
+- [ ] **M7.0.3** **[IMPLEMENT]** Wire the enhancer toggle into the UI:
+      add an "Apply output enhancer" checkbox to `InferencePlaygroundView.vue`
+      and `ModelExportView.vue`.
+      Files: `webui/src/views/InferencePlaygroundView.vue`,
+             `webui/src/views/ModelExportView.vue`.
+- [ ] **M7.0.4** Tests + docs for the output enhancer pipeline.
+
 ### M7.1 F0/pitch-curve override editor (two-tier)
 
 - [ ] **M7.1.1** Backend: allow a per-file custom F0 curve (override CREPE).
@@ -45,6 +81,21 @@ _Granular plan for milestone M7. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M7.3 Reverb IR injection + extractor
 
+- [ ] **M7.3.0** **[RESEARCH — blocker for M7.3.1–M7.3.3]** Clarify whether
+      `SimpleReverb` needs to become a trainable module before IR injection is
+      useful. The current `SimpleReverb` is a fixed FIR comb filter with no
+      `nn.Parameter` — it has no learnable impulse response to inject into or
+      export. Two options:
+      - Option A: Replace `SimpleReverb` with a trainable IR conv (`nn.Parameter`
+        of length N, e.g. 16000 samples) so the reverb "learns" the room. IR
+        injection then freezes this parameter to a provided `.wav`. IR extraction
+        reads the parameter back.
+      - Option B: Keep `SimpleReverb` as-is; the "IR injection" just replaces
+        the fixed kernel with a user-provided one. "Export" dumps the fixed kernel.
+        Simpler but less interesting musically.
+      Document the decision before starting M7.3.1. Impact: Option A requires
+      changes to `model/ddsp/synths.py` and `model/ddsp_model.py`.
+      Files (research only): `doc/experimental-ddsp.md`, `doc/architecture.md`.
 - [ ] **M7.3.1** Backend: load a `.wav` IR and inject it into the (frozen)
       reverb module. Files: `model/reverb_injection.py`.
 - [ ] **M7.3.2** Backend: extract the learned IR as `.wav`.

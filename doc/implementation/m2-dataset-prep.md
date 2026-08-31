@@ -1,6 +1,6 @@
 ---
 type: implementation-plan
-status: draft
+status: implemented
 milestone: M2 - Dataset prep
 generated:
   by: primary-agent
@@ -81,7 +81,17 @@ usage does not compete with training VRAM._
 
 _References only; full records in [`../bugs.md`](../bugs.md)._
 
-- (none)
+- **Loudness A-weighting (open question):** `features.py` uses `librosa.feature.rms()`
+  → dB conversion, but `architecture.md` and `ui-requirements.md` describe
+  `loudness_db` as "A-weighted". The DDSP reference uses A-weighted loudness
+  (`librosa.A_weighting`) to approximate human loudness perception. This is not
+  a tracked BUG (no BUG-id yet) but must be clarified before M7:
+  - If A-weighting is required for correct DDSP conditioning, update
+    `dataset/features.py::extract_loudness()` to apply `librosa.A_weighting`.
+  - If RMS-dB is an intentional simplification, update the documentation in
+    `architecture.md` and `ui-requirements.md` to reflect this.
+  **Action required:** decision + implementation or doc correction. File as BUG-id
+  when actioned.
 
 ## History
 

@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 5`
+`next_id: 7`
 
 ## Bug template (copy for each new bug)
 
@@ -121,8 +121,6 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - history:
   - 2026-08-31 — found during M4.3 test roundtrip; fixed in `server/routes/dataset.py`.
 
-## Open bugs
-
 ## BUG-4 - Training Speed (FAST/NORMAL/QUALITY) fehlt als separater Parameter; UI zeigt fake GPU statt echter GPU; keine Preset+Speed-VRAM-Validierung
 - status: fixed
 - milestone: M6 (Polish/UI)
@@ -171,3 +169,44 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
     `getGPUInfo()` + `gpuHostInfoFixture` in fixtures; (c) popup overlay in
     TrainingConfigView.vue with VRAM validation on preset/speed change.
     Full check suite: pytest 151/1, vitest 23/0, ruff/format clean, build clean.
+
+## Open bugs
+
+## BUG-5 - Preset-schema drift: frontend fixtures/views use AutoVC field names instead of DDSP backend schema
+- status: open
+- milestone: M5 (Web UI)
+- affected: M4 (backend), M7 (experimental, any preset-driven flow)
+- found-in: M1–M6 review 2026-08-31 (architecture cross-check)
+- severity: major
+- description: The mock fixtures (`webui/src/mocks/fixtures.js`) and
+  `TrainingConfigView.vue` use AutoVC/DSP-autoencoder field names:
+  `hidden_dim`, `encoder_dim`, `decoder_dim`, `postnet_dim`, `n_trees`,
+  `type: 'autovc'`, `type: 'dsp-autoencoder'`. The real DDSP backend
+  (`server/presets.py`, `server/tasks.py::build_training()`) uses:
+  `hidden_size`, `stft_scales`, `mixed_precision`, `gradient_checkpointing`,
+  `is_builtin`. Additionally, `modelsFixture` checkpoints use `.h5` (Keras)
+  instead of `.pt` (PyTorch).
+  The Vitest tests pass because they run against the mocks only — an actual
+  backend call would fail immediately on the field mismatch.
+- reproduction: Run the app against the real backend; select any built-in
+  preset in TrainingConfigView → the preset dropdown filter (`type === 'autovc'`)
+  finds nothing, training payload contains unknown fields.
+- resolution: (open) Fix tracked in `implementation/m5-webui.md` M5.8.1–M5.8.3.
+- history:
+  - 2026-08-31 — filed during M1–M6 review; fix steps added to m5-webui.md.
+
+## BUG-6 - Training Speed radio button labels show incorrect VRAM percentages
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView)
+- found-in: M1–M6 review 2026-08-31
+- severity: minor
+- description: `TrainingConfigView.vue` speed radio buttons are labeled
+  `FAST (25% VRAM)` / `NORMAL (50% VRAM)` / `QUALITY (75% VRAM)`. These
+  numbers describe the built-in preset VRAM targets, not the speed-modifier
+  factors. The actual `apply_speed()` logic in `server/routes/host.py` applies
+  factors 0.50× / 0.75× / 0.90× to the preset's `hidden_size`. The QUALITY
+  label is especially misleading: it shows 75% but the factor is 0.90×.
+- reproduction: Open TrainingConfigView → Training Speed section → read labels.
+- resolution: (open) Fix tracked in `implementation/m5-webui.md` M5.8.4.
+- history:
+  - 2026-08-31 — filed during M1–M6 review; fix step added to m5-webui.md.

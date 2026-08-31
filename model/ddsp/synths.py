@@ -242,18 +242,21 @@ class DDSPCore(nn.Module):
         hop_length: int = 128,
         reverb_delay: float = 0.03,
         reverb_decay: float = 0.5,
+        use_reverb: bool = True,
     ) -> None:
         super().__init__()
         self.sample_rate = sample_rate
         self.hop_length = hop_length
+        self.use_reverb = use_reverb
 
         self.harmonic_synth = HarmonicOscillatorSynth(n_harmonics=n_harmonics)
         self.noise_synth = FilteredNoiseSynth(hop_length=hop_length)
-        self.reverb = SimpleReverb(
-            delay_seconds=reverb_delay,
-            decay=reverb_decay,
-            sample_rate=sample_rate,
-        )
+        if use_reverb:
+            self.reverb = SimpleReverb(
+                delay_seconds=reverb_delay,
+                decay=reverb_decay,
+                sample_rate=sample_rate,
+            )
 
     def forward(
         self,
@@ -290,7 +293,8 @@ class DDSPCore(nn.Module):
         )
 
         # Apply reverb only to noise branch (common DDSP pattern)
-        noise_audio = self.reverb(noise_audio)
+        if self.use_reverb:
+            noise_audio = self.reverb(noise_audio)
 
         # Mix: harmonic + filtered noise
         audio = harmonic_audio + noise_audio

@@ -25,26 +25,33 @@ _Granular plan for milestone M3. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M3.1 Model + losses
 
-- [ ] **M3.1.1** Build the self-owned DDSP core: harmonic oscillator +
+- [x] **M3.1.1** Build the self-owned DDSP core: harmonic oscillator +
       filtered-noise + reverb synth (PyTorch `nn.Module`).
       Files: `model/ddsp/`.
       Verify: forward pass produces audio of expected shape.
-- [ ] **M3.1.2** Wire the decoder (GRU) conditioned on f0/loudness.
+- [x] **M3.1.2** Wire the decoder (GRU) conditioned on f0/loudness.
       Files: `model/ddsp_model.py`.
       Verify: outputs `amplitudes`, `harmonic_distribution`, magnitudes.
-- [ ] **M3.1.3** Implement the multi-scale spectral loss (PyTorch). Default
+- [x] **M3.1.3** Implement the multi-scale spectral loss (PyTorch). Default
       config: 3 scales `[512, 1024, 2048]` (VRAM-efficient). The number of
       scales must be configurable from the GPU auto-detection module (see
       `architecture.md` VRAM tier table).
       Files: `model/losses.py`.
       Verify: loss returns a finite scalar.
+- [ ] **M3.1.4** **[IMPLEMENT]** Add `n_noise_bins: int = 32` to `DDSPConfig`
+      so the parameter is persisted in checkpoints and can be restored on resume.
+      Update `DDSPModel.__init__` to read `n_noise_bins` from `config` instead of
+      the current hardcoded default.
+      Files: `model/ddsp_model.py`.
+      Verify: checkpoint save+load round-trip with a non-default `n_noise_bins`
+      value succeeds without error.
 
 ### M3.2 GPU detection
 
-- [ ] **M3.2.1** Detect available GPUs (`torch.cuda`).
+- [x] **M3.2.1** Detect available GPUs (`torch.cuda`).
       Files: `train/gpu.py`.
       Verify: unit test (skip without GPU) reports devices.
-- [ ] **M3.2.2** Analyze GPU (VRAM) and propose optimal training parameters.
+- [x] **M3.2.2** Analyze GPU (VRAM) and propose optimal training parameters.
       Map VRAM to parameter tier (see `architecture.md`): hidden size, STFT
       scale count, mixed precision on/off, gradient checkpointing on/off.
       Files: `train/gpu.py`.
@@ -52,25 +59,25 @@ _Granular plan for milestone M3. Meta plan: [`../plan.md`](../plan.md); status:
 
 ### M3.3 Training loop
 
-- [ ] **M3.3.1** Implement the training step (optimizer + loss + mixed
+- [x] **M3.3.1** Implement the training step (optimizer + loss + mixed
       precision). Use `torch.cuda.amp.autocast` + `GradScaler` for VRAM
       efficiency. Support gradient checkpointing on the encoder (controlled
       by GPU detection tier).
       Files: `train/trainer.py`.
       Verify: smoke test runs a few steps on GPU (or CPU fallback).
-- [ ] **M3.3.2** Implement checkpointing + resume.
+- [x] **M3.3.2** Implement checkpointing + resume.
       Files: `train/trainer.py`.
       Verify: test saves + reloads a checkpoint.
-- [ ] **M3.3.3** Write metrics/logs to TensorBoard.
+- [x] **M3.3.3** Write metrics/logs to TensorBoard.
       Files: `train/trainer.py`.
       Verify: smoke test emits an event file.
 
 ### M3.4 Inference & export
 
-- [ ] **M3.4.1** Offline render from a checkpoint (condition on f0/loudness).
+- [x] **M3.4.1** Offline render from a checkpoint (condition on f0/loudness).
       Files: `inference/render.py`.
       Verify: produces non-empty audio.
-- [ ] **M3.4.2** Low-latency realtime export (Neutone/TorchScript, ONNX).
+- [x] **M3.4.2** Low-latency realtime export (Neutone/TorchScript, ONNX).
       Files: `inference/export.py`.
       Verify: exports a loadable artifact.
 
@@ -80,6 +87,39 @@ _Granular plan for milestone M3. Meta plan: [`../plan.md`](../plan.md); status:
 - [x] **M3.5.2** Loss test (finite, decreases on synthetic case).
 - [x] **M3.5.3** Training smoke test (few steps, checkpoint save/reload).
 - [x] **M3.5.4** Inference/export smoke test.
+
+### M3.6 DataLoader (open — required for real training)
+
+_This step was identified as a gap during the M1–M6 review (2026-08-31). The
+`Trainer.run()` method and `server/tasks.py::build_tensors()` only operate on a
+single pre-loaded tensor batch. Real multi-file dataset training is not yet wired
+up. This step must be completed before M7 experimental features can work
+correctly._
+
+- [x] **M3.6.1** **[RESEARCH]** Decide the DataLoader contract: should
+      `Trainer` accept a `torch.utils.data.DataLoader` or should `build_tensors`
+      iterate over the `FeatureCache`? Considerations: chunked audio (seq_len ≤ 4 s
+      @ 16 kHz), per-file f0/loudness alignment, shuffle across files,
+      reproducible seed. Document the decision in `architecture.md`.
+      Files (research only, no code): `architecture.md`.
+- [x] **M3.6.2** **[IMPLEMENT]** Implement a `DDSPDataset` (PyTorch `Dataset`)
+      that reads all `*.npy` feature files from a `FeatureCache` directory,
+      chunks them into fixed-length frames, and returns `(f0, loudness,
+      audio_chunk)` triples. Seed-reproducible.
+      Files: `dataset/loader.py` (extend or add `DDSPDataset`).
+      Verify: unit test iterates at least one epoch over a synthetic 3-file cache.
+- [x] **M3.6.3** **[IMPLEMENT]** Wire `DDSPDataset` into `Trainer.run()`: accept
+      an optional `DataLoader` argument; when provided, iterate over real batches
+      instead of the fixed dummy tensors.
+      Files: `train/trainer.py`.
+      Verify: smoke test with `DDSPDataset` + `DataLoader` runs 10 steps without
+      error on CPU.
+- [x] **M3.6.4** **[IMPLEMENT]** Wire `DDSPDataset` into
+      `server/tasks.py::build_tensors()` / `run_training_job`: replace the
+      16-frame dummy fallback with a proper DataLoader-driven loop. Add a
+      `logging.warning` (never silent fallback) when no cache is found.
+      Files: `server/tasks.py`.
+      Verify: backend training test with a real cache fixture.
 
 ## BUGS
 

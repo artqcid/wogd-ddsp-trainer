@@ -1,4 +1,4 @@
-"""DDSP model: GRU decoder conditioned on f0 + loudness, driving DDSP core synth."""
+"""DDSP model: GRU/RNN decoder conditioned on f0 + loudness, driving DDSP core synth."""
 
 from __future__ import annotations
 
@@ -20,7 +20,8 @@ class DDSPConfig:
         frame_size: samples per analysis frame (also used as hop length for synthesis).
         n_harmonics: number of harmonic oscillators.
         hidden_size: GRU hidden state dimension.
-        decoder_type: decoder architecture name (reserved for future expansion).
+        decoder_type: decoder architecture name ("gru" or "rnn").
+        use_reverb: whether to apply reverb in DDSPCore synthesis.
         stft_scales: list of FFT sizes for multi-scale spectral loss (informational;
             the actual loss uses its own fft_sizes to keep the model config decoupled
             from GPU-specific tunables).
@@ -31,6 +32,7 @@ class DDSPConfig:
     n_harmonics: int = 60
     hidden_size: int = 256
     decoder_type: str = "gru"
+    use_reverb: bool = True
     stft_scales: list[int] = None  # set in __post_init__
 
     def __post_init__(self) -> None:
@@ -39,12 +41,12 @@ class DDSPConfig:
 
 
 class DDSPModel(nn.Module):
-    """DDSP model: GRU decoder conditioned on f0 + loudness.
+    """DDSP model: GRU/RNN decoder conditioned on f0 + loudness, driving DDSP core synth.
 
     Takes per-frame f0 (Hz) and loudness (log energy) features, runs them
-    through a GRU, and produces harmonic amplitudes, harmonic distribution
-    (softmax over H harmonics), and noise magnitudes. These parameters drive
-    the internal DDSPCore to synthesize audio.
+    through a GRU (or RNN in future), and produces harmonic amplitudes, harmonic
+    distribution (softmax over H harmonics), and noise magnitudes. These parameters
+    drive the internal DDSPCore to synthesize audio (with optional reverb).
     """
 
     def __init__(
@@ -75,6 +77,7 @@ class DDSPModel(nn.Module):
             n_harmonics=config.n_harmonics,
             sample_rate=config.sample_rate,
             hop_length=config.frame_size,
+            use_reverb=config.use_reverb,
         )
 
         self.n_noise_bins = n_noise_bins

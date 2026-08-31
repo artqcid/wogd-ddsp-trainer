@@ -92,6 +92,26 @@ _Granular plan for milestone M4. Meta plan: [`../plan.md`](../plan.md); status:
 - [x] **M4.6.3** Run lifecycle tests (start/stop/resume/status).
 - [x] **M4.6.4** Preset CRUD + constraint-validation tests.
 
+### M4.7 build_tensors() silent-fallback fix (open)
+
+_Identified during M1–M6 review (2026-08-31). `server/tasks.py::build_tensors()`
+silently falls back to a 16-frame dummy tensor (f0=220 Hz) when no dataset cache
+is found or when the cache is missing the expected keys. This means training runs
+without error on meaningless synthetic data — a serious correctness risk._
+
+- [x] **M4.7.1** **[IMPLEMENT]** Add `logging.warning(...)` in `build_tensors()`
+      whenever the code takes the synthetic fallback path (missing dataset_id,
+      missing cache, missing keys). The warning must include the run_id and the
+      reason for the fallback so operators can diagnose issues.
+      Files: `server/tasks.py`.
+      Verify: unit test asserts that a `logging.WARNING` is emitted when
+      `build_tensors()` is called without a cache.
+- [x] **M4.7.2** **[IMPLEMENT — dependent on M3.6]** Once `DDSPDataset` exists
+      (M3.6.2), replace the single-tensor dummy fallback in `build_tensors()` /
+      `run_training_job()` with a proper `DataLoader`-driven training loop.
+      See M3.6.4.
+      Files: `server/tasks.py`.
+
 ## BUGS
 
 _References only; full records in [`../bugs.md`](../bugs.md)._

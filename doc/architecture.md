@@ -73,6 +73,29 @@ Building blocks (planned directory layout):
    audio or a UI sketch) -> render synthesis offline, or export a low-latency
    realtime model (Neutone/TorchScript, ONNX) -> play/download.
 
+### DataLoader contract (M3.6.1, resolved)
+
+The training loop uses a standard PyTorch `DataLoader` wrapping a `DDSPDataset`,
+not a `FeatureCache` directly. Rationale:
+
+- **Separation of concerns:** `Trainer` trains; it should not know about
+  filesystem paths, cache keys, or chunking logic.
+- **PyTorch standard:** `DataLoader` + `Dataset` is the canonical pattern for
+  training loops — every tutorial and production system uses it, making the
+  codebase easier to understand and maintain.
+- **`build_tensors()` stays as the bridge:** `server/tasks.py::build_tensors()`
+  creates the `DDSPDataset` from the `FeatureCache` on disk, wraps it in a
+  `DataLoader`, and passes it to `Trainer.run()`. This preserves the current
+  architecture where `tasks.py` prepares all training inputs.
+- **Chunking in the Dataset:** `DDSPDataset.__getitem__` loads a single file's
+  `.npy` features via `FeatureCache`, chunks them into fixed-length segments
+  (≤4 s @ 16 kHz = 64000 audio samples = 400 frames at 10 ms hop), and yields
+  `(f0, loudness, audio_chunk)` triples. Shuffle and seed-reproducibility are
+  handled by `DataLoader`'s native `shuffle` + `generator` arguments.
+- **Resume safety:** The `DDSPDataset` uses a deterministic, seed-based
+  permutation so that resumed training sees the same shuffled order (as long as
+  the dataset contents have not changed).
+
 ## Preset management
 
 The app manages training parameter presets — both built-in and user-defined.
@@ -256,10 +279,30 @@ The GPU detection module (`train/gpu.py`) reads available VRAM and suggests:
 
 ## Status
 
-M1 (scaffold), M2 (dataset prep) and M3 (model + training) are implemented and
-tested; **M4 web backend is implemented** (FastAPI services, run lifecycle,
-TensorBoard provisioning, preset management with clamping, backend tests
-M4.3/M4.6) with ruff clean, pytest 132 passed / 1 GPU-skip and vitest 2 passed
-against all `/api` endpoints. **M5 (web UI) is the next milestone.** The
-sections above are validated against the codebase and will keep being updated
-as modules land.
+M1 (scaffold), M2 (dataset prep), M3 (model + training), M4 (web backend),
+M5 (web UI) and M6 (polish) are implemented and tested. Final check suite:
+ruff/format 0, pytest 151 passed / 1 GPU-skip, vitest 23 passed, build clean.
+M7 (experimental sound design) and M8 (experimental synthesis hacks) are open.
+
+### Known open items (identified in M1–M6 review 2026-08-31)
+
+- **Preset-schema drift (BUG-5):** frontend fixtures use AutoVC/DSP-autoencoder
+  field names (`hidden_dim`, `type: 'autovc'`) instead of DDSP backend fields
+  (`hidden_size`, `is_builtin`). Fix tracked in `implementation/m5-webui.md`
+  M5.8.1–M5.8.3.
+- **Training Speed labels (BUG-6):** UI radio buttons show incorrect VRAM
+  percentages. Fix tracked in `implementation/m5-webui.md` M5.8.4.
+- **Real DataLoader missing (M3.6):** `Trainer.run()` and `build_tensors()`
+  train on a single dummy batch, not real multi-file datasets. Tracked in
+  `implementation/m3-model-training.md` M3.6.
+- **`n_noise_bins` not in DDSPConfig (M3.1.4):** checkpoint resume may fail if
+  `n_noise_bins` differs. Tracked in `implementation/m3-model-training.md`
+  M3.1.4.
+- **Missing DDSP UI controls:** decoder-type selector and reverb enable/disable
+  required by `ui-requirements.md` but not yet in `TrainingConfigView.vue`.
+  Tracked in `implementation/m5-webui.md` M5.8.5.
+- **Loudness A-weighting (M2):** `features.py` uses RMS-dB rather than
+  A-weighted loudness as documented. Decision pending (see
+  `implementation/m2-dataset-prep.md`).
+- **Output Enhancer (NSF-HiFiGAN):** deferred from M6.5 to M7; tracked in
+  `implementation/m7-experimental.md` M7.0.

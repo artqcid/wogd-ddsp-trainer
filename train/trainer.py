@@ -8,9 +8,11 @@ from __future__ import annotations
 import os
 import threading
 from dataclasses import asdict, dataclass
+from itertools import cycle
 
 import torch
 from torch import nn
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from model import DDSPModel, MultiScaleSpectralLoss
@@ -204,21 +206,33 @@ class Trainer:
 
     def run(
         self,
-        f0: torch.Tensor,
-        loudness: torch.Tensor,
-        target_audio: torch.Tensor,
+        f0: torch.Tensor | None = None,
+        loudness: torch.Tensor | None = None,
+        target_audio: torch.Tensor | None = None,
+        data_loader: DataLoader | None = None,
         stop_event: threading.Event | None = None,
     ) -> dict[str, object]:
-        """Run a single-batch training loop for ``config.max_steps``.
+        """Run the training loop for ``config.max_steps`` steps.
 
-        Repeats :meth:`train_step` on the same batch, logs ``train/loss`` to
-        TensorBoard every ``config.log_interval`` steps, and writes
-        checkpoints every ``config.checkpoint_interval`` steps.
+        When *data_loader* is provided, the loop iterates over real batches
+        from the loader (wrapped with ``itertools.cycle`` so it never
+        exhausts). Each batch is a tuple ``(f0, loudness, audio)`` of
+        tensors shaped ``(1, T)`` as yielded by ``DDSPDataset``, so no
+        additional reshaping is required.
+
+        When *data_loader* is ``None``, the loop repeats on the single
+        pre-loaded batch (backward-compatible with existing callers).
 
         Args:
             f0: Per-frame fundamental frequency in Hz, ``(B, T_frames)``.
-            loudness: Per-frame log energy, ``(B, T_frames)``.
-            target_audio: Target waveform, ``(B, T_audio)``.
+                Ignored when *data_loader* is provided.
+            loudness: Per-frame log energy, ``(B, T_frames)``. Ignored when
+                *data_loader* is provided.
+            target_audio: Target waveform, ``(B, T_audio)``. Ignored when
+                *data_loader* is provided.
+            data_loader: Optional ``torch.utils.data.DataLoader`` yielding
+                ``(f0, loudness, audio)`` tuples. When provided, *f0*,
+                *loudness*, and *target_audio* are optional.
             stop_event: Optional ``threading.Event``. When set, the loop stops
                 at the start of the next iteration (cooperative stop).
 
@@ -229,19 +243,13 @@ class Trainer:
         """
         final_loss: float | None = None
 
-        for _ in range(self.config.max_steps):
-            if stop_event is not None and stop_event.is_set():
-                break
-            result = self.train_step(f0, loudness, target_audio)
+        def _log_and_checkpoint(result: dict) -> None:
+            nonlocal final_loss
             loss = result["loss"]
-            step_after = result["step"] + 1  # step after this iteration
-
-            # Log to TensorBoard.
+            step_after = result["step"] + 1
             if step_after % self.config.log_interval == 0:
                 self.writer.add_scalar("train/loss", loss, step_after)
                 final_loss = loss
-
-            # Checkpoint.
             if step_after % self.config.checkpoint_interval == 0:
                 self._checkpoint_dir = getattr(self, "_checkpoint_dir", "checkpoints")
                 ckpt_path = os.path.join(
@@ -249,6 +257,24 @@ class Trainer:
                     f"step-{step_after}.pt",
                 )
                 self.save_checkpoint(ckpt_path)
+
+        if data_loader is not None:
+            loader_iter = iter(cycle(data_loader))
+            for _ in range(self.config.max_steps):
+                if stop_event is not None and stop_event.is_set():
+                    break
+                try:
+                    f0_batch, loudness_batch, audio_batch = next(loader_iter)
+                except StopIteration:
+                    break
+                result = self.train_step(f0_batch, loudness_batch, audio_batch)
+                _log_and_checkpoint(result)
+        else:
+            for _ in range(self.config.max_steps):
+                if stop_event is not None and stop_event.is_set():
+                    break
+                result = self.train_step(f0, loudness, target_audio)
+                _log_and_checkpoint(result)
 
         if final_loss is None:
             # max_steps was 0.

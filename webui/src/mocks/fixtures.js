@@ -74,17 +74,17 @@ export const resumeRunFixture = { success: true }
 export const deleteRunFixture = { success: true }
 
 export const presetsFixture = [
-  { name: 'vctk_default', type: 'autovc', parameters: { hidden_dim: 128, encoder_dim: 128, decoder_dim: 128, postnet_dim: 128 } },
-  { name: 'singing_model', type: 'dsp-autoencoder', parameters: { hidden_dim: 256, encoder_dim: 256, decoder_dim: 256, postnet_dim: 256, sample_rate: 44100 } },
+  { name: 'vctk_default', is_builtin: true, params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
+  { name: 'singing_model', is_builtin: true, params: { hidden_size: 256, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
 ]
 
-export const createPresetFixture = { name: 'custom_voice', type: 'autovc', parameters: { hidden_dim: 128, encoder_dim: 128, decoder_dim: 128, postnet_dim: 128 } }
+export const createPresetFixture = { name: 'custom_voice', is_builtin: false, params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } }
 
 export const updatePresetFixture = { success: true }
 
 export const deletePresetFixture = { success: true }
 
-export const createPresetFromRunFixture = { name: 'run_v1_preset', type: 'autovc', parameters: { hidden_dim: 128, encoder_dim: 128, decoder_dim: 128, postnet_dim: 128 } }
+export const createPresetFromRunFixture = { name: 'run_v1_preset', is_builtin: false, params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } }
 
 export const synthesizeFixture = { job_id: 'job_synth_001', status: 'queued' }
 
@@ -101,8 +101,8 @@ export const inferenceArtifactsFixture = [
 ]
 
 export const modelsFixture = [
-  { run_id: 'run_abc123', checkpoints: ['checkpoint_50.h5', 'checkpoint_100.h5'], created_at: '2024-01-15T10:30:00Z' },
-  { run_id: 'run_def456', checkpoints: ['checkpoint_30.h5', 'checkpoint_45.h5'], created_at: '2024-02-20T14:00:00Z' },
+  { run_id: 'run_abc123', checkpoints: ['step-50.pt', 'step-100.pt'], created_at: '2024-01-15T10:30:00Z' },
+  { run_id: 'run_def456', checkpoints: ['step-30.pt', 'step-45.pt'], created_at: '2024-02-20T14:00:00Z' },
 ]
 
 export const downloadModelFixture = null // Blob returned by download endpoint

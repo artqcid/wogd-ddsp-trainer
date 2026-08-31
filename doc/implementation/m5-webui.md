@@ -85,11 +85,73 @@ _Granular plan for milestone M5. Meta plan: [`../plan.md`](../plan.md); status:
 - [x] **M5.7.1** Vitest per view: every view renders with `MockApiClient` +
       fixtures.
 
+### M5.8 Preset-schema alignment and parameter fixes
+
+_Identified during M1–M6 review (2026-08-31). The mock fixtures and the
+`TrainingConfigView.vue` logic use AutoVC/DSP-autoencoder field names that do
+not match the DDSP backend schema. These must be fixed before any integration
+test or real backend run can work._
+
+- [x] **M5.8.1** **[IMPLEMENT — BUG FIX]** Align `webui/src/mocks/fixtures.js`
+      `presetsFixture` with the real backend preset schema:
+      - Replace `type: 'autovc'` / `type: 'dsp-autoencoder'` with
+        `is_builtin: true` (built-in) or `is_builtin: false` (custom).
+      - Replace `parameters: { hidden_dim, encoder_dim, decoder_dim,
+        postnet_dim, ... }` with the DDSP schema:
+        `params: { hidden_size, stft_scales, mixed_precision,
+        gradient_checkpointing }`.
+      - Align `createPresetFixture`, `createPresetFromRunFixture` likewise.
+      - Align `modelsFixture` checkpoints from `*.h5` to `step-*.pt` format.
+      Files: `webui/src/mocks/fixtures.js`, `webui/src/mocks/mockApiClient.js`.
+      Verify: vitest still green after fixture update.
+
+- [x] **M5.8.2** **[IMPLEMENT — BUG FIX]** Fix `TrainingConfigView.vue`
+      `presetOptions` computed property: filter built-in presets by
+      `p.is_builtin === true` instead of `p.type === 'builtin' || p.type ===
+      'autovc' || p.type === 'dsp-autoencoder'`.
+      Files: `webui/src/views/TrainingConfigView.vue`.
+      Verify: vitest render test passes with updated fixture.
+
+- [x] **M5.8.3** **[IMPLEMENT — BUG FIX]** Fix `TrainingConfigView.vue`
+      `currentParams` computed property and `handleStartTraining()`: replace
+      AutoVC field names (`hidden_dim`, `encoder_dim`, `decoder_dim`,
+      `postnet_dim`, `n_trees`) with the DDSP backend fields
+      (`hidden_size`, `stft_scales`, `mixed_precision`,
+      `gradient_checkpointing`). The payload sent to `POST /api/runs` must
+      match `build_training()` in `server/tasks.py`.
+      Files: `webui/src/views/TrainingConfigView.vue`.
+      Verify: vitest render test + mock start-training flow still green.
+
+- [x] **M5.8.4** **[IMPLEMENT — BUG FIX]** Fix Training Speed labels in
+      `TrainingConfigView.vue`: the radio buttons currently show
+      `FAST (25% VRAM)` / `NORMAL (50% VRAM)` / `QUALITY (75% VRAM)`. These
+      labels describe the preset VRAM targets, not the speed-modifier factors
+      (FAST 0.5x / NORMAL 0.75x / QUALITY 0.9x on hidden_size). Update the
+      labels to accurately reflect what the speed selector does, e.g.:
+      `FAST (0.5x hidden_size, max speed)` / `NORMAL (0.75x, default)` /
+      `QUALITY (0.9x, best output)`.
+      Files: `webui/src/views/TrainingConfigView.vue`.
+
+- [x] **M5.8.5** **[IMPLEMENT]** Add missing DDSP-specific UI controls required
+      by `ui-requirements.md` section 3:
+      - Decoder type selector (GRU / RNN) — maps to `DDSPConfig.decoder_type`.
+      - Reverb enable/disable toggle — maps to a new `use_reverb: bool` flag
+        that must also be added to `DDSPConfig` and wired through
+        `model/ddsp/synths.py::DDSPCore`.
+      Files: `webui/src/views/TrainingConfigView.vue`,
+             `model/ddsp_model.py` (DDSPConfig),
+             `model/ddsp/synths.py` (DDSPCore reverb toggle).
+      Verify: vitest render test passes; ruff clean on Python changes.
+      Note: this is a non-trivial cross-stack change; coordinate with M3.
+
 ## BUGS
 
 _References only; full records in [`../bugs.md`](../bugs.md)._
 
-- (none)
+- `BUG-5` — Preset-schema drift: fixtures use AutoVC field names; backend uses
+  DDSP field names. See M5.8.1–M5.8.3. Status: open.
+- `BUG-6` — Training Speed radio button labels misleading (25/50/75% instead of
+  actual 0.5×/0.75×/0.9× factors). See M5.8.4. Status: open.
 
 ## History
 
