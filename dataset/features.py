@@ -155,14 +155,34 @@ def _align_arrays(arrays: list[np.ndarray]) -> list[np.ndarray]:
     return out
 
 
+def load_f0_override(base_path: str) -> np.ndarray | None:
+    """Load an optional per-file F0 override from a .npy file at {base_path}.f0_override.npy.
+
+    The override must be a 1-D float32 array of F0-in-Hz values (not normalized).
+    Returns the array if the file exists, else None.
+    """
+    path = f"{base_path}.f0_override.npy"
+    if not os.path.exists(path):
+        return None
+    arr = np.load(path, allow_pickle=False)
+    if arr.dtype != np.float32:
+        arr = arr.astype(np.float32)
+    return arr
+
+
 def compute_features(
     audio: np.ndarray,
     sample_rate: float,
     f0_extractor_name: str = "parselmouth",
     hop_length: int = 256,
     n_fft: int = 2048,
+    f0_override: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     """Run F0 + confidence (chosen extractor) and loudness, normalize each to [0,1].
+
+    If *f0_override* is a 1-D float32 array of F0-in-Hz values (NOT normalized), the F0
+    extractor is skipped entirely and the override is used instead — confidence is set to 1.0
+    for every frame. Otherwise the named extractor runs as usual.
 
     Returns a dict with keys "f0_hz", "f0_confidence", "loudness_db" — all float32 1-D
     arrays of the same length (aligned by truncating to the shortest channel).
@@ -172,6 +192,20 @@ def compute_features(
     - loudness_db: min-max normalized to [0,1] over its own values.
     - f0_confidence: already in [0,1]; passed through unchanged.
     """
+    if f0_override is not None:
+        f0_hz_norm = normalize_feature(f0_override)
+        confidence = np.ones_like(f0_hz_norm, dtype=np.float32)
+        loudness_db = extract_loudness_db(audio, sample_rate, hop_length=hop_length, n_fft=n_fft)
+        loudness_norm = normalize_feature(loudness_db)
+        f0_hz_norm, confidence, loudness_norm = _align_arrays(
+            [f0_hz_norm, confidence, loudness_norm]
+        )
+        return {
+            "f0_hz": f0_hz_norm,
+            "f0_confidence": confidence,
+            "loudness_db": loudness_norm,
+        }
+
     extractor = get_f0_extractor(f0_extractor_name)
     if f0_extractor_name == "parselmouth":
         f0_hz, f0_confidence = extractor(audio, sample_rate)

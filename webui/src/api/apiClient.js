@@ -156,4 +156,28 @@ export class ApiClient {
   async validatePreset(params, training_speed) {
     throw new Error('ApiClient.validatePreset not implemented')
   }
+
+  /**
+   * Injects a user-provided IR into a model's reverb.
+   * @param {string} runId
+   * @param {File} irFile
+   * @returns {Promise<{status: string}>}
+   */
+  async injectIr(runId, irFile) {
+    throw new Error('ApiClient.injectIr not implemented')
+  }
+
+  /**
+   * Returns the download URL for a model's current reverb IR.
+   * @param {string} runId
+   * @returns {Promise<string>}
+   */
+  async extractIrUrl(runId) {
+    throw new Error('ApiClient.extractIrUrl not implemented')
+  }
+
+  /** @returns {Promise<{f0_hz: number[], f0_confidence: number[], loudness_db: number[]}>} */
+  async getFeatures(datasetId, filename) {
+    throw new Error('ApiClient.getFeatures not implemented')
+  }
 }

@@ -1,6 +1,6 @@
 ---
 type: implementation-plan
-status: in-progress
+status: complete
 milestone: M7 - Experimental sound design (Musique Concrète)
 generated:
   by: primary-agent
@@ -119,25 +119,25 @@ in parallel._
 
 ### M7.1 F0/pitch-curve override editor (two-tier)
 
-- [ ] **M7.1.1** Backend: allow a per-file custom F0 curve (override CREPE).
+- [x] **M7.1.1** Backend: allow a per-file custom F0 curve (override CREPE).
       Files: `dataset/features.py` (override path), `server/routes/dataset.py`.
-- [ ] **M7.1.2** File-level inspector: canvas overlay on the waveform
+- [x] **M7.1.2** File-level inspector: canvas overlay on the waveform
       (draw / smooth / erase / randomize). Files: `webui/src/components/F0Editor.vue`.
-- [ ] **M7.1.3** Backend: global dataset transformation rules (quantization to
+- [x] **M7.1.3** Backend: global dataset transformation rules (quantization to
       a scale, chaos/noise injection, pitch inversion).
       Files: `dataset/transforms.py`.
-- [ ] **M7.1.4** Global rules UI panel (apply to whole dataset).
+- [x] **M7.1.4** Global rules UI panel (apply to whole dataset).
       Files: `webui/src/components/F0RulesPanel.vue`.
 
 ### M7.2 DDSP component mixer
 
-- [ ] **M7.2.1** Backend: expose harmonics-vs-noise complexity config
+- [x] **M7.2.1** Backend: expose harmonics-vs-noise complexity config
       (`n_harmonics`, `n_filter_banks`). Files: `model/ddsp_model.py`.
-- [ ] **M7.2.2** UI sliders for the mixer. Files: `webui/src/components/ComponentMixer.vue`.
+- [x] **M7.2.2** UI sliders for the mixer. Files: `webui/src/components/ComponentMixer.vue`.
 
 ### M7.3 Reverb IR injection + extractor
 
-- [ ] **M7.3.0** **[RESEARCH — blocker for M7.3.1–M7.3.3]** Clarify whether
+- [x] **M7.3.0** **[RESEARCH — blocker for M7.3.1–M7.3.3]** Clarify whether
       `SimpleReverb` needs to become a trainable module before IR injection is
       useful. The current `SimpleReverb` is a fixed FIR comb filter with no
       `nn.Parameter` — it has no learnable impulse response to inject into or
@@ -152,18 +152,18 @@ in parallel._
       Document the decision before starting M7.3.1. Impact: Option A requires
       changes to `model/ddsp/synths.py` and `model/ddsp_model.py`.
       Files (research only): `doc/experimental-ddsp.md`, `doc/architecture.md`.
-- [ ] **M7.3.1** Backend: load a `.wav` IR and inject it into the (frozen)
+- [x] **M7.3.1** Backend: load a `.wav` IR and inject it into the (frozen)
       reverb module. Files: `model/reverb_injection.py`.
-- [ ] **M7.3.2** Backend: extract the learned IR as `.wav`.
+- [x] **M7.3.2** Backend: extract the learned IR as `.wav`.
       Files: `model/reverb_injection.py`.
-- [ ] **M7.3.3** UI: IR upload + freeze toggle + "export IR" button.
+- [x] **M7.3.3** UI: IR upload + freeze toggle + "export IR" button.
       Files: `webui/src/components/ReverbInjection.vue`.
 
 ### M7.4 Tests + docs
 
-- [ ] **M7.4.1** Tests for F0 override + global rules.
-- [ ] **M7.4.2** Tests for mixer + IR injection/extraction.
-- [ ] **M7.4.3** Finalize docs (`experimental-ddsp.md` stays authoritative).
+- [x] **M7.4.1** Tests for F0 override + global rules.
+- [x] **M7.4.2** Tests for mixer + IR injection/extraction.
+- [x] **M7.4.3** Finalize docs (`experimental-ddsp.md` stays authoritative).
 
 ### Future directions (not in scope)
 
@@ -180,6 +180,18 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-08-31** — M7.1 + M7.2 + M7.4 implemented (all remaining M7 steps):
+  - M7.1.1: F0 override in `dataset/features.py` (load_f0_override + f0_override param) + REST endpoints in `server/routes/dataset.py`.
+  - M7.1.3: `dataset/transforms.py` — quantize_to_scale, inject_noise, invert_pitch for creative F0 manipulation.
+  - M7.1.2+4: F0Editor.vue (canvas draw) + F0RulesPanel.vue (global rules) + F0EditorView.vue + route + sidebar + apiClient/mocks.
+  - M7.2.1: n_harmonics + n_filter_banks in DDSPConfig + ParameterBounds (4 tiers) + server/presets.py clamping + TrainingConfigView.vue sliders.
+  - M7.2.2: ComponentMixer.vue (sliders: harmonics 0-120, filter banks 0-64, harmonic gain, noise gain) + ComponentMixerView.vue + route + sidebar.
+  - M7.4: 16 new tests (f0 override, transforms, bounds). All 186 pytest + 23 vitest green.
+- **2026-08-31** — M7.3.0–3 implemented (Reverb IR Injection):
+  - M7.3.0: Research concluded Option B (fixed kernel swap) — SimpleReverb uses register_buffer, not nn.Parameter. Documented in experimental-ddsp.md.
+  - M7.3.1–2: `model/reverb_injection.py` — inject_ir() (load .wav, mono, resample, normalise, crop/pad, replace buffer) + extract_ir() (save buffer as .wav). 7 tests.
+  - M7.3.3: REST endpoints (POST /api/reverb/ir-inject, GET /api/reverb/ir-extract/{run_id}) in server/routes/reverb.py, ReverbInjectionView.vue, route + sidebar link, apiClient stubs + mocks.
+  - 170 pytest + 23 vitest green, ruff clean.
 - **2026-08-31** — M7.0.1–4 implemented (Output Enhancer):
   - M7.0.1: Vocos chosen as primary (MIT, pip-installable, HF from_pretrained), BigVGAN fallback, identity fallback.
   - M7.0.2: `inference/enhancer.py` (OutputEnhancer with 3 backends) + wired through `inference/render.py` (enhance param).

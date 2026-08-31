@@ -51,6 +51,21 @@
     </div>
 
     <div class="sidebar-group">
+      <div class="sidebar-group-label">Experimental</div>
+      <ul class="sidebar-links">
+      <li>
+        <RouterLink to="/experimental/reverb" class="sidebar-link">Reverb IR Injection</RouterLink>
+      </li>
+       <li>
+         <RouterLink to="/experimental/f0-editor" class="sidebar-link">F0 Editor</RouterLink>
+       </li>
+       <li>
+         <RouterLink to="/experimental/mixer" class="sidebar-link">Component Mixer</RouterLink>
+       </li>
+       </ul>
+    </div>
+
+    <div class="sidebar-group">
       <div class="sidebar-group-label">System</div>
       <ul class="sidebar-links">
         <li>

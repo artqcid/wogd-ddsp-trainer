@@ -3,6 +3,36 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 — M7.1 + M7.2 + M7.4 (F0 override, Component Mixer, Tests) — Milestone M7 complete
+
+**Creation:** M7.1 (F0 override editor + transforms), M7.2 (Component Mixer), M7.4 (tests + docs).
+
+Continuation of same session (autopilot: "alle offenen punkte ohne rückfragen erledigen").
+
+- M7.1.1: `load_f0_override()` + `f0_override` param in features.py; REST upload/delete in dataset routes.
+- M7.1.3: `dataset/transforms.py` — quantize_to_scale, inject_noise, invert_pitch (numpy only).
+- M7.1.2+4: F0Editor.vue (canvas), F0RulesPanel.vue, F0EditorView.vue, route, sidebar, apiClient/mocks.
+- M7.2.1: DDSPConfig.n_noise_bins; ParameterBounds (n_harmonics_min/max, n_filter_banks_min/max) across 4 tiers; clamping in server/presets.py; UI sliders in TrainingConfigView.vue.
+- M7.2.2: ComponentMixer.vue (harmonics 0-120, filter banks 0-64, gains) + ComponentMixerView.vue.
+- M7.4: 16 new tests. 186 pytest / 23 vitest green, ruff clean.
+
+All M7 checkboxes [x]. Milestone M7 complete.
+
+Subagent tasks: `ses_fa65de2d5ffem7uSQkJlO7LAsj` (F0 override backend), `ses_fa65dbdeaffeND7cd7qaSWAzs5` (transforms), `ses_fa65d9a0effeclxisyO0hG1IQz` (parameter bounds + config), `ses_fa654cc51ffeBy9b6FLnOMOIxr` (tests), `ses_fa6451248ffeQtWTAO7vBMPIkS` (Component Mixer UI).
+
+## 2026-08-31 — M7.3 Reverb IR Injection (Option B — fixed kernel swap)
+
+**Creation:** M7.3 — IR injection/extraction for SimpleReverb via kernel buffer swap.
+
+Plan approval: "commit push, danach go weiter" (continuation of same session).
+
+- M7.3.0: Research confirmed SimpleReverb uses `register_buffer` (no nn.Parameter). Decision: Option B (fixed kernel swap), safe for checkpoints.
+- M7.3.1–2: `model/reverb_injection.py` — inject_ir() + extract_ir(). 7 tests.
+- M7.3.3: REST endpoints (server/routes/reverb.py), ReverbInjectionView.vue, router + sidebar + apiClient + mocks.
+- 170 pytest / 23 vitest green, ruff clean.
+
+Subagent tasks: `ses_fa66fe540ffezKWYmnmHbjTNDA` (M7.3.3 UI wiring).
+
 ## 2026-08-31 — M7.0 Output Enhancer (Vocos/BigVGAN post-processor)
 
 **Creation:** M7.0 – Optional DDSP output enhancer using pre-trained vocoder.

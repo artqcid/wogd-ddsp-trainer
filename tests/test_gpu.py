@@ -155,6 +155,35 @@ def test_propose_presets_ultra_max_hidden_1024() -> None:
 
 
 # ---------------------------------------------------------------------------
+# _bounds_for_tier — n_harmonics / n_filter_banks fields
+# ---------------------------------------------------------------------------
+
+
+def test_bounds_n_harmonics_low() -> None:
+    b = propose_parameters(2.0)
+    assert b.n_harmonics_min == 20
+    assert b.n_harmonics_max == 60
+    assert b.n_filter_banks_min == 16
+    assert b.n_filter_banks_max == 32
+
+
+def test_bounds_n_harmonics_ultra() -> None:
+    b = propose_parameters(16.0)
+    assert b.n_harmonics_min == 20
+    assert b.n_harmonics_max == 120
+    assert b.n_filter_banks_min == 16
+    assert b.n_filter_banks_max == 64
+
+
+def test_propose_presets_include_n_harmonics() -> None:
+    bounds = propose_parameters(6.0)
+    presets = propose_presets(bounds)
+    for name in ("FAST", "NORMAL", "QUALITY"):
+        assert "n_harmonics" in presets[name]
+        assert "n_filter_banks" in presets[name]
+
+
+# ---------------------------------------------------------------------------
 # detect_gpus — guarded
 # ---------------------------------------------------------------------------
 

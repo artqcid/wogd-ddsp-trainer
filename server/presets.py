@@ -27,6 +27,8 @@ from train.gpu import (
 )
 
 PARAM_KEYS: tuple = (
+    "n_harmonics",
+    "n_filter_banks",
     "hidden_size",
     "stft_scales",
     "mixed_precision",
@@ -90,6 +92,40 @@ def clamp_params(params: dict, bounds: ParameterBounds) -> tuple[dict, list[str]
             clamped["hidden_size"] = value
     else:
         # missing -> leave absent (no default), no flag
+        pass
+
+    if "n_harmonics" in clamped:
+        try:
+            value = int(clamped["n_harmonics"])
+        except (ValueError, TypeError):
+            value = bounds.n_harmonics_min
+            flags.append("n_harmonics")
+        else:
+            if value < bounds.n_harmonics_min:
+                value = bounds.n_harmonics_min
+                flags.append("n_harmonics")
+            elif value > bounds.n_harmonics_max:
+                value = bounds.n_harmonics_max
+                flags.append("n_harmonics")
+            clamped["n_harmonics"] = value
+    else:
+        pass
+
+    if "n_filter_banks" in clamped:
+        try:
+            value = int(clamped["n_filter_banks"])
+        except (ValueError, TypeError):
+            value = bounds.n_filter_banks_min
+            flags.append("n_filter_banks")
+        else:
+            if value < bounds.n_filter_banks_min:
+                value = bounds.n_filter_banks_min
+                flags.append("n_filter_banks")
+            elif value > bounds.n_filter_banks_max:
+                value = bounds.n_filter_banks_max
+                flags.append("n_filter_banks")
+            clamped["n_filter_banks"] = value
+    else:
         pass
 
     if "stft_scales" in clamped:

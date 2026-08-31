@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 ALLOWED_EXTENSIONS = {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".aiff", ".aif"}
@@ -103,3 +104,63 @@ async def get_dataset(dataset_id: str) -> dict:
     if not dataset_path.is_dir():
         raise HTTPException(status_code=404, detail="dataset not found")
     return dataset_summary(dataset_path)
+
+
+@router.post("/{dataset_id}/f0-override/{filename}")
+async def upload_f0_override(
+    dataset_id: str,
+    filename: str,
+    f0_override: Annotated[UploadFile, File(...)],
+) -> dict:
+    """Upload a per-file F0 override (.npy, 1-D float32, F0 in Hz, not normalized)."""
+    if not dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+    safe_name = _sanitize(filename)
+
+    try:
+        arr = np.load(f0_override.file, allow_pickle=False)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"failed to load .npy: {exc}") from exc
+
+    if arr.dtype != np.float32:
+        try:
+            arr = arr.astype(np.float32)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"override must be convertible to float32: {exc}",
+            ) from exc
+
+    if arr.ndim != 1:
+        raise HTTPException(
+            status_code=400,
+            detail=f"override must be 1-D, got ndim={arr.ndim}",
+        )
+
+    dataset_path = datasets_dir() / dataset_id
+    out_path = dataset_path / f"{safe_name}.f0_override.npy"
+    np.save(out_path, arr, allow_pickle=False)
+
+    return {
+        "status": "ok",
+        "file": f"{safe_name}.f0_override.npy",
+        "length": int(arr.size),
+    }
+
+
+@router.delete("/{dataset_id}/f0-override/{filename}")
+async def delete_f0_override(dataset_id: str, filename: str) -> dict:
+    """Delete a per-file F0 override (.f0_override.npy) for the given dataset."""
+    if not dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+    safe_name = _sanitize(filename)
+    out_path = datasets_dir() / dataset_id / f"{safe_name}.f0_override.npy"
+
+    if not out_path.exists():
+        raise HTTPException(status_code=404, detail="f0_override file not found")
+
+    out_path.unlink()
+
+    return {"status": "deleted"}

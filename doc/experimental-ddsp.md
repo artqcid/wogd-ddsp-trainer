@@ -157,3 +157,20 @@ powerful architectural interventions.
   of intervention).
 - `ddsp-concepts.md` - DDSP background (signal flow, DSP modules, monophonic
   constraint).
+
+## SimpleReverb IR decision (2026-08-31 — M7.3.0 research)
+
+[Architektur-Fakt] `SimpleReverb` (`model/ddsp/synths.py:103`) uses
+`self.register_buffer("kernel", kernel)` — a **fixed** FIR comb filter with
+no `nn.Parameter`s. The kernel is a finite cascade of decay taps applied via
+`F.conv1d(..., padding="same")`. This differs from the magenta reference
+(which has a trainable IR weight).
+
+**Decision: Option B** (fixed kernel swap) for M7.3:
+- IR injection: replace `self.kernel` buffer with a user-provided `.wav` IR
+  (resampled/cropped to match kernel length).
+- IR extraction: save the current `self.kernel` buffer as `.wav`.
+- Backward-compatible: checkpoints unchanged, no new parameters.
+- Option A (trainable `nn.Parameter` IR) deferred — would break all existing
+  checkpoints and requires dedicated reverb training data to be musically useful.
+  Revisit as M8.x if warranted.

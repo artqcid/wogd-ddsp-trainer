@@ -17,6 +17,8 @@ const clampMessages = ref([])
 const trainingSpeed = ref('NORMAL')
 const decoderType = ref('gru')
 const useReverb = ref(true)
+const nHarmonics = ref(60)
+const nFilterBanks = ref(32)
 const gpuInfo = ref(null)
 const showVramWarning = ref(false)
 const vramAdjustmentParams = ref(null)
@@ -33,6 +35,8 @@ const currentParams = computed(() => {
     learning_rate: learningRate.value,
     batch_size: batchSize.value,
     epochs: epochs.value,
+    n_harmonics: p.n_harmonics ?? nHarmonics.value,
+    n_filter_banks: p.n_filter_banks ?? nFilterBanks.value,
     hidden_size: p.hidden_size ?? 256,
     stft_scales: 3,
     mixed_precision: p.mixed_precision ?? 'required',
@@ -61,6 +65,8 @@ function applyPreset(preset) {
     learningRate.value = preset.params.learning_rate ?? 0.001
     batchSize.value = preset.params.batch_size ?? 32
     epochs.value = preset.params.epochs ?? 100
+    nHarmonics.value = preset.params.n_harmonics ?? 60
+    nFilterBanks.value = preset.params.n_filter_banks ?? 32
   }
   validateCurrentConfig()
 }
@@ -96,6 +102,24 @@ function acceptVramAdjustment() {
       params: {
         ...selectedPreset.value.params,
         hidden_size: adj.hidden_size,
+      }
+    }
+  }
+  if (adj.n_harmonics !== undefined) {
+    selectedPreset.value = {
+      ...selectedPreset.value,
+      params: {
+        ...selectedPreset.value.params,
+        n_harmonics: adj.n_harmonics,
+      }
+    }
+  }
+  if (adj.n_filter_banks !== undefined) {
+    selectedPreset.value = {
+      ...selectedPreset.value,
+      params: {
+        ...selectedPreset.value.params,
+        n_filter_banks: adj.n_filter_banks,
       }
     }
   }
@@ -138,6 +162,8 @@ async function handleStartTraining() {
       gradient_checkpointing: selectedPreset.value?.params?.gradient_checkpointing ?? 'optional',
       decoder_type: selectedPreset.value?.params?.decoder_type ?? 'gru',
       use_reverb: selectedPreset.value?.params?.use_reverb ?? true,
+      n_harmonics: selectedPreset.value?.params?.n_harmonics ?? nHarmonics.value,
+      n_filter_banks: selectedPreset.value?.params?.n_filter_banks ?? nFilterBanks.value,
     }
   }
   try {
@@ -258,6 +284,28 @@ async function handleStartTraining() {
           Enable Reverb
         </label>
       </div>
+      <div class="form-group">
+        <label for="n-harmonics">Number of Harmonics</label>
+        <input
+          id="n-harmonics"
+          type="number"
+          min="20"
+          max="120"
+          data-testid="n-harmonics"
+          v-model.number="nHarmonics"
+        />
+      </div>
+      <div class="form-group">
+        <label for="n-filter-banks">Number of Filter Banks</label>
+        <input
+          id="n-filter-banks"
+          type="number"
+          min="16"
+          max="64"
+          data-testid="n-filter-banks"
+          v-model.number="nFilterBanks"
+        />
+      </div>
     </div>
 
     <div class="config-section">
@@ -374,14 +422,16 @@ async function handleStartTraining() {
         epochs: epochs,
         target_mode: targetMode,
         training_speed: trainingSpeed,
-         parameters: {
-           hidden_size: selectedPreset?.params?.hidden_size ?? 256,
-           stft_scales: selectedPreset?.params?.stft_scales ?? 3,
-           mixed_precision: selectedPreset?.params?.mixed_precision ?? 'required',
-           gradient_checkpointing: selectedPreset?.params?.gradient_checkpointing ?? 'optional',
-           decoder_type: selectedPreset?.params?.decoder_type ?? 'gru',
-           use_reverb: selectedPreset?.params?.use_reverb ?? true,
-         }
+      parameters: {
+        hidden_size: selectedPreset?.params?.hidden_size ?? 256,
+        stft_scales: selectedPreset?.params?.stft_scales ?? 3,
+        mixed_precision: selectedPreset?.params?.mixed_precision ?? 'required',
+        gradient_checkpointing: selectedPreset?.params?.gradient_checkpointing ?? 'optional',
+        decoder_type: selectedPreset?.params?.decoder_type ?? 'gru',
+        use_reverb: selectedPreset?.params?.use_reverb ?? true,
+        n_harmonics: selectedPreset?.params?.n_harmonics ?? nHarmonics,
+        n_filter_banks: selectedPreset?.params?.n_filter_banks ?? nFilterBanks,
+      }
       }"
       @close="showDialog = false"
       @save="(payload) => {

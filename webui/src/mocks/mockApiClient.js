@@ -152,4 +152,21 @@ export class MockApiClient {
   async validatePreset(params, training_speed) {
     return validatePresetFixture(params, training_speed)
   }
+
+  async injectIr() {
+    return { status: 'ok' }
+  }
+
+  async extractIrUrl(runId) {
+    return '/api/reverb/ir-extract/' + runId
+  }
+
+  async getFeatures() {
+    const len = 100
+    return {
+      f0_hz: Array.from({ length: len }, () => Math.random() * 600 + 50),
+      f0_confidence: Array.from({ length: len }, () => Math.random()),
+      loudness_db: Array.from({ length: len }, () => Math.random() * 60 - 60),
+    }
+  }
 }

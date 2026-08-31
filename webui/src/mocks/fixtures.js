@@ -138,6 +138,11 @@ export const gpuHostInfoFixture = {
   },
 }
 
+export const reverbInjectionFixture = {
+  status: 'ok',
+  run_id: 'run_abc123',
+}
+
 const _SPEED_FACTORS = {
   FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
   NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },

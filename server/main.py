@@ -17,7 +17,7 @@ from server.presets import (
     reclamp_all_custom,
     seed_builtin_presets,
 )
-from server.routes import dataset, host, inference, model, presets, settings, training
+from server.routes import dataset, host, inference, model, presets, reverb, settings, training
 from server.tensorboard import get_manager
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,7 @@ app.include_router(inference.router, prefix="/api")
 app.include_router(presets.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
 app.include_router(host.router, prefix="/api")
+app.include_router(reverb.router, prefix="/api")
 
 install_handlers(app)
 

@@ -30,6 +30,7 @@ class DDSPConfig:
     sample_rate: int = 16000
     frame_size: int = 128
     n_harmonics: int = 60
+    n_noise_bins: int = 32
     hidden_size: int = 256
     decoder_type: str = "gru"
     use_reverb: bool = True
@@ -52,10 +53,11 @@ class DDSPModel(nn.Module):
     def __init__(
         self,
         config: DDSPConfig,
-        n_noise_bins: int = 32,
+        n_noise_bins: int | None = None,
     ) -> None:
         super().__init__()
         self.config = config
+        n_noise_bins = n_noise_bins if n_noise_bins is not None else config.n_noise_bins
 
         input_dim = 2  # f0 + loudness
 

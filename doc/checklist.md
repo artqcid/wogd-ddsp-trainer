@@ -111,13 +111,13 @@ See [`log.md`](./log.md) for the chronological changelog._
 ## Milestone M7 - Experimental sound design (Musique Concrète)
 
 - [x] **M7.0** Output enhancer: pre-trained Vocos/BigVGAN post-processor with UI toggle.
-- [ ] **M7.1** F0/pitch-curve override editor: per-file canvas inspector +
+- [x] **M7.1** F0/pitch-curve override editor: per-file canvas inspector +
       global dataset transformation rules (quantize, chaos/noise injection,
       pitch inversion).
-- [ ] **M7.2** DDSP component mixer: harmonics-vs-noise balance sliders.
-- [ ] **M7.3** Reverb IR injection + freeze (de-reverberation + inverse
+- [x] **M7.2** DDSP component mixer: harmonics-vs-noise balance sliders.
+- [x] **M7.3** Reverb IR injection + freeze (de-reverberation + inverse
       acoustic compensation) + IR extractor (export learned IR as `.wav`).
-- [ ] **M7.4** Experimental sound-design tests + docs.
+- [x] **M7.4** Experimental sound-design tests + docs.
 
 ## Milestone M8 - Experimental synthesis hacks
 

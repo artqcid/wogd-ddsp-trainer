@@ -51,6 +51,21 @@ const routes = [
     name: 'settings',
     component: () => import('../views/SettingsView.vue'),
   },
+  {
+    path: '/experimental/reverb',
+    name: 'reverb-ir',
+    component: () => import('../views/ReverbInjectionView.vue'),
+  },
+  {
+    path: '/experimental/f0-editor',
+    name: 'f0-editor',
+    component: () => import('../views/F0EditorView.vue'),
+  },
+  {
+    path: '/experimental/mixer',
+    name: 'component-mixer',
+    component: () => import('../views/ComponentMixerView.vue'),
+  },
 ]
 
 const router = createRouter({

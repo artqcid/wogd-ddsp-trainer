@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from dataset import features, loader
+from dataset.features import load_f0_override
 
 
 def test_get_f0_extractor() -> None:
@@ -121,3 +122,47 @@ def test_save_and_load_roundtrip(tmp_path) -> None:
     assert set(loaded.keys()) == set(feat.keys())
     for key in feat:
         assert np.allclose(loaded[key].astype(np.float32), feat[key].astype(np.float32))
+
+
+def test_compute_features_with_f0_override() -> None:
+    audio = np.sin(2 * np.pi * 440 * np.arange(16000) / 16000, dtype=np.float32)
+    f0_override = np.full(100, 440.0, dtype=np.float32)
+    feat = features.compute_features(audio, 16000, f0_override=f0_override)
+    assert "f0_hz" in feat
+    assert "f0_confidence" in feat
+    assert "loudness_db" in feat
+    assert len(feat["f0_hz"]) == len(feat["f0_confidence"]) == len(feat["loudness_db"])
+    assert np.all(feat["f0_confidence"] == 1.0)
+    assert np.all(feat["f0_hz"] >= 0.0)
+    assert np.all(feat["f0_hz"] <= 1.0)
+
+
+def test_compute_features_override_vs_extract() -> None:
+    audio = np.sin(2 * np.pi * 440 * np.arange(16000) / 16000, dtype=np.float32)
+    f0_override = np.full(100, 440.0, dtype=np.float32)
+    features_ovr = features.compute_features(audio, 16000, f0_override=f0_override)
+    features_ext = features.compute_features(audio, 16000, f0_extractor_name="parselmouth")
+    assert features_ovr["f0_confidence"][0] == 1.0
+    assert features_ext["f0_hz"].shape == features_ovr["f0_hz"].shape
+
+
+def test_load_f0_override(tmp_path) -> None:
+    base = str(tmp_path / "testfile")
+    arr = np.array([220.0, 330.0, 440.0], dtype=np.float32)
+    np.save(base + ".f0_override.npy", arr)
+    loaded = load_f0_override(base)
+    assert loaded is not None
+    assert np.array_equal(loaded, arr)
+
+
+def test_load_f0_override_missing(tmp_path) -> None:
+    loaded = load_f0_override(str(tmp_path / "nonexistent"))
+    assert loaded is None
+
+
+def test_compute_features_f0_override_normalization() -> None:
+    audio = np.zeros(16000, dtype=np.float32)
+    f0_override = np.array([0.0, 220.0, 440.0], dtype=np.float32)
+    feat = features.compute_features(audio, 16000, f0_override=f0_override)
+    assert feat["f0_hz"][0] == 0.0  # 0 Hz -> 0 after min-max
+    assert feat["f0_hz"][2] == 1.0  # max value -> 1
