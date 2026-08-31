@@ -19,5 +19,8 @@ webui/dist/
 # RAG runtime database (rebuild via index_project_code)
 wogd_ddsp.db
 
+# Training runtime artifacts (TensorBoard events)
+runs/
+
 # Logs
 *.log

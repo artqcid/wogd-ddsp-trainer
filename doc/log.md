@@ -3,6 +3,83 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - TOON-Konvention für Subagent-Delegations-Prompts
+
+**Update:** `AGENTS.md` (Subagent rules). Neue verbindliche Konvention: Der
+Primary-Agent serialisiert strukturierte, uniforme Payloads (Dateilisten +
+Zeilen, Signatur-/Parametertabellen, API-/Symbol-Arrays, Key-Value-Mappings)
+in Delegations-Prompts als ` ```toon`-Block statt Inline-JSON/langer Listen.
+- **TOON nutzen** für uniforme strukturierte Daten im Prompt.
+- **Nicht TOON**: Freitext-Beschreibungen/Anweisungen (Markdown), Prosa-Kontext
+  und v.a. **Code-Bodies** (immer als normales fenced code, nie via TOON);
+  RAG-Snippets kommen unverändert aus `get_rag_chunk` (text).
+- Wenn die Daten bereits vom RAG-Output-Filter (`query_code_rag format="toon"`)
+  stammen, verbatim durchreichen statt neu encodieren. TOON ändert nie
+  Daten/Logik, nur die Serialisierung beim Prompt-Schreiben.
+- Anker: AGENTS.md (Single Source of Truth, via `opencode.json` instructions).
+
+**Status:** Konvention dokumentiert; Anwendung ab nächster Delegation.
+
+## 2026-08-31 - RAG/MCP-Monolith in mcp_rag/ Paket aufgeteilt (CCD)
+
+**Update:** `wogd_ddsp_mcp_server.py` (1554 Z, 48 Funktionen) war ein Monolith
+und verletzte SRP/CCD. Aufgeteilt in ein `mcp_rag/`-Paket; reines
+Umorganisieren, **keine Verhaltens-/Logikänderung** (kein Schema-, Chunking-,
+Query- oder Format-Token-Wechsel):
+- `mcp_rag/chunking.py`  — strukturelles Chunking (py/cpp/md) + stabile IDs + `chunk_file()`.
+- `mcp_rag/ngrams.py`    — n-Gramm-Embedding + cosine + `semantic_rerank`.
+- `mcp_rag/db.py`        — `ProjectRAG` auf DB/Scan/Index reduziert (+ Konstanten/Schema).
+- `mcp_rag/query.py`     — `query_rag`, `query_wiki`, LIKE-Fallbacks, `_build_match_expr`.
+- `mcp_rag/formatting.py`— `format_results/compact/json/toon` + `chunk_ref` (hier lebt `format_toon`).
+- `mcp_rag/wiki.py`      — `generate_wiki` + Dependencies/Usages/Anchor.
+- `mcp_rag/__init__.py`  — Re-Exports. `wogd_ddsp_mcp_server.py` = dünner Einstieg
+  (Pfade, `_rag = ProjectRAG(...)`, 4 MCP-Tools mit unveränderten Docstrings).
+- `pyproject.toml`: ruff-exclude auf `mcp_rag/` erweitert (gleicher Stil).
+- Verifikation: py-compile; Temp-DB-Round-Trip (Index→Query→Format(json/toon)→Chunk→Wiki)
+  grün; `toon.decode == json.loads`; Einstieg importiert gegen echte DB, alle 4 Tools
+  ok; `index_project_code` real (87 Dateien, 521 Symbole); ruff 7 vorbestehende Fehler
+  (nur M3-Testdateien, unverändert), pytest 69 passed / 8 vorbestehend fail — nichts neu.
+
+**Status:** Split fertig; Wiki neu generiert.
+
+## 2026-08-31 - RAG-MCP: optional TOON output filter (opt-in)
+
+**Update:** `wogd_ddsp_mcp_server.py` + `pyproject.toml`. Added a **pure
+output-side** `format="toon"` serializer for LLM consumption of search results
+(30–60 % token reduction vs JSON on tabular data; opt-in only, never default).
+- Scope per user: **only** to optimize LLM work (RAG-MCP output). Fachliche
+  App-Daten, `text`-Snippets, Docs, Subagent-Prompt-Freitext sind bewusst
+  unberührt. Kern/RAG-DB (`index_project_code`, Chunk-Speicher, SQLite) wird
+  nicht mutiert — TOON ist ein reiner letzter Serialisierungs-Schritt.
+- `pyproject.toml`: `python-toon>=0.1.3` added (MCP-Server läuft im venv).
+- `wogd_ddsp_mcp_server.py`: `ProjectRAG.format_toon()` (identisches stabiles
+  Payload wie `format_json`, via `toon.encode`); `format_results()` um `toon`
+  erweitert; `query_code_wiki` routet jetzt alle Nicht-`text`-Formate über
+  `format_results` (json/compact/toon konsistent); Docstrings um `toon`
+  ergänzt. `toon` optional importiert — bei Fehlen Fallback auf JSON.
+- Abwärtskompatibilität gewahrt: `text` (Default), `compact`, `json` unverändert.
+- Verified: TOON-Round-Trip identisch zu JSON-Playload (lossless, inkl. null +
+  multiline), Backward-Compat-Checks grün, `pytest` 69 passed.
+- **Pre-existing (nicht Teil dieser Aufgabe, aus früherer M3-Testgenerierung
+  unvollendet):** `ruff` 7 Fehler + 8 Test-Fails in `tests/test_{gpu,losses,
+  model,inference,trainer}.py` — siehe Entscheidungsbedarf im Report.
+
+**Status:** TOON-Welle-1 fertig; Wiki via `index_project_code` aktualisiert.
+
+## 2026-08-31 - Subagent model switched to Groq Qwen3.8 27B
+
+**Update:** Subagent config (workspace-only). `general` and `explore` now run
+on `groq/qwen/qwen3.8-27b` (workspace override in `opencode.json`); `compaction`
+stays on `opencode/nemotron-3.5-lightning-free`.
+- Global config: `provider.groq.models["qwen/qwen3.8-27b"]` registered
+  (Context 131042 / Output 16384; model not yet in models.dev → visible only
+  via explicit model entry). Restart opencode required; `GROQ_API_KEY` via
+  `/connect`.
+- `AGENTS.md` — subagent-model claims updated (general/explore = Groq Qwen3.8
+  27B, compaction = nemotron).
+
+**Status:** config saved; workspace-only scope per user request.
+
 ## 2026-08-31 - M2 Dataset prep implemented
 
 **Creation:** M2 complete (parallel subagent delegation). Audio ingestion,
