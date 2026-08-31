@@ -27,6 +27,17 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "celery>=5.4",
     "redis>=5.0",
+    # M3: TensorBoard metrics (training loop) + ONNX export (model export).
+    # onnx has cp314 wheels since 1.22 (unlike neutone_sdk, see BUG-1).
+    # onnxscript is required by torch>=2.13's ONNX exporter (imported when
+    # torch.onnx.export runs), so it must be a declared runtime dependency.
+    "tensorboard>=2.18",
+    "onnx>=1.16",
+    "onnxscript>=0.7",
+    # TOON (Token-Oriented Object Notation): optional serialization of the
+    # RAG/MCP search results for LLM consumption (format="toon" output filter)
+    # in wogd_ddsp_mcp_server.py. Pure output-side; never touches the RAG DB.
+    "python-toon>=0.1.3",
     # NOTE: neutone_sdk is intentionally deferred (not in core deps). It pins
     # numpy<2.3 which has NO cp314 Windows wheel on PyPI -> source build fails on
     # Python 3.14/Windows. Reintroduced in M3.4 (model export). See BUG-<id> in
@@ -53,9 +64,10 @@ packages = [
 line-length = 100
 target-version = "py313"
 src = ["."]
-# The RAG/MCP tooling server is a standalone script (not part of the app
-# package) with its own long-line/#noqa style; exclude it from lint + format.
-exclude = ["wogd_ddsp_mcp_server.py"]
+# The RAG/MCP tooling server + its `mcp_rag` package are a standalone
+# toolchain (not part of the app package) with their own long-line/#noqa
+# style; exclude them from lint + format.
+exclude = ["wogd_ddsp_mcp_server.py", "mcp_rag"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
