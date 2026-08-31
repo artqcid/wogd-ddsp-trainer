@@ -24,3 +24,7 @@ runs/
 
 # Logs
 *.log
+
+# App runtime data (SQLite + uploads)
+wogd-trainer.db
+datasets/

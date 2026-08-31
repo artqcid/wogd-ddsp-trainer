@@ -3,6 +3,38 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M4 Web-Backend umgesetzt (FastAPI + Celery + Presets)
+
+**Creation:** [`architecture.md`](architecture.md) (Web-backend-Sektion),
+[`implementation/m4-backend.md`](implementation/m4-backend.md). Implementiert
+und verifiziert: FastAPI-App (`server/main.py`, Lifespan: init_db + Built-ins-
+Seed + Hardware-Fingerprint/Reclamp), SQLite-Layer (`server/db.py`), Celery +
+TaskRunner (`server/tasks.py`, kooperativer Stop via `stop_event` in
+`trainer.py`), Preset-Logik mit Clamping (`server/presets.py`), TensorBoard-
+Provisioning (`server/tensorboard.py`), REST-Routen für Dataset/Model/Run-
+Lifecycle/Inference/Presets (`server/routes/`). Fehlerbehebungen via
+Subagenten: `run["id"]`→`run["run_id"]`, Checkpoint-Subdir, `bounds_to_dict`,
+fehlende `UploadFile`/`Annotated`-Imports, `FileResponse` aus `fastapi.responses`,
+`datasets_dir()` `Path("")`-Bug, B008/F821/SIM-Cleanup (details im impl-plan
+`## History`).
+
+**Update (Backend-Tests M4.3/M4.6 abgeschlossen):** Neu
+`tests/test_server_db.py`, `tests/test_server_presets.py` (Unit),
+`tests/test_api_datasets.py`, `tests/test_api_training.py`,
+`tests/test_api_inference.py`, `tests/test_api_presets.py` (API via
+`TestClient` + `FakeTaskRunner`). Primary-Fixes aus Test-Roundtrips
+(subagent task_ids im impl-plan): URL-Präfix `"/runs"`→`"/api/runs"`,
+Modul-`RUNS_DIR`-Import-Cache→`runs_dir()`, `_wav_bytes()`/`_run_id`-Fixes,
+Multipart-Liste-von-Tripeln, 202 statt 422 bei optionalem audio, job_id ist
+`str(uuid4())`, `_run_payload`+`name`/`run_id`-Keys, kein GET-Einzel-Preset.
+Produktions-Bugfixt: `datasets_dir()` ignorierte ein gesetztes, aber noch
+nicht existierendes `WOGD_DATASETS_DIR` und fiel auf `Path.cwd()/datasets`
+zurück (Repo-Verschmutzung). Checks: ruff check+format clean (83 Dateien),
+pytest 132 passed/1 GPU-skip, vitest 2 passed (webui).
+
+**Status:** Checkliste M4.1/2/3/4/5 `[x]`, M4.3 Backend-Tests `[x]`; M5
+(Web-UI) als nächstes.
+
 ## 2026-08-31 - M3 Tests grün (8 -> 0 Fails)
 
 **Update:** [`m3-model-training.md`](implementation/m3-model-training.md).

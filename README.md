@@ -4,10 +4,11 @@ A web UI training application for **DDSP-based speech synthesis** models. It
 exposes a browser UI to prepare datasets, configure and run DDSP training,
 monitor progress (TensorBoard), and synthesize/export vocal output.
 
-**Status:** scaffold phase — **M1 done** (repo structure, Python venv with
-PyTorch CUDA, Vue+Vite+Pinia web scaffold, checks green). Milestones M2-M8
-planned, not yet implemented. Roadmap: [`doc/plan.md`](doc/plan.md) · open
-tasks: [`doc/checklist.md`](doc/checklist.md).
+**Status:** **M1–M4 implemented** — scaffold, dataset prep, model + training
+loop, and the web backend (FastAPI + Celery/Redis, run lifecycle, TensorBoard
+provisioning, preset management with GPU-constraint clamping). All checks green
+(`ruff`, `pytest`, `vitest`). Milestones M5 (web UI) – M8 planned. Roadmap:
+[`doc/plan.md`](doc/plan.md) · open tasks: [`doc/checklist.md`](doc/checklist.md).
 
 - **Stack:** Python + PyTorch + torchaudio (self-owned DDSP core) · FastAPI +
   Celery/Redis · Vue 3 + Vite + Pinia.
@@ -90,7 +91,11 @@ npm run dev
 Backend: `http://127.0.0.1:8000` (OpenAPI at `/docs`). The Vite dev server
 proxies `/api` to the backend.
 
-`<TODO M4: server.main:app — the FastAPI app is not implemented yet>`
+The backend is implemented (`server/main.py`); it serves the REST API under
+`/api` (datasets, models, runs, inference, presets, TensorBoard). Optional env
+vars: `WOGD_DB_PATH`, `WOGD_RUNS_DIR`, `WOGD_DATASETS_DIR`, `WOGD_REDIS_URL`,
+`WOGD_TB_PORT`, `WOGD_SERVER_PORT`. Async jobs use Celery + Redis; with no
+Redis running, the API still works for everything except actual job execution.
 
 ### 1.7 Tests, lint & build
 
@@ -133,9 +138,10 @@ Once available, install instructions will go here.
 
 ## 3. Using the software for training
 
-`<TODO M2-M5: the training pipeline and web UI are not implemented yet>`
-(The dataset-prep module is in — `dataset/` ingestion + F0/loudness features,
-split + cache. Training loop (M3), backend (M4) and UI (M5) are still ahead.)
+`<TODO M5: the web UI is not implemented yet>` (The dataset-prep module and the
+training loop are in — `dataset/`, `model/`, `train/`. The web backend (M4) is
+also in: REST services under `/api`, run lifecycle via Celery, preset
+management. The M5 browser UI is still ahead.)
 
 The intended workflow:
 

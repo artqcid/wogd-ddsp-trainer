@@ -114,6 +114,17 @@ mappings. Rules of thumb:
 - TOON never touches the underlying data/logic; it is only a serialization
   choice at prompt-write time.
 
+**TOON hard gate (strict compliance, no exceptions):**
+- Before ANY delegation, the primary agent MUST load the `toon-delegation`
+  skill (`.opencode/skills/toon-delegation/SKILL.md`) and apply its
+  pre-delegation checklist while writing the prompt.
+- A delegation prompt is **non-compliant** (must not be sent) if it contains
+  structured / uniform / repeating payloads (file lists with attributes,
+  signature or parameter tables, API/symbol arrays, named-key mappings,
+  config key/value lists) **outside** a fenced ```toon block.
+- Prose instructions and code bodies never go into TOON (see rules above);
+  they stay Markdown / plain fenced code.
+
 **Task size & context limits (MANDATORY — subagents have small context windows):**
 - Give each subagent ONE small, single-step task only.
 - Break large work into a CHAIN of small subagent tasks, not one big task.

@@ -62,12 +62,12 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M4 - Web backend
 
-- [ ] **M4.1** FastAPI services: dataset, model, training, inference.
-- [ ] **M4.2** Celery + Redis async training/synthesis jobs + run lifecycle
+- [x] **M4.1** FastAPI services: dataset, model, training, inference.
+- [x] **M4.2** Celery + Redis async training/synthesis jobs + run lifecycle
       over REST (start/stop/resume).
-- [ ] **M4.3** Backend tests.
-- [ ] **M4.4** TensorBoard URL/embed provisioning for the UI.
-- [ ] **M4.5** Preset management: SQLite schema (`presets` table), CRUD
+- [x] **M4.3** Backend tests.
+- [x] **M4.4** TensorBoard URL/embed provisioning for the UI.
+- [x] **M4.5** Preset management: SQLite schema (`presets` table), CRUD
       endpoints, GPU-constraint validation + clamp-on-hardware-change.
 
 ## Milestone M5 - Web UI

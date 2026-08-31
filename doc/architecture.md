@@ -146,14 +146,46 @@ skaliert, sondern auf die nächstsinnvolle Stufe gesetzt.
 
 ### REST endpoints
 
-- `GET  /presets` — list all presets (built-in + custom) with current clamp
+- `GET  /api/presets` — list all presets (built-in + custom) with current clamp
   status.
-- `POST /presets` — create custom preset (body: name + params). Values
+- `POST /api/presets` — create custom preset (body: name + params). Values
   outside bounds are clamped; response includes `clamped_fields` warning.
-- `PUT  /presets/{id}` — update custom preset name/params (same clamping).
-- `DELETE /presets/{id}` — delete custom preset only (built-in → 403).
-- `POST /presets/from-run/{run_id}` — snapshot a run's effective params as a
+- `PUT  /api/presets/{id}` — update custom preset name/params (same clamping).
+- `DELETE /api/presets/{id}` — delete custom preset only (built-in → 403).
+- `POST /api/presets/from-run/{run_id}` — snapshot a run's effective params as a
   custom preset.
+
+## Web backend (M4, implemented)
+
+The FastAPI app (`server/main.py`, `app = FastAPI(...)`) mounts all routers
+under the `/api` prefix and runs an asyncio lifespan that: creates the SQLite
+table schema (`server/db.py`), seeds the built-in presets from the current GPU
+bounds, persists the hardware fingerprint and re-clamps custom presets on GPU
+change. `GET /api/tensorboard` lazily launches TensorBoard (`server/tensorboard.py`)
+and returns its reachable URL for the UI embed.
+
+### REST endpoint map
+
+| Service | Endpoints |
+|---|---|
+| Datasets | `POST /api/datasets` (multipart upload, uuid id), `GET /api/datasets`, `GET /api/datasets/{id}` |
+| Models | `GET /api/models` (checkpoint scan newest-first), `GET /api/models/{run_id}/{checkpoint}` |
+| Runs | `POST /api/runs/validate` (clamp + `clamped_fields` + bounds), `POST /api/runs` (create + submit), `GET /api/runs`, `GET /api/runs/{id}`, `POST /api/runs/{id}/stop`, `POST /api/runs/{id}/resume`, `DELETE /api/runs/{id}` |
+| Inference | `POST /api/inference/synthesize` (202; multipart: run_id, pitch_shift, loudness_shift, audio), `GET /api/inference/jobs/{job_id}` (status + artifact_url when completed), `GET /api/inference/artifacts/{job_id}` (wav FileResponse; 409/404 guards) |
+| Presets | see section above |
+| Misc | `GET /` (service info), `GET /api/tensorboard` |
+
+### Run lifecycle
+
+Vocabulary: `pending → running → stopping/stopped → completed/failed`.
+`server/tasks.py` define Celery tasks for training and synthesis; a
+`TaskRunner` protocol (`submit_training`/`submit_synthesis`) + `get_task_runner`
+inject the runner into routes (tests override the dependency). Stop is
+cooperative: the worker polls the DB `stop_requested` flag and sets a
+`threading.Event` passed into `Trainer.run(stop_event=...)`. Runs and
+checkpoints live under `runs/<run_id>/checkpoints/step-*.pt` (env:
+`WOGD_RUNS_DIR`, `WOGD_DATASETS_DIR`, `WOGD_DB_PATH`, `WOGD_REDIS_URL`,
+`WOGD_TB_PORT`, `WOGD_SERVER_PORT`).
 
 ## Training monitoring (TensorBoard doctrine)
 
@@ -222,5 +254,10 @@ The GPU detection module (`train/gpu.py`) reads available VRAM and suggests:
 
 ## Status
 
-Scaffold phase. The codebase is empty; the above is the intended structure and
-will be validated/updated as modules land.
+M1 (scaffold), M2 (dataset prep) and M3 (model + training) are implemented and
+tested; **M4 web backend is implemented** (FastAPI services, run lifecycle,
+TensorBoard provisioning, preset management with clamping, backend tests
+M4.3/M4.6) with ruff clean, pytest 132 passed / 1 GPU-skip and vitest 2 passed
+against all `/api` endpoints. **M5 (web UI) is the next milestone.** The
+sections above are validated against the codebase and will keep being updated
+as modules land.

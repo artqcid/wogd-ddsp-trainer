@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from dataclasses import asdict, dataclass
 
 import torch
@@ -206,6 +207,7 @@ class Trainer:
         f0: torch.Tensor,
         loudness: torch.Tensor,
         target_audio: torch.Tensor,
+        stop_event: threading.Event | None = None,
     ) -> dict[str, object]:
         """Run a single-batch training loop for ``config.max_steps``.
 
@@ -217,6 +219,8 @@ class Trainer:
             f0: Per-frame fundamental frequency in Hz, ``(B, T_frames)``.
             loudness: Per-frame log energy, ``(B, T_frames)``.
             target_audio: Target waveform, ``(B, T_audio)``.
+            stop_event: Optional ``threading.Event``. When set, the loop stops
+                at the start of the next iteration (cooperative stop).
 
         Returns:
             Summary dict with ``"steps"`` (int) and ``"final_loss"``
@@ -226,6 +230,8 @@ class Trainer:
         final_loss: float | None = None
 
         for _ in range(self.config.max_steps):
+            if stop_event is not None and stop_event.is_set():
+                break
             result = self.train_step(f0, loudness, target_audio)
             loss = result["loss"]
             step_after = result["step"] + 1  # step after this iteration
