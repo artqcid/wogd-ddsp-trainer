@@ -72,21 +72,21 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M5 - Web UI
 
-- [ ] **M5.1** App shell: dark-mode SPA, sidebar (4 nav groups), top bar
+- [x] **M5.1** App shell: dark-mode SPA, sidebar (4 nav groups), top bar
       (backend/GPU/project status).
-- [ ] **M5.2** Dataset & Preprocessing views: upload ingestion, dataset
+- [x] **M5.2** Dataset & Preprocessing views: upload ingestion, dataset
       manager, preprocessing (Wavesurfer.js waveform, F0 confidence
       warnings).
-- [ ] **M5.3** Model Architecture view: training config (ML params, target
+- [x] **M5.3** Model Architecture view: training config (ML params, target
       mode offline/realtime, GPU suggestions) + preset selection
       (FAST/NORMAL/QUALITY + custom) with constraint-clamping display.
-- [ ] **M5.4** Training & Monitor view: job control, TensorBoard
+- [x] **M5.4** Training & Monitor view: job control, TensorBoard
       iframe/fallback link, status polling.
-- [ ] **M5.5** Inference & Export views: model registry, timbre transfer +
+- [x] **M5.5** Inference & Export views: model registry, timbre transfer +
       A/B player, export hub (Neutone/ONNX/TorchScript).
-- [ ] **M5.6** Preset Management view: create/edit custom presets (values
+- [x] **M5.6** Preset Management view: create/edit custom presets (values
       clamped to GPU bounds), "Save as Preset" button in run detail.
-- [ ] **M5.7** UI tests (Vitest): every view renders with `MockApiClient` +
+- [x] **M5.7** UI tests (Vitest): every view renders with `MockApiClient` +
       fixtures (mock-data seam).
 
 ## Milestone M6 - Polish

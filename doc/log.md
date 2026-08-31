@@ -3,6 +3,29 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - M5 Web-UI umgesetzt (App Shell + Views + Vitest)
+
+**Creation:** [`ui-requirements.md`](ui-requirements.md) (bindend für alle
+Rollen), [`implementation/m5-webui.md`](implementation/m5-webui.md) (M5.1–M5.7
+markiert, `status: implemented`). Implementiert in `webui/`: Abhängigkeiten
+`vue-router@4` + `wavesurfer.js@7`; Dark-Theme-Shell (`App.vue` mit CSS-Vars
+auf `:root`, `Sidebar.vue` mit 4 Nav-Gruppen + Presets, `TopBar.vue`, Router
+mit 9 lazy Routes, `main.js` registriert Router + Pinia); API-Client-Brücke
+auf alle 22 REST-Endpoints (`api/apiClient.js` + `mocks/fixtures.js` +
+`mocks/mockApiClient.js`, Mock-Data-Seam, keine Backend-Imports). Views:
+`UploadIngestionView` (Drag-drop + Wavesurfer), `DatasetManagerView`,
+`PreprocessingView` + `PitchConfidenceIndicator`, `TrainingConfigView` +
+`PresetSaveDialog`, `TrainingDashboardView` (TensorBoard-iframe/New-Tab +
+Polling), `InferencePlaygroundView` + `ABComparisonPlayer`, `ModelExportView`,
+`PresetManagerView`. Vitest M5.7: 8 neue Render-Tests
+(`tests/views-batch{1,2}.test.js`) + bestehende → 18/18 grün.
+
+**Fixes aus Test-Roundtrips (Subagenten + Primary):** `PresetManagerView`
+v-for-Template-Scope (param.key/value außerhalb des V-For), `ModelExportView`
+-Format-Cards rendern aus statischer `formatOptions` statt leerem
+`selectedFormats`, `InferencePlaygroundView` `v-model` auf file-input →
+`@change`-Handler. Test-Setup nutzt `vi.mock('vue-router')` + `flushPromises`.
+
 ## 2026-08-31 - M4 Web-Backend umgesetzt (FastAPI + Celery + Presets)
 
 **Creation:** [`architecture.md`](architecture.md) (Web-backend-Sektion),

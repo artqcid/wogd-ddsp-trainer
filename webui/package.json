@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "pinia": "^2.3.0",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "vue-router": "^4.6.4",
+    "wavesurfer.js": "^7.12.11"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.0",

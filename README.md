@@ -4,10 +4,12 @@ A web UI training application for **DDSP-based speech synthesis** models. It
 exposes a browser UI to prepare datasets, configure and run DDSP training,
 monitor progress (TensorBoard), and synthesize/export vocal output.
 
-**Status:** **M1–M4 implemented** — scaffold, dataset prep, model + training
-loop, and the web backend (FastAPI + Celery/Redis, run lifecycle, TensorBoard
-provisioning, preset management with GPU-constraint clamping). All checks green
-(`ruff`, `pytest`, `vitest`). Milestones M5 (web UI) – M8 planned. Roadmap:
+**Status:** **M1–M5 implemented** — scaffold, dataset prep, model + training
+loop, the web backend (FastAPI + Celery/Redis, run lifecycle, TensorBoard
+provisioning, preset management with GPU-constraint clamping), and the web UI
+(Vue 3 + Vite + Pinia: dataset/preprocessing, model architecture +
+presets, training dashboard, inference/export). All checks green
+(`ruff`, `pytest`, `vitest`). Milestones M6 (polish) – M8 planned. Roadmap:
 [`doc/plan.md`](doc/plan.md) · open tasks: [`doc/checklist.md`](doc/checklist.md).
 
 - **Stack:** Python + PyTorch + torchaudio (self-owned DDSP core) · FastAPI +
@@ -138,10 +140,11 @@ Once available, install instructions will go here.
 
 ## 3. Using the software for training
 
-`<TODO M5: the web UI is not implemented yet>` (The dataset-prep module and the
-training loop are in — `dataset/`, `model/`, `train/`. The web backend (M4) is
-also in: REST services under `/api`, run lifecycle via Celery, preset
-management. The M5 browser UI is still ahead.)
+`<TODO M6: packaging not yet implemented.>` (The dataset-prep module, training
+loop and web backend — `dataset/`, `model/`, `train/`, `server/` — and the M5
+browser UI under `webui/` are all in. REST services under `/api`, run lifecycle
+via Celery, preset management, and a Vue 3 dashboard are implemented and
+covered by Vitest.)
 
 The intended workflow:
 
