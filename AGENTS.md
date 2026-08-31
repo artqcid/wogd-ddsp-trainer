@@ -94,6 +94,26 @@ autonomously from start to finish and then returns its report.
 - Escalate architectural questions upward; delegate small, focused
   implementation/search tasks to subagents (`general`, `explore`).
 
+**TOON in delegation prompts (mandatory convention):**
+To cut tokens and reduce tool-rounding risk on the small subagent contexts,
+the primary agent serializes **structured, uniform payloads** inside delegation
+prompts as a fenced ` ```toon` block (via `toon.encode`/manual transcription)
+instead of inline JSON or long Markdown lists. Applies to: file lists (path +
+line range), signatures/parameter tables, API/symbol index arrays, named-key
+mappings. Rules of thumb:
+
+- **Use TOON** for any repeating/uniform structured data in the prompt —
+  e.g. `[3,]{path,lines,name,kind}:` rows, param tables, config key/value lists.
+- **Do NOT use TOON** for: free-text descriptions/natural-language instructions
+  (stay Markdown), prose context, and **any code body** — full source always
+  travels as plain fenced code (```` ```python ````/```` ```cpp ```` etc.),
+  never via TOON. RAG code snippets come from `get_rag_chunk` (text), unchanged.
+- When the data has already been produced by the RAG output filter
+  (`query_code_rag`, `format="toon"`) or `get_rag_chunk`-style payloads, pass
+  that TOON block through verbatim rather than re-encoding manually.
+- TOON never touches the underlying data/logic; it is only a serialization
+  choice at prompt-write time.
+
 **Task size & context limits (MANDATORY — subagents have small context windows):**
 - Give each subagent ONE small, single-step task only.
 - Break large work into a CHAIN of small subagent tasks, not one big task.
@@ -116,7 +136,8 @@ autonomously from start to finish and then returns its report.
 - **Subagents have access to GitHub MCP read-only tools** (`github_search_code`,
   `github_get_file_contents`, `github_list_commits`, `github_search_repositories`,
   etc.) for analyzing code on GitHub. Write tools remain primary-only.
-- **Subagent model:** all subagents (`general`, `explore`, `compaction`) run on
+- **Subagent model:** `general` and `explore` run on
+  `groq/qwen/qwen3.8-27b`, `compaction` on
   `opencode/nemotron-3.5-lightning-free` (workspace override in
   `opencode.json`). Keep their tasks small and focused.
 - **After a subagent finishes**, the primary agent runs `index_project_code`
@@ -167,8 +188,9 @@ Primary agents form a responsibility hierarchy (defined in
 - **DEV_JUNIOR_Openrouter** — small, well-defined, self-contained tasks.
 
 All primary agents follow the `AGENTS.md` workflow: todo-first plan, then
-autopilot only after explicit plan approval. Subagents (`general`, `explore`,
-`compaction`) run on `opencode/nemotron-3.5-lightning-free` with `wogd_ddsp`
+autopilot only after explicit plan approval. Subagents (`general`, `explore`
+run on `groq/qwen/qwen3.8-27b`; `compaction` on
+`opencode/nemotron-3.5-lightning-free`) have `wogd_ddsp`
 RAG access (see `opencode.json`).
 
 ## Wiki Lint Workflow (runs on every Post-Task Sync)

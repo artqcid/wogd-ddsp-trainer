@@ -26,6 +26,7 @@
   "instructions": ["AGENTS.md"],
   "agent": {
     "general": {
+      "model": "groq/qwen/qwen3.8-27b",
       "permission": {
         "wogd_ddsp_query_code_wiki": "allow",
         "wogd_ddsp_query_code_rag": "allow",
@@ -33,6 +34,7 @@
       }
     },
     "explore": {
+      "model": "groq/qwen/qwen3.8-27b",
       "permission": {
         "wogd_ddsp_query_code_wiki": "allow",
         "wogd_ddsp_query_code_rag": "allow",
