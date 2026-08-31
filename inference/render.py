@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
+import logging
+
 import torch
 
 from model import DDSPConfig, DDSPModel
+
+from .enhancer import OutputEnhancer
+
+logger = logging.getLogger(__name__)
+
+_enhancer: OutputEnhancer | None = None
+
+
+def _get_enhancer(device: str = "cpu") -> OutputEnhancer:
+    global _enhancer
+    if _enhancer is None:
+        _enhancer = OutputEnhancer(device=device)
+    return _enhancer
 
 
 def load_model_from_checkpoint(
@@ -35,6 +50,7 @@ def render(
     f0: torch.Tensor,
     loudness: torch.Tensor,
     sample_rate: int = 16000,
+    enhance: bool = False,
 ) -> tuple[torch.Tensor, int]:
     """Run DDSP inference and return the generated audio.
 
@@ -42,6 +58,7 @@ def render(
     ----------
     f0 : (B, T) or (T,) float tensor, Hz.
     loudness : (B, T) or (T,) float tensor, log energy.
+    enhance : If True, pass audio through the optional vocoder enhancer.
     """
     f0 = _maybe_unsqueeze(f0)
     loudness = _maybe_unsqueeze(loudness)
@@ -53,6 +70,11 @@ def render(
         audio = model(f0, loudness)["audio"]
     if audio.size(0) == 1:
         audio = audio.squeeze(dim=0)
+
+    if enhance:
+        enhancer = _get_enhancer(device=str(next(model.parameters()).device))
+        audio = enhancer.enhance(audio, sample_rate=sample_rate)
+
     return audio, sample_rate
 
 
@@ -63,9 +85,10 @@ def render_to_file(
     out_path: str,
     sample_rate: int = 16000,
     mono: bool = True,
+    enhance: bool = False,
 ) -> str:
     """Render audio and write a 16/24/32-bit float WAV file."""
-    audio, _sr = render(model, f0, loudness, sample_rate=sample_rate)
+    audio, _sr = render(model, f0, loudness, sample_rate=sample_rate, enhance=enhance)
     audio = audio.clamp(-1.0, 1.0)
     audio = audio.cpu().float()
     if mono and audio.dim() == 2 and audio.size(0) > 1:

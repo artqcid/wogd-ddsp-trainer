@@ -24,6 +24,7 @@ async def synthesize(
     run_id: str = Form(...),
     pitch_shift: float = Form(0.0),
     loudness_shift: float = Form(0.0),
+    enhance: bool = Form(False),
     audio: Annotated[UploadFile | None, File()] = None,
     *,
     runner: Annotated[TaskRunner, Depends(get_task_runner)],
@@ -33,6 +34,7 @@ async def synthesize(
         "run_id": run_id,
         "pitch_shift": pitch_shift,
         "loudness_shift": loudness_shift,
+        "enhance": enhance,
         "seed": 0,
     }
 

@@ -3,6 +3,21 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 — M7.0 Output Enhancer (Vocos/BigVGAN post-processor)
+
+**Creation:** M7.0 – Optional DDSP output enhancer using pre-trained vocoder.
+
+Plan approval: user said "ja, lass mich kurz etwas abtippen..." (impact analysis) then "Continue with the steps" (implementation).
+
+- M7.0.1: Research chose Vocos (MIT, pip, HF) as primary, BigVGAN as fallback, identity fallback.
+- M7.0.2: `inference/enhancer.py` — `OutputEnhancer` class with 3 backends + lazy singleton in `inference/render.py`.
+- M7.0.3: UI checkbox in InferencePlaygroundView.vue, REST `enhance: bool` param in POST /api/inference/synthesize, pass-through in server/tasks.py.
+- M7.0.4: 7 tests (identity fallback, shape preservation, enhance flag, default False). 163 pytest / 23 vitest green.
+- Doc: m7-experimental.md updated with [x] marks + History.
+- Wiki index updated (852 symbols), ruff format clean.
+
+Subagent tasks: `ses_fa6841006ffemWDAaVMHw50fhe` (M7.0.2 enhancer module), `ses_fa67a6c8fffeABe4dinaV5iHIb` (M7.0.3 UI toggle).
+
 ## 2026-08-31 - M3.6 DataLoader + M5.8 Preset/BUG fixes + M5.8.5 Decoder/Reverb UI + M4.7 warning logs
 
 **Update:** Implemented all findings from the M1–M6 review across 3 milestones.

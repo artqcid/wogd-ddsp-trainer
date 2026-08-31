@@ -303,7 +303,8 @@ def run_synthesis_job(job_id: str) -> dict:
         out_path = runs_dir() / run_id / "synthesis" / f"{job_id}.wav"
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
-        render_to_file(model, f0, loudness, str(out_path))
+        enhance = bool(params.get("enhance", False))
+        render_to_file(model, f0, loudness, str(out_path), enhance=enhance)
 
         synth_update(conn, job_id, status="completed", artifact_path=str(out_path))
         conn.commit()

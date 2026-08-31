@@ -110,6 +110,7 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M7 - Experimental sound design (Musique Concrète)
 
+- [x] **M7.0** Output enhancer: pre-trained Vocos/BigVGAN post-processor with UI toggle.
 - [ ] **M7.1** F0/pitch-curve override editor: per-file canvas inspector +
       global dataset transformation rules (quantize, chaos/noise injection,
       pitch inversion).

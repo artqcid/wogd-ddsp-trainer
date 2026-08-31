@@ -12,6 +12,7 @@ from inference import (
     render,
     render_to_file,
 )
+from inference.enhancer import OutputEnhancer
 from model import DDSPConfig, DDSPModel
 
 
@@ -98,3 +99,66 @@ def test_export_neutone_raises() -> None:
 
 def _torch_input() -> torch.Tensor:
     return torch.full((1, 16), 220.0)
+
+
+# ---------------------------------------------------------------------------
+# OutputEnhancer tests (identity fallback — no vocoder dependency)
+# ---------------------------------------------------------------------------
+
+
+def test_enhancer_identity_fallback() -> None:
+    enhancer = OutputEnhancer(device="cpu")
+    assert not enhancer.is_active
+    assert enhancer.backend_name == "identity"
+
+
+def test_enhancer_passthrough_1d() -> None:
+    enhancer = OutputEnhancer(device="cpu")
+    audio = torch.rand(16000)
+    out = enhancer.enhance(audio, sample_rate=16000)
+    assert out.dim() == 1
+    assert out.shape == audio.shape
+    assert torch.equal(out, audio)
+
+
+def test_enhancer_passthrough_2d() -> None:
+    enhancer = OutputEnhancer(device="cpu")
+    audio = torch.rand(1, 16000)
+    out = enhancer.enhance(audio, sample_rate=16000)
+    assert out.dim() == 2
+    assert out.shape == audio.shape
+    assert torch.equal(out, audio)
+
+
+def test_enhancer_passthrough_3d() -> None:
+    enhancer = OutputEnhancer(device="cpu")
+    audio = torch.rand(2, 1, 16000)
+    out = enhancer.enhance(audio, sample_rate=16000)
+    assert out.dim() == 3
+    assert out.shape == audio.shape
+    assert torch.equal(out, audio)
+
+
+def test_render_with_enhance_flag(tmp_path: pytest.TempPath) -> None:
+    model, f0, loudness, _cpt_path = _model_and_inputs(tmp_path)
+    audio, sr = render(model, f0, loudness, enhance=True)
+    assert sr == 16000
+    assert audio.dim() == 1
+    assert audio.numel() > 0
+    assert audio.isfinite().all()
+
+
+def test_render_to_file_with_enhance_flag(tmp_path: pytest.TempPath) -> None:
+    model, f0, loudness, _cpt_path = _model_and_inputs(tmp_path)
+    out_path = str(tmp_path / "enhanced_out.wav")
+    written = render_to_file(model, f0, loudness, out_path, enhance=True)
+    assert written == out_path
+    assert os.path.exists(out_path)
+    assert os.path.getsize(out_path) > 0
+
+
+def test_enhance_default_is_false(tmp_path: pytest.TempPath) -> None:
+    model, f0, loudness, _cpt_path = _model_and_inputs(tmp_path)
+    audio_default, _ = render(model, f0, loudness)
+    audio_explicit, _ = render(model, f0, loudness, enhance=False)
+    assert torch.equal(audio_default, audio_explicit)

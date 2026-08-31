@@ -8,6 +8,7 @@ const models = ref([])
 const selectedModelId = ref('')
 const audioFile = ref(null)
 const audioFileName = ref('')
+const enhanceOutput = ref(false)
 const isSynthesizing = ref(false)
 const jobId = ref(null)
 const jobStatus = ref(null)
@@ -52,7 +53,8 @@ async function handleSynthesize() {
   try {
     const result = await apiClient.synthesize({
       model_id: selectedModelId.value,
-      audio_file: audioFile.value
+      audio_file: audioFile.value,
+      enhance: enhanceOutput.value
     })
     jobId.value = result.job_id
     jobStatus.value = result.status
@@ -135,6 +137,16 @@ async function loadArtifacts() {
       </div>
     </div>
 
+    <div class="form-row">
+      <div class="form-group checkbox-group">
+        <label>
+          <input type="checkbox" v-model="enhanceOutput" data-testid="enhance-toggle" />
+          Enable output enhancement
+        </label>
+        <span class="enhance-hint">Improve perceived quality via pre-trained vocoder</span>
+      </div>
+    </div>
+
     <button
       class="synthesize-btn"
       @click="handleSynthesize"
@@ -193,4 +205,15 @@ async function loadArtifacts() {
 .artifact-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.875rem; }
 .artifact-item a { color: var(--accent); text-decoration: none; }
 .artifact-item a:hover { text-decoration: underline; }
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.enhance-hint {
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-left: 1.5rem;
+}
 </style>
