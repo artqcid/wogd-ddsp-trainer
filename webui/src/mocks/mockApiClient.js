@@ -22,6 +22,9 @@ import {
   modelsFixture,
   downloadModelFixture,
   tensorboardFixture,
+  settingsFixture,
+  gpuHostInfoFixture,
+  validatePresetFixture,
 } from './fixtures.js'
 
 /**
@@ -121,5 +124,32 @@ export class MockApiClient {
 
   async getTensorboard() {
     return { ...tensorboardFixture }
+  }
+
+  async getSettings() {
+    return { ...settingsFixture }
+  }
+
+  async updateSettings(dataDir) {
+    return {
+      ...settingsFixture,
+      data_dir: dataDir || settingsFixture.data_dir,
+      data_is_default: !dataDir,
+      datasets_dir: dataDir ? `${dataDir}/datasets` : settingsFixture.datasets_dir,
+      runs_dir: dataDir ? `${dataDir}/runs` : settingsFixture.runs_dir,
+      db_path: dataDir ? `${dataDir}/wogd-trainer.db` : settingsFixture.db_path,
+    }
+  }
+
+  async getHostInfo() {
+    return { ...gpuHostInfoFixture }
+  }
+
+  async getGPUInfo() {
+    return this.getHostInfo()
+  }
+
+  async validatePreset(params, training_speed) {
+    return validatePresetFixture(params, training_speed)
   }
 }

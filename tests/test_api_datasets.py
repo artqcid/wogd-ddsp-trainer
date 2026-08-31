@@ -60,7 +60,8 @@ def test_upload_rejects_unsupported_extension(client: Any, fake_runner: Any) -> 
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST
     body = resp.json()
-    assert body["detail"] == "unsupported file type: x.txt"
+    assert body["error"]["message"] == "unsupported file type: x.txt"
+    assert body["error"]["code"] == "BAD_REQUEST"
 
     assert fake_runner.submitted_training == []
     assert fake_runner.submitted_synthesis == []
@@ -121,7 +122,8 @@ def test_get_dataset_detail(client: Any, fake_runner: Any) -> None:
 
     missing_resp = client.get("/api/datasets/999999")
     assert missing_resp.status_code == status.HTTP_404_NOT_FOUND
-    assert missing_resp.json()["detail"] == "dataset not found"
+    assert missing_resp.json()["error"]["message"] == "dataset not found"
+    assert missing_resp.json()["error"]["code"] == "NOT_FOUND"
 
 
 def test_dataset_name_unique(client: Any, fake_runner: Any) -> None:
@@ -140,7 +142,8 @@ def test_dataset_name_unique(client: Any, fake_runner: Any) -> None:
 
     if second_resp.status_code == status.HTTP_409_CONFLICT:
         second_body = second_resp.json()
-        assert second_body["detail"] == "dataset name already exists"
+        assert second_body["error"]["message"] == "dataset name already exists"
+        assert second_body["error"]["code"] == "CONFLICT"
         return
 
     assert second_resp.status_code == status.HTTP_200_OK

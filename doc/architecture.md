@@ -184,8 +184,10 @@ inject the runner into routes (tests override the dependency). Stop is
 cooperative: the worker polls the DB `stop_requested` flag and sets a
 `threading.Event` passed into `Trainer.run(stop_event=...)`. Runs and
 checkpoints live under `runs/<run_id>/checkpoints/step-*.pt` (env:
-`WOGD_RUNS_DIR`, `WOGD_DATASETS_DIR`, `WOGD_DB_PATH`, `WOGD_REDIS_URL`,
-`WOGD_TB_PORT`, `WOGD_SERVER_PORT`).
+`WOGD_DATA_DIR` (default `%LOCALAPPDATA%\wogd-ddsp-trainer` on Windows; sets the
+data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
+`WOGD_REDIS_URL`, `WOGD_TB_PORT`, `WOGD_SERVER_PORT`; the old
+`WOGD_RUNS_DIR`/`WOGD_DATASETS_DIR` vars are no longer used).
 
 ## Training monitoring (TensorBoard doctrine)
 

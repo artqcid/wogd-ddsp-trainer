@@ -88,13 +88,22 @@ describe('TrainingConfigView', () => {
     const wrapper = mount(TrainingConfigView, mountOptions)
     await flushPromises()
     expect(wrapper.find('[data-testid="gpu-info"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="gpu-info"]').text()).toContain('NVIDIA RTX 3060+')
+    expect(wrapper.find('[data-testid="gpu-info"]').text()).toContain('NVIDIA GeForce RTX 3060')
   })
 
   it('renders preset select', async () => {
     const wrapper = mount(TrainingConfigView, mountOptions)
     await flushPromises()
     expect(wrapper.find('[data-testid="preset-select"]').exists()).toBe(true)
+  })
+
+  it('renders training speed selector', async () => {
+    const wrapper = mount(TrainingConfigView, mountOptions)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="training-speed"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="speed-FAST"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="speed-NORMAL"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="speed-QUALITY"]').exists()).toBe(true)
   })
 })
 

@@ -10,8 +10,7 @@ from fastapi.testclient import TestClient
 # Set default env vars into a per-process temp dir BEFORE any server.* import.
 _test_dir = tempfile.mkdtemp(prefix="wogd_test_")
 os.environ.setdefault("WOGD_DB_PATH", os.path.join(_test_dir, "test.db"))
-os.environ.setdefault("WOGD_RUNS_DIR", os.path.join(_test_dir, "runs"))
-os.environ.setdefault("WOGD_DATASETS_DIR", os.path.join(_test_dir, "datasets"))
+os.environ.setdefault("WOGD_DATA_DIR", os.path.join(_test_dir, "data"))
 
 from server.main import app  # noqa: E402 -- needs env setdefault above
 from server.tasks import get_task_runner  # noqa: E402 -- needs env setdefault above
@@ -67,10 +66,9 @@ def fake_runner() -> Generator[FakeTaskRunner]:
 
 @pytest.fixture(scope="function")
 def tmp_env(tmp_path: str) -> Generator[None]:
-    """Set WOGD_DB_PATH, WOGD_RUNS_DIR, WOGD_DATASETS_DIR from tmp_path."""
+    """Set WOGD_DB_PATH + WOGD_DATA_DIR from tmp_path."""
     os.environ["WOGD_DB_PATH"] = os.path.join(str(tmp_path), "test.db")
-    os.environ["WOGD_RUNS_DIR"] = os.path.join(str(tmp_path), "runs")
-    os.environ["WOGD_DATASETS_DIR"] = os.path.join(str(tmp_path), "datasets")
+    os.environ["WOGD_DATA_DIR"] = os.path.join(str(tmp_path), "data")
     yield
 
 

@@ -124,4 +124,36 @@ export class ApiClient {
   async getTensorboard() {
     throw new Error('ApiClient.getTensorboard not implemented')
   }
+
+  /** @returns {Promise<{install_dir: string, data_dir: string, db_path: string, datasets_dir: string, runs_dir: string, data_is_default: boolean}>} */
+  async getSettings() {
+    throw new Error('ApiClient.getSettings not implemented')
+  }
+
+  /**
+   * @param {string|null} dataDir Absolute new data directory, or null to reset to default.
+   * @returns {Promise<{install_dir: string, data_dir: string, db_path: string, datasets_dir: string, runs_dir: string, data_is_default: boolean}>}
+   */
+  async updateSettings(dataDir) {
+    throw new Error('ApiClient.updateSettings not implemented')
+  }
+
+  /** @returns {Promise<{gpus: Array<{index: number, name: string, total_vram_gb: number, available_vram_gb: number}>, tier: string, bounds: object, presets: object}>} */
+  async getHostInfo() {
+    throw new Error('ApiClient.getHostInfo not implemented')
+  }
+
+  /** @returns {Promise<{gpus: Array, tier: string, bounds: object, presets: object}>} */
+  async getGPUInfo() {
+    return this.getHostInfo()
+  }
+
+  /**
+   * @param {object} params Training parameters (hidden_size, stft_scales, etc.)
+   * @param {"FAST"|"NORMAL"|"QUALITY"} training_speed
+   * @returns {Promise<{original_params: object, speed_applied_params: object, clamped_params: object, clamped_fields: Array<string>, bounds: object, training_speed: string, fits_gpu: boolean}>}
+   */
+  async validatePreset(params, training_speed) {
+    throw new Error('ApiClient.validatePreset not implemented')
+  }
 }

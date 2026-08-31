@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import os
 import shutil
 import uuid
 from pathlib import Path
@@ -15,10 +14,10 @@ router = APIRouter(prefix="/datasets", tags=["datasets"])
 
 
 def datasets_dir() -> Path:
-    env = os.environ.get("WOGD_DATASETS_DIR", "")
-    if env:
-        return Path(env)
-    return Path.cwd() / "datasets"
+    """Return the datasets output folder under the effective data root."""
+    from server.paths import datasets_dir as _paths_datasets_dir
+
+    return _paths_datasets_dir()
 
 
 def _sanitize(name: str) -> str:

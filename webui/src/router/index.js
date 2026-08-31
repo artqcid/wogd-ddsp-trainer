@@ -46,6 +46,11 @@ const routes = [
     name: 'presets',
     component: () => import('../views/PresetManagerView.vue'),
   },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('../views/SettingsView.vue'),
+  },
 ]
 
 const router = createRouter({

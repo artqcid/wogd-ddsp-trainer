@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 3`
+`next_id: 5`
 
 ## Bug template (copy for each new bug)
 
@@ -77,6 +77,30 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Fixed bugs
 
+## BUG-3 - webui/src/App.vue imports RouterView as default export (release build fails)
+- status: fixed
+- milestone: M1 (scaffold, M1.3)
+- affected: M6 (release packaging/run)
+- found-in: M6.1 release build (`npm run build` -> `vite build`)
+- severity: major
+- description: `webui/src/App.vue` line 7 used `import RouterView from 'vue-router'`
+  (a default import), but `vue-router` exposes `RouterView` only as a **named**
+  export. During development Vite's on-demand transform tolerates this, but the
+  production build (`vite build`) fails with `"default" is not exported by
+  "node_modules/vue-router/dist/vue-router.mjs"` — breaking the M6 release
+  bundle and therefore `start-application-release`.
+- reproduction: `cd webui && npm run build` -> rollup error `"default" is not
+  exported by "…/vue-router.mjs"`.
+- resolution: (fixed) changed to a named import:
+  `import { RouterView } from 'vue-router'` in `webui/src/App.vue`. `npm run build`
+  now succeeds (60 modules, dist emitted). Full verification (ruff/pytest/vitest)
+  recorded in `doc/log.md`.
+- history:
+  - 2026-08-31 — found while wiring `start-application-release` (release build
+    failed); fixed the named import in `webui/src/App.vue`.
+  - 2026-08-31 — **verified** as part of M6.6: `npm run build` succeeds, vitest
+    18 passed, live release backend serves the built UI (root + SPA fallback).
+
 ## BUG-2 - datasets_dir() ignores existing-but-empty WOGD_DATASETS_DIR (falls back to cwd/datasets)
 - status: fixed
 - milestone: M4 (web backend)
@@ -96,3 +120,54 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   upload/list paths `mkdir` on demand). Covered by `tests/test_api_datasets.py`.
 - history:
   - 2026-08-31 — found during M4.3 test roundtrip; fixed in `server/routes/dataset.py`.
+
+## Open bugs
+
+## BUG-4 - Training Speed (FAST/NORMAL/QUALITY) fehlt als separater Parameter; UI zeigt fake GPU statt echter GPU; keine Preset+Speed-VRAM-Validierung
+- status: fixed
+- milestone: M6 (Polish/UI)
+- found-in: M6 code review / user feedback
+- severity: major
+- description: Drei zusammenhängende Mängel, die als **ein Bug** behandelt werden
+  (waren in M5/M6 geplant, aber nicht umgesetzt):
+
+  **(a) Training-Speed-Parameter fehlt.** Die Backend-Funktionen
+  `train/gpu.py::propose_presets()` berechnen korrekt FAST (25% VRAM), NORMAL
+  (50%) und QUALITY (100% VRAM) als Built-in-Presets. Das UI bietet aber
+  **keinen separaten Training-Speed-Selektor** (FAST/NORMAL/QUALITY). Die drei
+  Werte sollen als unabhängiger Parameter funktionieren, der die Parameter eines
+  gewählten Presets *modifiziert* — sie sind nicht die Presets selbst. FAST soll
+  Training beschleunigen (auch mit Qualitätseinbussen), NORMAL = 75% VRAM = Default,
+  QUALITY = 90% VRAM.
+
+  **(b) GPU-Anzeige ist fake.** `webui/src/views/TrainingConfigView.vue` zeigt
+  `"Suggested GPU: NVIDIA RTX 3060+ (12GB VRAM)"` — ein hartcodierter Platzhalter.
+  Das Backend (`train/gpu.py::detect_gpus()`, `suggest_for_host()`) liest die
+  echte GPU aus, aber das UI greift nicht darauf zu. Stattdessen soll die
+  **aktuell installierte GPU** angezeigt werden (Name + VRAM).
+
+  **(c) Keine Preset+Speed-VRAM-Validierung.** Das UI prüft nicht, ob ein
+  gewähltes Preset + Training-Speed auf der aktuellen GPU ausführbar ist.
+  Wenn die Konfiguration den verfügbaren VRAM übersteigt, soll der User einen
+  Hinweis bekommen + ein Popup mit Anpassungsvorschlägen ("Anpassungen annehmen?").
+- reproduction: (a) Öffne Training Config → kein Speed-Selektor. (b) Öffne
+  Training Config → GPU-Abschnitt zeigt fake-Werte. (c) Wähle QUALITY-Preset auf
+  einer 6-GB-GPU → keine Warnung.
+- resolution: All three sub-deficiencies implemented and verified:
+  - (a) Training Speed FAST/NORMAL/QUALITY radio buttons added to TrainingConfigView.vue,
+    calling POST /api/host/validate-preset with speed factor modification (FAST 0.5x,
+    NORMAL 0.75x, QUALITY 0.9x on hidden_size). `server/routes/host.py` provides
+    `apply_speed()` + `validate_preset()` endpoint.
+  - (b) GPU display now reads from GET /api/host/info (backend `suggest_for_host()`),
+    showing real GPU name, total/available VRAM, and tier. Mock fixture provides
+    fallback data for dev/testing.
+  - (c) VRAM validation on preset selection and speed change: if `fits_gpu` is false,
+    a popup overlay ("VRAM-Warnung") appears with "Anpassungen annehmen" / "Abbrechen"
+    buttons. Accepting applies clamped hidden_size to the preset.
+- history:
+  - 2026-08-31 — angelegt als Bug (nicht Feature, da Plan-Umsetzung fehlte).
+  - 2026-08-31 — **fixed** via: (a) `server/routes/host.py` with `apply_speed()` +
+    `validate_preset()` + 12 backend tests; (b) `apiClient.getHostInfo()` +
+    `getGPUInfo()` + `gpuHostInfoFixture` in fixtures; (c) popup overlay in
+    TrainingConfigView.vue with VRAM validation on preset/speed change.
+    Full check suite: pytest 151/1, vitest 23/0, ruff/format clean, build clean.

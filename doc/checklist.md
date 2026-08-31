@@ -91,13 +91,22 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M6 - Polish
 
-- [ ] **M6.1** Packaging (non-Docker).
-- [ ] **M6.2** Docs finalization.
-- [ ] **M6.3** Error handling (backend + UI).
-- [ ] **M6.4** Performance pass (profile, optimize measured bottlenecks only).
-- [ ] **M6.5** Output enhancer (native PyTorch vocoder NSF-HiFiGAN /
-      shallow-diffusion) to lift raw DDSP output quality (see
-      [`related-work.md`](./related-work.md)).
+- [x] **M6.1** Packaging (non-Docker): data-root layout (`server/paths.py`),
+      `%LOCALAPPDATA%` default, live data-dir change (`GET/PUT /api/settings`),
+      UI Settings view, `build-installer` VSCode task + packaging script.
+- [x] **M6.2** Docs finalization: architecture, workflow, UI requirements,
+      implementation plans up-to-date (M6.1/M6.3/M6.4 changes documented).
+- [x] **M6.3** Error handling: consistent REST envelope (`server/errors.py`),
+      worker failure persistence (`error` columns on DB tables),
+      UI toast notifications (Pinia store + overlay component).
+- [x] **M6.4** Performance pass: profiled on RTX 3060 Laptop GPU
+      (QUALITY: 28 steps/s, NORMAL 68 steps/s; inference RTF ~0.004x).
+      Per CCD no trivial optimisation merited.
+- [x] **M6.5** BUG-4: Training Speed (FAST/NORMAL/QUALITY) selector,
+      real GPU display, VRAM validation popup.
+      (`server/routes/host.py`, apiClient, TrainingConfigView.vue)
+- [ ] **Moved to M7** Output enhancer (native PyTorch vocoder NSF-HiFiGAN /
+      shallow-diffusion) — deferred to M7 experimental milestone.
 
 ## Milestone M7 - Experimental sound design (Musique Concrète)
 

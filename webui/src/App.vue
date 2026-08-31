@@ -1,10 +1,12 @@
 <script setup>
-import RouterView from 'vue-router'
+import { RouterView } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
+import ToastNotifications from './components/ToastNotifications.vue'
 import TopBar from './components/TopBar.vue'
 </script>
 
 <template>
+  <ToastNotifications />
   <div class="app-shell">
     <Sidebar class="app-sidebar" />
     <div class="app-main">

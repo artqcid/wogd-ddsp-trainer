@@ -95,9 +95,14 @@ proxies `/api` to the backend.
 
 The backend is implemented (`server/main.py`); it serves the REST API under
 `/api` (datasets, models, runs, inference, presets, TensorBoard). Optional env
-vars: `WOGD_DB_PATH`, `WOGD_RUNS_DIR`, `WOGD_DATASETS_DIR`, `WOGD_REDIS_URL`,
-`WOGD_TB_PORT`, `WOGD_SERVER_PORT`. Async jobs use Celery + Redis; with no
-Redis running, the API still works for everything except actual job execution.
+vars: `WOGD_DB_PATH`, `WOGD_DATA_DIR`
+(default `%LOCALAPPDATA%\wogd-ddsp-trainer` on Windows; sets the data root that
+holds `datasets/`, `runs/` and the database), `WOGD_REDIS_URL`, `WOGD_TB_PORT`,
+`WOGD_SERVER_PORT`, `WOGD_SERVE_STATIC=1` (release mode: serve `webui/dist` from
+FastAPI). The old `WOGD_RUNS_DIR`/`WOGD_DATASETS_DIR` vars are no longer used;
+`runs/` and `datasets/` now live under the data root. Async jobs use Celery +
+Redis; with no Redis running, the API still works for everything except actual
+job execution.
 
 ### 1.7 Tests, lint & build
 
@@ -122,6 +127,7 @@ The workspace defines these tasks (`.vscode/tasks.json`):
 |---|---|
 | `build-debug` | frontend development build |
 | `build-release` | frontend production build |
+| `build-installer` | create a self-contained, portable Windows package |
 | `e2e-test` | end-to-end tests |
 | `start-application-debug` | backend + frontend (dev, hot reload) |
 | `start-application-release` | backend (release) |
@@ -130,11 +136,23 @@ The workspace defines these tasks (`.vscode/tasks.json`):
 
 ## 2. Installation (end users)
 
-`<TODO M6: non-Docker packaging not implemented yet. Planned: a wheel/local
-distribution for the backend + a static frontend bundle. See
-doc/checklist.md M6.1 and doc/implementation/m6-polish.md>`
+A self-contained, portable Windows package is produced by the `build-installer`
+VS Code task (`scripts/build-installer.ps1`). It bundles the backend, the
+production frontend build, and the application venv (Python + libraries) under
+`dist/installer/wogd-ddsp-trainer/` — nothing is installed globally and no
+host configuration is changed.
 
-Once available, install instructions will go here.
+To build the package: run `Ctrl+Shift+B` → `build-installer`, or run
+`pwsh scripts/build-installer.ps1`. Then distribute the contents of
+`dist/installer/wogd-ddsp-trainer/` (e.g. zip it). Start by double-clicking
+`start.bat`; open `http://127.0.0.1:8000`.
+
+User data (datasets, runs, database) is stored under
+`%LOCALAPPDATA%\wogd-ddsp-trainer` on first run. This data directory can be
+changed live in the app (Settings → Data directory). A full NSIS/InnoSetup
+Windows installer with an uninstaller is planned for a later milestone.
+
+`[x] M6.1.3` - local install/run path documented. See `doc/implementation/m6-polish.md`.
 
 ---
 

@@ -7,23 +7,23 @@ Uses stdlib sqlite3 only. Callers are responsible for committing transactions.
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 import typing
+from contextlib import suppress
 from pathlib import Path
 
 
 def get_db_path() -> Path:
-    """Return the database path from WOGD_DB_PATH or the default cwd path."""
-    env: str | None = os.environ.get("WOGD_DB_PATH")
-    if env:
-        return Path(env)
-    return Path.cwd() / "wogd-trainer.db"
+    """Return the database path (see :func:`server.paths.db_path`)."""
+    from server.paths import db_path
+
+    return db_path()
 
 
 def connect(path: Path | None = None) -> sqlite3.Connection:
     """Open (or create) the database and set row_factory to sqlite3.Row."""
     target: Path = path if path is not None else get_db_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
     conn: sqlite3.Connection = sqlite3.connect(target)
     conn.row_factory = sqlite3.Row
     return conn
@@ -56,6 +56,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             config_json TEXT NOT NULL DEFAULT '{}',
             created_from_preset TEXT,
             dataset_id TEXT,
+            error TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
             stop_requested INTEGER NOT NULL DEFAULT 0
@@ -71,6 +72,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             status TEXT NOT NULL DEFAULT 'pending',
             params_json TEXT NOT NULL DEFAULT '{}',
             artifact_path TEXT,
+            error TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
         )
@@ -82,6 +84,19 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)
         """
     )
+
+    _migrate_columns(conn)
+
+
+def _migrate_columns(conn: sqlite3.Connection) -> None:
+    """Add columns that newer schema versions require (safe for existing DBs)."""
+    cur = conn.cursor()
+    for table, col, col_def in [
+        ("runs", "error", "TEXT"),
+        ("synthesis_jobs", "error", "TEXT"),
+    ]:
+        with suppress(sqlite3.OperationalError):
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
 
 
 def _bool(row: sqlite3.Row, key: str) -> bool:
@@ -119,6 +134,7 @@ def _parse_run(row: sqlite3.Row) -> dict:
         "config": _dict(row, "config_json"),
         "created_from_preset": row["created_from_preset"],
         "dataset_id": row["dataset_id"],
+        "error": row["error"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "stop_requested": _bool(row, "stop_requested"),
@@ -133,6 +149,7 @@ def _parse_synthjob(row: sqlite3.Row) -> dict:
         "status": row["status"],
         "params": _dict(row, "params_json"),
         "artifact_path": row["artifact_path"],
+        "error": row["error"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }
@@ -338,6 +355,15 @@ def run_delete(conn: sqlite3.Connection, run_id: str) -> bool:
     return cur.rowcount > 0
 
 
+def run_set_error(conn: sqlite3.Connection, run_id: str, error: str) -> None:
+    """Set the error field on a run."""
+    cur: sqlite3.Cursor = conn.cursor()
+    cur.execute(
+        "UPDATE runs SET error = ?, updated_at = datetime('now') WHERE run_id = ?",
+        (error, run_id),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Synthesis jobs
 # ---------------------------------------------------------------------------
@@ -376,8 +402,9 @@ def synth_update(
     *,
     status: str | None = None,
     artifact_path: str | None = None,
+    error: str | None = None,
 ) -> None:
-    """Update optional status/artifact_path fields and bump updated_at."""
+    """Update optional status/artifact_path/error fields and bump updated_at."""
     set_parts: list[str] = []
     values: list[typing.Any] = []
 
@@ -388,6 +415,10 @@ def synth_update(
     if artifact_path is not None:
         set_parts.append("artifact_path = ?")
         values.append(artifact_path)
+
+    if error is not None:
+        set_parts.append("error = ?")
+        values.append(error)
 
     if not set_parts:
         return

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 from fastapi import status
 
 from server.db import synth_update
+from server.tasks import runs_dir
 
 
 def _run_id() -> str:
@@ -74,7 +72,7 @@ def test_get_job_pending_then_completed(client, db_conn):
     assert pending.json()["status"] == "pending"
     assert pending.json()["artifact_url"] is None
 
-    artifact_path = Path(os.environ["WOGD_RUNS_DIR"]) / _run_id() / "synthesis" / f"{job_id}.wav"
+    artifact_path = runs_dir() / _run_id() / "synthesis" / f"{job_id}.wav"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_bytes(_wav_bytes())
 
@@ -125,7 +123,7 @@ def test_artifact_after_complete_200(client, db_conn):
     assert post.status_code == status.HTTP_202_ACCEPTED
     job_id = post.json()["job_id"]
 
-    artifact_path = Path(os.environ["WOGD_RUNS_DIR"]) / _run_id() / "synthesis" / f"{job_id}.wav"
+    artifact_path = runs_dir() / _run_id() / "synthesis" / f"{job_id}.wav"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     written = _wav_bytes()
     artifact_path.write_bytes(written)

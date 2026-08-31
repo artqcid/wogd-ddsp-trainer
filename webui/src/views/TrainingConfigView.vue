@@ -14,6 +14,10 @@ const showDialog = ref(false)
 const validationResult = ref(null)
 const isClamping = ref(false)
 const clampMessages = ref([])
+const trainingSpeed = ref('NORMAL')
+const gpuInfo = ref(null)
+const showVramWarning = ref(false)
+const vramAdjustmentParams = ref(null)
 
 const presetOptions = computed(() => {
   const builtin = presets.value.filter(p => p.type === 'builtin' || p.type === 'autovc' || p.type === 'dsp-autoencoder')
@@ -21,15 +25,29 @@ const presetOptions = computed(() => {
   return { builtin, custom }
 })
 
-const gpuBounds = {
-  hiddenDim: 256,
-  encoderDim: 256,
-  decoderDim: 256,
-  postnetDim: 256,
-  sampleRate: 48000,
-  nHarmonics: 64,
-  nTrees: 100
-}
+const currentParams = computed(() => {
+  const p = selectedPreset.value?.parameters || {}
+  return {
+    learning_rate: learningRate.value,
+    batch_size: batchSize.value,
+    epochs: epochs.value,
+    hidden_size: p.hidden_dim ?? 256,
+    stft_scales: 3,
+    mixed_precision: p.mixed_precision ?? 'required',
+    gradient_checkpointing: p.gradient_checkpointing ?? 'optional',
+  }
+})
+
+const gpuDisplay = computed(() => {
+  if (!gpuInfo.value?.gpus?.length) return null
+  const gpu = gpuInfo.value.gpus[0]
+  return {
+    name: gpu.name,
+    totalVram: gpu.total_vram_gb.toFixed(1),
+    availableVram: gpu.available_vram_gb.toFixed(1),
+    tier: gpuInfo.value.tier,
+  }
+})
 
 function applyPreset(preset) {
   selectedPreset.value = preset
@@ -40,6 +58,15 @@ function applyPreset(preset) {
 
     const dims = ['hidden_dim', 'encoder_dim', 'decoder_dim', 'postnet_dim']
     const clamped = []
+    const gpuBounds = {
+      hiddenDim: 256,
+      encoderDim: 256,
+      decoderDim: 256,
+      postnetDim: 256,
+      sampleRate: 48000,
+      nHarmonics: 64,
+      nTrees: 100
+    }
     dims.forEach(dim => {
       const val = preset.parameters[dim]
       if (val !== undefined && val > gpuBounds[dim]) {
@@ -60,6 +87,50 @@ function applyPreset(preset) {
     isClamping.value = false
     clampMessages.value = []
   }
+
+  validateCurrentConfig()
+}
+
+async function validateCurrentConfig() {
+  if (!apiClient) return
+  try {
+    const result = await apiClient.validatePreset(currentParams.value, trainingSpeed.value)
+    if (!result.fits_gpu) {
+      showVramWarning.value = true
+      vramAdjustmentParams.value = result.clamped_params
+    } else {
+      showVramWarning.value = false
+      vramAdjustmentParams.value = null
+    }
+  } catch {
+    showVramWarning.value = false
+  }
+}
+
+function onSpeedChange(speed) {
+  trainingSpeed.value = speed
+  validateCurrentConfig()
+}
+
+function acceptVramAdjustment() {
+  if (!vramAdjustmentParams.value || !selectedPreset.value) return
+  showVramWarning.value = false
+  const adj = vramAdjustmentParams.value
+  if (adj.hidden_size !== undefined) {
+    selectedPreset.value = {
+      ...selectedPreset.value,
+      parameters: {
+        ...selectedPreset.value.parameters,
+        hidden_dim: adj.hidden_size,
+      }
+    }
+  }
+  vramAdjustmentParams.value = null
+}
+
+function dismissVramWarning() {
+  showVramWarning.value = false
+  vramAdjustmentParams.value = null
 }
 
 onMounted(async () => {
@@ -68,6 +139,11 @@ onMounted(async () => {
     presets.value = await apiClient.listPresets()
   } catch (e) {
     console.error('Failed to load presets:', e)
+  }
+  try {
+    gpuInfo.value = await apiClient.getHostInfo()
+  } catch (e) {
+    console.error('Failed to load GPU info:', e)
   }
 })
 
@@ -79,6 +155,7 @@ async function handleStartTraining() {
     batch_size: batchSize.value,
     epochs: epochs.value,
     target_mode: targetMode.value,
+    training_speed: trainingSpeed.value,
     preset: selectedPreset.value?.name || null,
     parameters: {
       hidden_dim: selectedPreset.value?.parameters?.hidden_dim ?? 128,
@@ -194,6 +271,42 @@ async function handleStartTraining() {
     </div>
 
     <div class="config-section">
+      <h3>Training Speed</h3>
+      <div class="radio-group" data-testid="training-speed">
+        <label>
+          <input
+            type="radio"
+            value="FAST"
+            :checked="trainingSpeed === 'FAST'"
+            data-testid="speed-FAST"
+            @change="onSpeedChange('FAST')"
+          />
+          FAST (25% VRAM)
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="NORMAL"
+            :checked="trainingSpeed === 'NORMAL'"
+            data-testid="speed-NORMAL"
+            @change="onSpeedChange('NORMAL')"
+          />
+          NORMAL (50% VRAM)
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="QUALITY"
+            :checked="trainingSpeed === 'QUALITY'"
+            data-testid="speed-QUALITY"
+            @change="onSpeedChange('QUALITY')"
+          />
+          QUALITY (75% VRAM)
+        </label>
+      </div>
+    </div>
+
+    <div class="config-section">
       <h3>Target Mode</h3>
       <div class="radio-group" data-testid="target-mode">
         <label>
@@ -216,10 +329,13 @@ async function handleStartTraining() {
     </div>
 
     <div class="config-section">
-      <h3>GPU Requirements</h3>
+      <h3>GPU</h3>
       <div class="gpu-info" data-testid="gpu-info">
-        <div>Suggested GPU: NVIDIA RTX 3060+ (12GB VRAM)</div>
-        <div>Estimated training time: ~2 hours for 100 epochs</div>
+        <template v-if="gpuDisplay">
+          <div>{{ gpuDisplay.name }} ({{ gpuDisplay.totalVram }}GB VRAM, {{ gpuDisplay.availableVram }}GB available)</div>
+          <div>Tier: {{ gpuDisplay.tier }}</div>
+        </template>
+        <div v-else>No GPU detected</div>
       </div>
     </div>
 
@@ -249,6 +365,17 @@ async function handleStartTraining() {
       {{ validationResult.message }}
     </div>
 
+    <div v-if="showVramWarning" class="popup-overlay" data-testid="vram-popup">
+      <div class="popup-box">
+        <h4>VRAM-Warnung</h4>
+        <p>Die gewählte Konfiguration überschreitet den verfügbaren VRAM. Möchten Sie die empfohlenen Anpassungen übernehmen?</p>
+        <div class="popup-actions">
+          <button class="btn-primary" @click="acceptVramAdjustment">Anpassungen annehmen</button>
+          <button class="btn-secondary" @click="dismissVramWarning">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
     <PresetSaveDialog
       :show="showDialog"
       :currentConfig="{
@@ -256,6 +383,7 @@ async function handleStartTraining() {
         batch_size: batchSize,
         epochs: epochs,
         target_mode: targetMode,
+        training_speed: trainingSpeed,
         parameters: {
           hidden_dim: selectedPreset?.parameters?.hidden_dim ?? 128,
           encoder_dim: selectedPreset?.parameters?.encoder_dim ?? 128,
@@ -306,4 +434,18 @@ async function handleStartTraining() {
 .validation-result { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; }
 .validation-result.ok { background: var(--success); color: #000; }
 .validation-result.err { background: var(--error); color: #fff; }
+
+.popup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.popup-box {
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.popup-box h4 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--text-primary); }
+.popup-box p { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.25rem; }
+.popup-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
 </style>

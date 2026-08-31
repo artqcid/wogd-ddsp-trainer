@@ -49,6 +49,15 @@
         </li>
       </ul>
     </div>
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">System</div>
+      <ul class="sidebar-links">
+        <li>
+          <RouterLink to="/settings" class="sidebar-link">Settings</RouterLink>
+        </li>
+      </ul>
+    </div>
   </nav>
 </template>
 

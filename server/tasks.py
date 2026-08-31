@@ -27,6 +27,7 @@ from server.db import (
     connect,
     run_get,
     run_is_stop_requested,
+    run_set_error,
     run_set_status,
     synth_get,
     synth_update,
@@ -53,8 +54,10 @@ celery_app.conf.task_track_started = True
 
 
 def runs_dir() -> Path:
-    env = os.environ.get("WOGD_RUNS_DIR")
-    return Path(env) if env else Path.cwd() / "runs"
+    """Return the runs output folder under the effective data root."""
+    from server.paths import runs_dir as _paths_runs_dir
+
+    return _paths_runs_dir()
 
 
 def run_checkpoint_dir(run_id: str) -> Path:
@@ -117,7 +120,9 @@ def build_tensors(
     model: DDSPModel, dataset_id: str | None
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     if dataset_id is not None:
-        cache = FeatureCache(Path(os.environ.get("WOGD_DATASETS_DIR", "./datasets")) / dataset_id)
+        from server.paths import datasets_dir
+
+        cache = FeatureCache(datasets_dir() / dataset_id)
         if cache.exists("train"):
             arrays = cache.load("train")  # dict-like
             f0 = arrays.get("f0_hz") or arrays.get("f0")
@@ -200,12 +205,13 @@ def run_training_job(run_id: str) -> dict:
         stop_requested = False
         try:
             summary = trainer.run(f0, loudness, target, stop_event=stop_event)
-            # After run() returns, check whether we stopped early
             stop_requested = stop_event.is_set()
             status = "stopped" if stop_requested else "completed"
         except Exception as exc:  # noqa: BLE001
             status = "failed"
-            summary = {"error": str(exc)}
+            err_msg = str(exc)
+            summary = {"error": err_msg}
+            run_set_error(conn, run_id, err_msg)
         finally:
             run_set_status(conn, run_id, status)
             conn.commit()
@@ -228,7 +234,7 @@ def run_synthesis_job(job_id: str) -> dict:
     run_id = params["run_id"]
     ckpt = latest_checkpoint(run_id)
     if ckpt is None:
-        synth_update(conn, job_id, status="failed")
+        synth_update(conn, job_id, status="failed", error="no checkpoint")
         conn.commit()
         conn.close()
         return {"ok": False, "error": "no checkpoint"}
@@ -236,23 +242,30 @@ def run_synthesis_job(job_id: str) -> dict:
     synth_update(conn, job_id, status="running")
     conn.commit()
 
-    model = load_model_from_checkpoint(str(ckpt))
+    try:
+        model = load_model_from_checkpoint(str(ckpt))
 
-    seed = int(params.get("seed", 0))
-    torch.manual_seed(seed)
-    base_f0 = float(params.get("base_f0", 220.0)) + float(params.get("pitch_shift", 0.0))
-    f0 = torch.full((1, 32), base_f0, dtype=torch.float32)
-    loudness = torch.rand(1, 32, dtype=torch.float32).log()
+        seed = int(params.get("seed", 0))
+        torch.manual_seed(seed)
+        base_f0 = float(params.get("base_f0", 220.0)) + float(params.get("pitch_shift", 0.0))
+        f0 = torch.full((1, 32), base_f0, dtype=torch.float32)
+        loudness = torch.rand(1, 32, dtype=torch.float32).log()
 
-    out_path = runs_dir() / run_id / "synthesis" / f"{job_id}.wav"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path = runs_dir() / run_id / "synthesis" / f"{job_id}.wav"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    render_to_file(model, f0, loudness, str(out_path))
+        render_to_file(model, f0, loudness, str(out_path))
 
-    synth_update(conn, job_id, status="completed", artifact_path=str(out_path))
-    conn.commit()
-    conn.close()
-    return {"ok": True, "job_id": job_id, "status": "completed", "artifact_path": str(out_path)}
+        synth_update(conn, job_id, status="completed", artifact_path=str(out_path))
+        conn.commit()
+        conn.close()
+        return {"ok": True, "job_id": job_id, "status": "completed", "artifact_path": str(out_path)}
+    except Exception as exc:
+        err_msg = str(exc)
+        synth_update(conn, job_id, status="failed", error=err_msg)
+        conn.commit()
+        conn.close()
+        return {"ok": False, "error": err_msg}
 
 
 # ---------------------------------------------------------------------------

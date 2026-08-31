@@ -3,6 +3,124 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-08-31 - BUG-4 (Training Speed / GPU / VRAM validation) implemented
+
+**BUG-4** (three related deficiencies): (a) Training Speed FAST/NORMAL/QUALITY
+selector, (b) real GPU display from backend, (c) VRAM validation popup.
+
+Backend: `server/routes/host.py` — `GET /api/host/info` (GPU info from
+`suggest_for_host`), `POST /api/host/validate-preset` (`apply_speed` + clamp).
+Frontend: `apiClient.getHostInfo()` / `validatePreset()`, `gpuHostInfoFixture`,
+`TrainingConfigView.vue` with speed radio buttons, dynamic GPU display, VRAM
+popup overlay ("Anpassungen annehmen?"). Bug: `doc/bugs.md#BUG-4` → `status: fixed`.
+
+**Verify:** `ruff`/`format` 0, `pytest` 151/1, `vitest` 23/0, Build clean.
+
+## 2026-08-31 - M6.4 GPU-Profilierung (RTX 3060): Training + Inference
+
+**Creation:** `tests/profile_gpu.py` benchmarkt Training-Step + Inference auf
+GPU. Ergebnisse: QUALITY (hidden=512, 5 STFT-Scales): 35.5ms/Step (~28
+Steps/s), Inference RTF 0.004x. NORMAL (hidden=256, 3 Scales): 14.6ms/Step
+(~68 Steps/s). Bottleneck: Backward-Pass (38-45%), Loss (18-22%). Per CCD
+keine triviale Optimierung möglich, die Qualität/Architektur nicht opfert.
+
+**Verify:** `ruff`/`format` 0, `pytest` 139/1, `vitest` 22/0, Build clean.
+Wiki lint clean, index synced.
+
+## 2026-08-31 - M6.3 Error-Handling: REST-Envelope + Worker-Fehler + UI-Toasts
+
+**Creation:** `server/errors.py` mit ApiError + Exception-Handlern (einheitliches
+`{"error": {"code": "...", "message": "..."}}`-Envelope für alle HTTP-Fehler via
+`install_handlers()` in `main.py`). `error`-Spalte auf `runs`/`synthesis_jobs`-
+Tabellen (Migration in `init_db`), `run_set_error`, `synth_update(error=...)`.
+Task-Worker persistieren jetzt Fehlermeldungen. UI-Toast-System: Pinia-Store
+(`useNotificationsStore`) + Overlay-Komponente (`ToastNotifications.vue`,
+animierte Übergänge, auto-dismiss) in `App.vue` verdrahtet.
+
+**Verify:** Tests aktualisiert (neues Envelope-Format). `ruff`/`format` 0,
+`pytest` 139/1, `vitest` 22/0, `npm run build` sauber.
+
+## 2026-08-31 - M6.1 Datenverzeichnis-Logik + Live-Änderung + Packaging-Task
+
+**Creation:** Zentrale Pfad-/Standort-Auflösung in `server/paths.py`:
+`install_dir()` (App-Code-Standort, Repo-/Install-Root) und `data_dir()`
+(ein "Sammelwurzel" für `datasets/`, `runs/` und die SQLite-DB). Default für
+`data_dir()` ist `%LOCALAPPDATA%\wogd-ddsp-trainer` unter Windows — identisches
+Verhalten in Entwicklung und nach Installation (kein Docker, kein globaler
+Eingriff). Präzedenz: Env `WOGD_DATA_DIR` > in DB-Meta persistierter Override
+(über `PUT /api/settings`) > Plattform-Default. Nur das Datenverzeichnis ist
+zur Laufzeit durch den User änderbar; Installationsverzeichnis und DB-Pfad sind
+fest.
+
+**Wiring:** `get_db_path()` (db.py), `runs_dir()` (tasks.py), `datasets_dir()`
+(routes/dataset.py), `build_tensors()` (tasks.py) auflösen alles über
+`paths.py`. `connect()` erzeugt jetzt den DB-Überordner (falls `%LOCALAPPDATA%`
+noch nicht existiert). `ensure_data_dirs()` wird beim Start aufgerufen und
+migriert best-effort alte `cwd/datasets`/`cwd/runs` in das neue Datenverzeichnis
+(dev-Übergang).
+
+**REST + UI:** `GET/PUT /api/settings` (Live-Datenverzeichnis-Änderung mit
+Validierung absoluter Pfade, Migration vorhandener datasets/runs auf das neue
+Ziel, Persistenz in DB-Meta, Reset auf Default), `GET /api/settings/defaults`.
+UI: `SettingsView.vue` (Anzeige Installationspfad + Datenverzeichnis + DB +
+datasets/runs; Datenverzeichnis live änderbar mit Reset; Hinweis dass
+Input-Samples per Drop-In in das datasets-Verzeichnis kopiert werden). Neu:
+apiClient-Methode, Mock, Fixtures, `settings.test.js`, `test_api_settings.py`.
+
+**Packaging:** `build-installer` VSCode-Task + `scripts/build-installer.ps1`
+erzeugen ein eigenständiges, portables Windows-Paket unter
+`dist/installer/wogd-ddsp-trainer/` (Backend-Quellen + `webui/dist` +
+Gebinde-.venv mit Python + Bibliotheken + `start.bat`/Launcher). Kein globaler
+Installationsvorgang, keine Änderung der Host-Konfiguration. Vollständiger
+Windows-Installer (NSIS/InnoSetup) mit Uninstaller ist ein späteres Milestone.
+
+**Docs:** README (Umgebungsvariablen, VSCode-Task-Tabelle, Installationsabschnitt),
+`doc/architecture.md` (Umgebungsvariablen-Liste), `doc/workspace-workflow.md`
+(Packaging-Abschnitt), `doc/implementation/m6-polish.md` (M6.1.3 erledigt,
+M6.1.6/M6.1.7 ergänzt, History).
+
+**Verify:** `ruff check`/`format` 0 Fehler, `pytest` 139/1 (GPU-Übersprung),
+`vitest` 21/0, `npm run build` sauber (neue SettingsView- + ApiClient-Chunks).
+
+**Update:** [`workspace-workflow.md`](workspace-workflow.md) (VSCode-Abschnitt
+neu), [`implementation/m6-polish.md`](implementation/m6-polish.md) (M6.1.4/5 +
+M6.6.4). `start-application-debug`/`start-application-release` sind **keine
+Build-Tasks** (das bleiben `build-debug`/`build-release`) — beide prüfen jetzt,
+ob der Frontend-Build aktuell ist (Rebuild nur wenn `webui/dist` fehlt/älter
+als Quelle), und starten danach **Frontend + Backend gemeinsam** über
+`scripts/start-app.ps1 -Mode <Debug|Release>`: Debug = Backend via debugpy
+(`--listen 5678 --wait-for-client`) + Vite-Dev (`:5173`), Attach per
+`Debug Backend (attach)`-Launch; Release = uvicorn mit `WOGD_SERVE_STATIC=1`,
+serviert API + `webui/dist`.
+
+**Verify:** Release — kein Rebuild bei aktuellem `dist`, Rebuild bei fehlendem
+`dist`, `/` html + Server sauber gestoppt. Debug — `:5173` (Vite) + `:5678`
+(debugpy) beide oben, sauber gestoppt. `debugpy` als dev-Dependency ergänzt;
+redundante `backend-dev`/`frontend-dev`/`backend-release`-Tasks entfernt.
+
+## 2026-08-31 - M6.1 VSCode Debug/Release Start-Tasks + Release Static Serving
+
+**Update:** [`implementation/m6-polish.md`](implementation/m6-polish.md) (neue
+Steps M6.1.4/M6.1.5 + M6.6, `>>> History`), [`workspace-workflow.md`](workspace-workflow.md)
+(pending M6.6.3). Der Nutzer wollte `start-application-debug`/
+`start-application-release` als manuell startbare Einträge — Debug = Vite
+debugbar + Backend im VSCode-Debugger; Release = gebautes Frontend servieren.
+Umsetzung: (a) `.vscode/launch.json` (compound `Debug Application` =
+`Debug Backend` debugpy `server.main:app` + `Vite Dev (debug)`); (b)
+`.vscode/tasks.json` — `start-application-debug` -> `frontend-dev`,
+`start-application-release` -> `build-release` -> `backend-release`
+(`WOGD_SERVE_STATIC=1`); (c) `server/main.py` — statisches Servieren von
+`webui/dist` + SPA-Fallback, gated auf `WOGD_SERVE_STATIC=1`.
+
+**BUG-3** gefunden + gefixt (`webui/src/App.vue` importierte `RouterView` als
+Default-Export → Produktions-Build scheiterte; jetzt Named-Import, `npm run
+build` grün). **M6.6 verifiziert:** `server.main.mount_frontend` extrahiert +
+`tests/test_frontend_static.py` (Static-Serving + SPA-Fallback); volle Checks
+grün (`ruff`/`format` 0, `pytest` 133 passed / 1 GPU-skip, `vitest` 18 passed,
+`vite build` ok). Live-Release-Test auf `:8021`: `/` html, SPA-Fallback html,
+`/api/datasets` 200; Server danach gestoppt (kein Listener übrig).
+`workspace-workflow.md` um VSCode-Tasks/Launch-Sektion ergänzt.
+
 ## 2026-08-31 - M5 Web-UI umgesetzt (App Shell + Views + Vitest)
 
 **Creation:** [`ui-requirements.md`](ui-requirements.md) (bindend für alle

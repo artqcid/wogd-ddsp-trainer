@@ -49,6 +49,10 @@ dev = [
     "ruff>=0.6",
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    # debugpy: debugger backend for the VSCode `start-application-debug` task
+    # (the backend is started with `python -m debugpy --listen ...` so VSCode
+    # can attach via the `Debug Backend (attach)` launch config).
+    "debugpy>=1.8",
 ]
 
 [tool.setuptools]

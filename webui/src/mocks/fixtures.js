@@ -108,3 +108,94 @@ export const modelsFixture = [
 export const downloadModelFixture = null // Blob returned by download endpoint
 
 export const tensorboardFixture = { url: 'https://localhost:6006', running: true, port: 6006 }
+
+export const settingsFixture = {
+  install_dir: 'C:/Program Files/wogd-ddsp-trainer',
+  data_dir: 'C:/Users/demo/AppData/Local/wogd-ddsp-trainer',
+  db_path: 'C:/Users/demo/AppData/Local/wogd-ddsp-trainer/wogd-trainer.db',
+  datasets_dir: 'C:/Users/demo/AppData/Local/wogd-ddsp-trainer/datasets',
+  runs_dir: 'C:/Users/demo/AppData/Local/wogd-ddsp-trainer/runs',
+  data_is_default: true,
+}
+
+export const gpuHostInfoFixture = {
+  gpus: [
+    { index: 0, name: 'NVIDIA GeForce RTX 3060', total_vram_gb: 12.0, available_vram_gb: 10.5 },
+  ],
+  tier: 'mid',
+  bounds: {
+    hidden_size_min: 256,
+    hidden_size_max: 512,
+    stft_scales_min: 3,
+    stft_scales_max: 3,
+    mixed_precision: 'required',
+    gradient_checkpointing: 'optional',
+  },
+  presets: {
+    FAST: { hidden_size: 256, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'enabled', vram_usage_target: '25%' },
+    NORMAL: { hidden_size: 384, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional', vram_usage_target: '50%' },
+    QUALITY: { hidden_size: 512, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'disabled', vram_usage_target: '75%' },
+  },
+}
+
+const _SPEED_FACTORS = {
+  FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
+  NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },
+  QUALITY: { hidden: 0.90, scales: 'keep', mp: 'tier', ckpt: 'disabled' },
+}
+
+export function validatePresetFixture(params, training_speed) {
+  const speed = training_speed || 'NORMAL'
+  const factor = _SPEED_FACTORS[speed] || _SPEED_FACTORS.NORMAL
+  const bounds = { ...gpuHostInfoFixture.bounds }
+
+  const speedApplied = { ...params }
+  if (typeof speedApplied.hidden_size === 'number') {
+    speedApplied.hidden_size = Math.round(speedApplied.hidden_size * factor.hidden)
+  }
+  if (factor.scales === 'min') {
+    speedApplied.stft_scales = bounds.stft_scales_min
+  }
+  if (factor.mp === 'required') {
+    speedApplied.mixed_precision = 'required'
+  } else if (factor.mp === 'tier') {
+    speedApplied.mixed_precision = bounds.mixed_precision
+  }
+  if (factor.ckpt === 'enabled') {
+    speedApplied.gradient_checkpointing = 'enabled'
+  } else if (factor.ckpt === 'disabled') {
+    speedApplied.gradient_checkpointing = 'disabled'
+  } else if (factor.ckpt === 'tier') {
+    speedApplied.gradient_checkpointing = bounds.gradient_checkpointing
+  }
+
+  const clampedParams = { ...speedApplied }
+  const clampedFields = []
+  if (clampedParams.hidden_size < bounds.hidden_size_min) {
+    clampedParams.hidden_size = bounds.hidden_size_min
+    clampedFields.push('hidden_size')
+  } else if (clampedParams.hidden_size > bounds.hidden_size_max) {
+    clampedParams.hidden_size = bounds.hidden_size_max
+    clampedFields.push('hidden_size')
+  }
+  if (clampedParams.stft_scales < bounds.stft_scales_min) {
+    clampedParams.stft_scales = bounds.stft_scales_min
+    clampedFields.push('stft_scales')
+  } else if (clampedParams.stft_scales > bounds.stft_scales_max) {
+    clampedParams.stft_scales = bounds.stft_scales_max
+    clampedFields.push('stft_scales')
+  }
+  if (clampedParams.learning_rate === undefined) {
+    clampedParams.learning_rate = 0.001
+  }
+
+  return {
+    original_params: { ...params },
+    speed_applied_params: speedApplied,
+    clamped_params: clampedParams,
+    clamped_fields: clampedFields,
+    bounds,
+    training_speed: speed,
+    fits_gpu: clampedFields.length === 0,
+  }
+}
