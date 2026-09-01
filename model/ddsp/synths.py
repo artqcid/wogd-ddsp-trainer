@@ -15,6 +15,29 @@ from .noise_colored import _brown_noise, _pink_noise
 from .variant import DDSPVariant
 
 
+def _angular_cumsum(x: torch.Tensor) -> torch.Tensor:
+    cum = torch.cumsum(x, dim=1)
+    return (cum + torch.pi) % (2 * torch.pi) - torch.pi
+
+
+def _apply_waveform(
+    phase: torch.Tensor, variant: DDSPVariant, wavetable: torch.Tensor | None = None
+) -> torch.Tensor:
+    if variant.pd_k != 0.0:
+        phase = phase + variant.pd_k * torch.sin(phase)
+    if variant.use_trainable_wavetable and wavetable is not None:
+        idx = (phase % (2.0 * torch.pi)) / (2.0 * torch.pi) * 255.0
+        idx_lo = idx.long().clamp(0, 254)
+        idx_hi = (idx_lo + 1).clamp(0, 255)
+        frac = idx - idx_lo.float()
+        return wavetable[idx_lo] * (1 - frac) + wavetable[idx_hi] * frac
+    if variant.waveform == "square":
+        return torch.sign(torch.sin(phase))
+    if variant.waveform == "saw":
+        return (phase % (2.0 * torch.pi)) / torch.pi - 1.0
+    return torch.sin(phase)
+
+
 @dataclass
 class SynthConfig:
     """Config shared by the DDSP synth branch."""
@@ -40,6 +63,11 @@ class HarmonicOscillatorSynth(nn.Module):
         super().__init__()
         self.n_harmonics = n_harmonics
         self.variant = variant or DDSPVariant()
+        if variant is not None and variant.use_trainable_wavetable:
+            t = torch.linspace(0, 2 * torch.pi, 256)
+            self.wavetable = nn.Parameter(torch.sin(t))
+        else:
+            self.wavetable = None
 
     def forward(
         self,
@@ -66,8 +94,27 @@ class HarmonicOscillatorSynth(nn.Module):
         dtype = amplitudes.dtype
 
         # Harmonic frequencies: h * f0, shape (B, T_frames, H)
-        harmonic_indices = torch.arange(1, self.n_harmonics + 1, device=device, dtype=dtype)
+        if self.variant.harmonic_ratios is not None:
+            _ratios = self.variant.harmonic_ratios
+            if len(_ratios) < self.n_harmonics:
+                _ratios = _ratios + list(range(len(_ratios) + 1, self.n_harmonics + 1))
+            harmonic_indices = torch.tensor(_ratios[: self.n_harmonics], device=device, dtype=dtype)
+        else:
+            harmonic_indices = torch.arange(1, self.n_harmonics + 1, device=device, dtype=dtype)
         harmonic_freqs = f0.unsqueeze(-1) * harmonic_indices  # (B, T_frames, H)
+
+        # FM synthesis: modulate harmonic frequencies by a modulation oscillator
+        if self.variant.fm_depth > 0.0:
+            mod_freq = f0 * self.variant.fm_ratio  # (B, T_frames)
+            mod_phase = (
+                2.0 * torch.pi * mod_freq
+                * torch.arange(T_frames, device=device, dtype=dtype).unsqueeze(0)
+                * (hop_length / sample_rate)
+            )
+            mod_phase = torch.cumsum(mod_phase, dim=1)
+            mod_signal = self.variant.fm_depth * torch.sin(mod_phase)
+            harmonic_freqs = harmonic_freqs + mod_signal.unsqueeze(-1) * f0.unsqueeze(-1)
+            harmonic_freqs = harmonic_freqs.clamp(min=1.0)
 
         # Effective amplitude per harmonic (modulated by distribution)
         harmonic_amps = amplitudes * harmonic_distribution  # (B, T_frames, H)
@@ -78,7 +125,10 @@ class HarmonicOscillatorSynth(nn.Module):
         phase_per_frame = phase_increments * hop_length  # (B, T_frames, H)
 
         # Integrated phase at frame boundaries
-        phase_frames = torch.cumsum(phase_per_frame, dim=1)  # (B, T_frames, H)
+        if self.variant.use_angular_cumsum:
+            phase_frames = _angular_cumsum(phase_per_frame)
+        else:
+            phase_frames = torch.cumsum(phase_per_frame, dim=1)  # (B, T_frames, H)
 
         # Audio-rate length
         T_audio = (T_frames - 1) * hop_length + 1
@@ -100,7 +150,7 @@ class HarmonicOscillatorSynth(nn.Module):
         amp_audio = _upsample_1d(harmonic_amps)  # (B, T_audio, H)
 
         # Additive synthesis: sum over harmonics
-        audio = (amp_audio * torch.sin(phase_audio)).sum(dim=-1)  # (B, T_audio)
+        audio = (amp_audio * _apply_waveform(phase_audio, self.variant, self.wavetable)).sum(dim=-1)
         return audio
 
 
@@ -308,12 +358,14 @@ class DDSPCore(nn.Module):
             )
             self.noise_synth = FilteredNoiseSynth(hop_length=hop_length, variant=self.variant)
 
-        if use_reverb:
+        if use_reverb and self.variant.engine in {"harmonic", "sinusoidal"}:
             self.reverb = SimpleReverb(
                 delay_seconds=reverb_delay,
                 decay=reverb_decay,
                 sample_rate=sample_rate,
             )
+        else:
+            self.reverb = None
 
     def forward(
         self,
@@ -341,8 +393,13 @@ class DDSPCore(nn.Module):
                 sample_rate=self.sample_rate,
                 hop_length=self.hop_length,
             )
+            noise_magnitudes = (
+                torch.zeros_like(amplitudes[..., :1])
+                if noise_magnitudes is None
+                else noise_magnitudes
+            )
             noise_audio = self.noise_synth(
-                noise_magnitudes if noise_magnitudes is not None else amplitudes,
+                noise_magnitudes,
                 n_samples=n_samples,
                 sample_rate=self.sample_rate,
             )

@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from model.ddsp import DDSPCore, DDSPVariant
-
-if TYPE_CHECKING:
-    from model.ddsp import DDSPVariant
 
 
 @dataclass
@@ -26,6 +22,8 @@ class DDSPConfig:
         hidden_size: GRU hidden state dimension.
         decoder_type: decoder architecture name ("gru" or "rnn").
         use_reverb: whether to apply reverb in DDSPCore synthesis.
+        variant: DDSP variant to use (engine, LFO settings, etc.); if None, the
+            __init__ parameter or a default DDSPVariant() is used.
         stft_scales: list of FFT sizes for multi-scale spectral loss (informational;
             the actual loss uses its own fft_sizes to keep the model config decoupled
             from GPU-specific tunables).
@@ -38,6 +36,7 @@ class DDSPConfig:
     hidden_size: int = 256
     decoder_type: str = "gru"
     use_reverb: bool = True
+    variant: DDSPVariant | None = None
     stft_scales: list[int] = None  # set in __post_init__
 
     def __post_init__(self) -> None:
@@ -62,7 +61,7 @@ class DDSPModel(nn.Module):
     ) -> None:
         super().__init__()
         self.config = config
-        self.variant = variant or DDSPVariant()
+        self.variant = variant or config.variant or DDSPVariant()
         n_noise_bins = n_noise_bins if n_noise_bins is not None else config.n_noise_bins
 
         input_dim = 2  # f0 + loudness
@@ -207,7 +206,9 @@ class DDSPModel(nn.Module):
 
     @classmethod
     def load_checkpoint(cls, path: str, variant: DDSPVariant | None = None) -> DDSPModel:
-        state = torch.load(path, map_location="cpu", weights_only=True)
+        import torch.serialization as _ts
+        with _ts.safe_globals([DDSPConfig, DDSPVariant]):
+            state = torch.load(path, map_location="cpu", weights_only=True)
         saved_engine = state.get("engine", "harmonic")
         if variant is None:
             variant = DDSPVariant(engine=saved_engine)

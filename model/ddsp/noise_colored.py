@@ -9,7 +9,9 @@ def _pink_noise(n: int, device, dtype) -> torch.Tensor:
     freqs[0] = 1.0  # avoid division by zero at DC
     pink_filter = 1.0 / freqs.sqrt()
     fft = fft * pink_filter
-    return torch.fft.irfft(fft, n=n)
+    signal = torch.fft.irfft(fft, n=n)
+    rms = signal.pow(2).mean().sqrt().clamp(min=1e-8)
+    return signal / rms
 
 
 def _brown_noise(n: int, device, dtype) -> torch.Tensor:
@@ -20,4 +22,6 @@ def _brown_noise(n: int, device, dtype) -> torch.Tensor:
     freqs[0] = 1.0
     brown_filter = 1.0 / freqs
     fft = fft * brown_filter
-    return torch.fft.irfft(fft, n=n)
+    signal = torch.fft.irfft(fft, n=n)
+    rms = signal.pow(2).mean().sqrt().clamp(min=1e-8)
+    return signal / rms

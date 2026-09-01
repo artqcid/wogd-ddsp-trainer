@@ -34,6 +34,7 @@ PARAM_KEYS: tuple = (
     "mixed_precision",
     "gradient_checkpointing",
     "learning_rate",
+    "variant",
 )
 ALLOWED_MIXED_PRECISION = ("required", "recommended", "optional")
 ALLOWED_CHECKPOINTING = ("enabled", "optional", "disabled")

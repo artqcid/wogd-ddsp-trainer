@@ -109,9 +109,8 @@ def test_engine_checkpoint_tag() -> None:
         path = f.name
     try:
         model.save_checkpoint(path)
-        torch.serialization.add_safe_globals([DDSPConfig])
-        state = torch.load(path, map_location="cpu", weights_only=True)
-        assert state["engine"] == "sinusoidal"  # type: ignore[arg-type]
+        loaded = DDSPModel.load_checkpoint(path)
+        assert loaded.variant.engine == "sinusoidal"
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -124,7 +123,6 @@ def test_engine_mismatch_raises() -> None:
         path = f.name
     try:
         model.save_checkpoint(path)
-        torch.serialization.add_safe_globals([DDSPConfig])
         with pytest.raises(ValueError, match="engine"):
             DDSPModel.load_checkpoint(path, variant=DDSPVariant(engine="harmonic"))
     finally:

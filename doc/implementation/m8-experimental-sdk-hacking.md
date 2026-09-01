@@ -689,12 +689,17 @@ Total: **14 subagent steps** + 4 primary build/test checkpoints.
 
 _References only; full records in [`../bugs.md`](../bugs.md)._
 
-- (none)
+- **BUG-7** — `DDSPModel.load_checkpoint` crashes with WeightsOnlyLoad error (DDSPConfig not a safe global) — open; root cause in `model/ddsp_model.py`; fix tracked in m9 step M9.10
+- **BUG-8** — `DDSPCore.forward` sinusoidal path silently passes wrong tensor when `noise_magnitudes=None` — open; root cause in `model/ddsp/synths.py`; fix tracked in m9 step M9.11
 
 ## History
 
 _Append-only, newest first._
 
+- **2026-09-01** — Post-M9 correctness review by ARCHITECT; BUG-7 + BUG-8 filed
+  in bugs.md and cross-referenced here (both files: model/ddsp_model.py +
+  model/ddsp/synths.py). M9.10–M9.14 cover the fixes; M8.1.3 (server-layer
+  variant parsing) remains open.
 - **2026-09-01** — M8.1.1, M8.1.2, M8.1.4 implemented by BUILD agent (as M9 prerequisite).
   - M8.1.1: DDSPVariant dataclass in model/ddsp/variant.py
   - M8.1.2: variant param in HarmonicOscillatorSynth/FilteredNoiseSynth/DDSPCore/DDSPModel + LFO injection

@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 7`
+`next_id: 9`
 
 ## Bug template (copy for each new bug)
 
@@ -170,10 +170,8 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
     TrainingConfigView.vue with VRAM validation on preset/speed change.
     Full check suite: pytest 151/1, vitest 23/0, ruff/format clean, build clean.
 
-## Open bugs
-
 ## BUG-5 - Preset-schema drift: frontend fixtures/views use AutoVC field names instead of DDSP backend schema
-- status: open
+- status: fixed
 - milestone: M5 (Web UI)
 - affected: M4 (backend), M7 (experimental, any preset-driven flow)
 - found-in: M1–M6 review 2026-08-31 (architecture cross-check)
@@ -191,22 +189,85 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: Run the app against the real backend; select any built-in
   preset in TrainingConfigView → the preset dropdown filter (`type === 'autovc'`)
   finds nothing, training payload contains unknown fields.
-- resolution: (open) Fix tracked in `implementation/m5-webui.md` M5.8.1–M5.8.3.
+- resolution: (fixed) All AutoVC field names removed from `webui/src/mocks/fixtures.js`
+  and `TrainingConfigView.vue`; replaced with correct DDSP backend schema (`hidden_size`,
+  `stft_scales`, `is_builtin`, `.pt` checkpoints). Steps M5.8.1–M5.8.3 in
+  `implementation/m5-webui.md` all marked `[x]`.
 - history:
   - 2026-08-31 — filed during M1–M6 review; fix steps added to m5-webui.md.
+  - 2026-09-01 — **verified fixed** by ARCHITECT correctness review: `fixtures.js` and
+    `TrainingConfigView.vue` contain no AutoVC field names; all DDSP fields present.
+    `m5-webui.md` M5.8.1–M5.8.3 marked `[x]`.
 
 ## BUG-6 - Training Speed radio button labels show incorrect VRAM percentages
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, TrainingConfigView)
 - found-in: M1–M6 review 2026-08-31
 - severity: minor
-- description: `TrainingConfigView.vue` speed radio buttons are labeled
+- description: `TrainingConfigView.vue` speed radio buttons were labeled
   `FAST (25% VRAM)` / `NORMAL (50% VRAM)` / `QUALITY (75% VRAM)`. These
-  numbers describe the built-in preset VRAM targets, not the speed-modifier
+  numbers described the built-in preset VRAM targets, not the speed-modifier
   factors. The actual `apply_speed()` logic in `server/routes/host.py` applies
   factors 0.50× / 0.75× / 0.90× to the preset's `hidden_size`. The QUALITY
-  label is especially misleading: it shows 75% but the factor is 0.90×.
+  label was especially misleading: it showed 75% but the factor is 0.90×.
 - reproduction: Open TrainingConfigView → Training Speed section → read labels.
-- resolution: (open) Fix tracked in `implementation/m5-webui.md` M5.8.4.
+- resolution: (fixed) Labels updated to `FAST (0.5x hidden_size, max speed)` /
+  `NORMAL (0.75x, default)` / `QUALITY (0.9x, best quality)` — accurately reflecting
+  the `hidden_size` multiplier factors. Step M5.8.4 in `implementation/m5-webui.md`
+  marked `[x]`.
 - history:
   - 2026-08-31 — filed during M1–M6 review; fix step added to m5-webui.md.
+  - 2026-09-01 — **verified fixed** by ARCHITECT correctness review: labels show
+    `0.5x` / `0.75x` / `0.9x` factors; no VRAM percentage text present.
+
+## Open bugs
+
+## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
+- status: open
+- milestone: M9 (Alternative synth engines, M9.6)
+- affected: M8 (M8.1.3 server wiring), M10, M11, M12 (any milestone that calls load_checkpoint)
+- found-in: post-M9 correctness review 2026-09-01 (ARCHITECT)
+- severity: major
+- description: `DDSPModel.load_checkpoint` calls `torch.load(path, weights_only=True)` but
+  `DDSPConfig` is a plain Python dataclass that is not registered as a PyTorch safe global.
+  PyTorch 2.6+ changed the default for `weights_only` to `True`, and any unregistered class
+  in the checkpoint raises `WeightsUnpickler error: Unsupported global: GLOBAL
+  model.ddsp_model.DDSPConfig was not an allowed global`. The method therefore crashes for
+  any real-world checkpoint load. The existing test `test_engine_checkpoint_tag` only
+  "works" because it calls `torch.serialization.add_safe_globals([DDSPConfig])` manually
+  before the `torch.load` call — the production code path does not.
+- reproduction: save a checkpoint via `model.save_checkpoint(path)`, then call
+  `DDSPModel.load_checkpoint(path)` → `WeightsUnpickler error`.
+- resolution: (open) Fix tracked in `implementation/m9-alternative-synth-engines.md` M9.10.
+  `DDSPModel.load_checkpoint` must call
+  `torch.serialization.add_safe_globals([DDSPConfig])` before the `torch.load` call
+  (or use the `torch.serialization.safe_globals([DDSPConfig])` context manager).
+  After fixing, remove the manual `add_safe_globals` call from the two tests in
+  `tests/test_synths_engines.py` so no hidden global state is leaked between tests.
+- history:
+  - 2026-09-01 — filed by ARCHITECT during post-M9 correctness review.
+
+## BUG-8 - `DDSPCore.forward` sinusoidal path silently passes wrong tensor to `FilteredNoiseSynth` when `noise_magnitudes=None`
+- status: open
+- milestone: M9 (Alternative synth engines, M9.6)
+- affected: M9 (any caller of DDSPCore with engine="sinusoidal")
+- found-in: post-M9 correctness review 2026-09-01 (ARCHITECT)
+- severity: minor
+- description: In `DDSPCore.forward`, the sinusoidal engine path contains a fallback
+  `noise_magnitudes if noise_magnitudes is not None else amplitudes`. When
+  `noise_magnitudes` is omitted (`None`), `amplitudes` (shape `(B, T, n_harmonics)`) is
+  passed to `FilteredNoiseSynth` instead of a proper noise magnitude tensor (expected
+  shape `(B, T, n_noise_bins)`). No exception is raised because `FilteredNoiseSynth`
+  accepts any last-dim size, but the output is semantically wrong: harmonic amplitude
+  envelopes are treated as noise spectral envelopes. The bug is latent — `DDSPModel`
+  always passes real `noise_magnitudes`, so no test currently triggers it — but any
+  direct use of `DDSPCore` with `engine="sinusoidal"` and no `noise_magnitudes` will
+  produce incorrect audio silently.
+- reproduction: `DDSPCore(variant=DDSPVariant(engine="sinusoidal"))(amplitudes=amps,
+  sinusoidal_freqs=freqs, noise_magnitudes=None, n_samples=N)` → output is valid but
+  noise branch uses harmonic amplitudes instead of silence/zeros.
+- resolution: (open) Fix tracked in `implementation/m9-alternative-synth-engines.md`
+  M9.11. The sinusoidal path should default `noise_magnitudes` to zeros of the correct
+  shape `(B, T, self.n_noise_bins)` when `None` is passed, not to `amplitudes`.
+- history:
+  - 2026-09-01 — filed by ARCHITECT during post-M9 correctness review.

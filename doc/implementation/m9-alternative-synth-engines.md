@@ -404,9 +404,211 @@ M9.7   UI: engine selector + noise controls
 M9.8   tests/test_synths_engines.py
 M9.9   Docs
   ↓ primary: full pytest + vitest + ruff + wiki sync
+--- post-M9 correctness fixes (must all be done before M9 is closed) ---
+M9.10  FIX BUG-7: load_checkpoint safe globals          (model/ddsp_model.py)
+M9.11  FIX BUG-8: sinusoidal None noise_magnitudes      (model/ddsp/synths.py)
+M9.12  IMP-A: remove redundant DDSPVariant TYPE_CHECKING import  (model/ddsp_model.py)
+M9.13  IMP-C: normalize _pink_noise/_brown_noise output (model/ddsp/noise_colored.py)
+M9.14  IMP-D: guard reverb init against unused engines  (model/ddsp/synths.py)
+  ↓ primary: full pytest + vitest + ruff + wiki sync
 ```
 
-Total: **9 subagent steps** + 3 primary checkpoints.
+Total: **14 subagent steps** + 4 primary checkpoints.
+
+---
+
+## Post-M9 Correctness Fixes
+
+> These steps close the two bugs and three code-quality improvements found
+> during the post-M9 review (2026-09-01). They are required before M9 can be
+> marked fully closed. Execute in order M9.10 → M9.14; each is a single-file
+> subagent task.
+
+### M9.10 — FIX BUG-7: `load_checkpoint` safe globals
+
+**Bug:** BUG-7 — `DDSPModel.load_checkpoint` crashes on PyTorch 2.6+ because
+`DDSPConfig` is not registered as a safe global before `torch.load(weights_only=True)`.
+
+**File:** `model/ddsp_model.py` → `DDSPModel.load_checkpoint`
+
+Replace:
+```python
+state = torch.load(path, map_location="cpu", weights_only=True)
+```
+With:
+```python
+import torch.serialization as _ts
+_ts.add_safe_globals([DDSPConfig])
+state = torch.load(path, map_location="cpu", weights_only=True)
+```
+
+Alternatively (preferred — no global side-effect):
+```python
+import torch.serialization as _ts
+with _ts.safe_globals([DDSPConfig]):
+    state = torch.load(path, map_location="cpu", weights_only=True)
+```
+
+Use the context-manager form (`safe_globals`) so no global state leaks to
+other code paths.
+
+**Also fix:** `tests/test_synths_engines.py` — remove the two manual
+`torch.serialization.add_safe_globals([DDSPConfig])` calls from
+`test_engine_checkpoint_tag` and `test_engine_mismatch_raises` (they were
+the workaround; the fix belongs in the production code, not in tests).
+
+**Verify:** `pytest tests/test_synths_engines.py -k "checkpoint"` → both
+tests green. Also verify the tests pass WITHOUT the manual `add_safe_globals`
+call in test code.
+
+---
+
+### M9.11 — FIX BUG-8: sinusoidal path `noise_magnitudes=None` fallback
+
+**Bug:** BUG-8 — `DDSPCore.forward` sinusoidal path silently passes
+`amplitudes` (wrong shape and semantics) to `FilteredNoiseSynth` when
+`noise_magnitudes=None`.
+
+**File:** `model/ddsp/synths.py` → `DDSPCore.forward`, sinusoidal engine path
+
+Find the fallback expression (currently something like):
+```python
+magnitudes = noise_magnitudes if noise_magnitudes is not None else amplitudes
+```
+(or the equivalent inline form in the sinusoidal branch)
+
+Replace with a zero-tensor default of the correct shape:
+```python
+if noise_magnitudes is None:
+    # Provide silent noise (correct shape: B × T × n_noise_bins)
+    B, T, _ = amplitudes.shape
+    noise_magnitudes = torch.zeros(
+        B, T, self.noise_synth.n_noise_bins,
+        device=amplitudes.device, dtype=amplitudes.dtype,
+    )
+```
+
+This ensures: (a) no semantically wrong tensor is passed, (b) the default
+behaviour is silence on the noise branch, which is the correct fallback when
+a caller only provides harmonic parameters.
+
+**Note:** `FilteredNoiseSynth` must expose `self.n_noise_bins` (check whether
+it is already stored; if not, add it in `__init__`).
+
+**Verify:**
+```python
+core = DDSPCore(variant=DDSPVariant(engine="sinusoidal"))
+out_none  = core(amplitudes=amps, sinusoidal_freqs=freqs, noise_magnitudes=None, n_samples=N)
+out_zeros = core(amplitudes=amps, sinusoidal_freqs=freqs,
+                 noise_magnitudes=torch.zeros(B, T, n_noise_bins), n_samples=N)
+assert torch.allclose(out_none, out_zeros)   # semantically equivalent now
+```
+
+---
+
+### M9.12 — IMP-A: remove redundant `DDSPVariant` `TYPE_CHECKING` import
+
+**File:** `model/ddsp_model.py`
+
+Current (lines 12–15):
+```python
+from model.ddsp import DDSPCore, DDSPVariant
+
+if TYPE_CHECKING:
+    from model.ddsp import DDSPVariant
+```
+
+The `TYPE_CHECKING` block is dead code: `DDSPVariant` is already imported at
+runtime on line 12. Remove lines 13–15 (the `if TYPE_CHECKING` block and the
+duplicate import). Also remove the `TYPE_CHECKING` import from `typing` if it
+is no longer used.
+
+**Verify:** `ruff check model/ddsp_model.py` → 0 errors; `python -c "from
+model.ddsp_model import DDSPModel"` → no error.
+
+---
+
+### M9.13 — IMP-C: normalize `_pink_noise` / `_brown_noise` output
+
+**File:** `model/ddsp/noise_colored.py`
+
+Problem: `_brown_noise` produces un-normalized output with rms ~258 and max
+~668 (measured at n=16000). `_pink_noise` has rms ~4.4. Both are multiplied
+inside `FilteredNoiseSynth` by the sigmoid-activated `noise_magnitudes`, but
+the un-normalized scale still causes ill-conditioned gradients on the brown
+noise path and makes the two noise colors behave at completely different
+amplitude scales.
+
+**Fix:** Add RMS normalization at the end of both helpers so their output has
+rms ≈ 1.0 (matching `torch.randn` white noise statistics):
+
+```python
+def _pink_noise(n: int, device, dtype) -> torch.Tensor:
+    ...  # existing FFT-shaping code
+    signal = torch.fft.irfft(shaped, n=n)
+    # Normalize to unit rms
+    rms = signal.pow(2).mean().sqrt().clamp(min=1e-8)
+    return signal / rms
+
+
+def _brown_noise(n: int, device, dtype) -> torch.Tensor:
+    ...  # existing FFT-shaping code
+    signal = torch.fft.irfft(shaped, n=n)
+    # Normalize to unit rms
+    rms = signal.pow(2).mean().sqrt().clamp(min=1e-8)
+    return signal / rms
+```
+
+**Verify:**
+```python
+from model.ddsp.noise_colored import _pink_noise, _brown_noise
+pn = _pink_noise(16000, "cpu", torch.float32)
+bn = _brown_noise(16000, "cpu", torch.float32)
+assert 0.5 < pn.pow(2).mean().sqrt().item() < 2.0, "pink rms not near 1"
+assert 0.5 < bn.pow(2).mean().sqrt().item() < 2.0, "brown rms not near 1"
+assert torch.isfinite(pn).all()
+assert torch.isfinite(bn).all()
+```
+
+Also re-run `pytest tests/test_synths_engines.py -k noise` to ensure existing
+noise tests still pass.
+
+---
+
+### M9.14 — IMP-D: guard `DDSPCore` reverb init against unused engines
+
+**File:** `model/ddsp/synths.py` → `DDSPCore.__init__`
+
+Problem: `self.reverb` (a `Reverb` module with its own trainable IR parameter)
+is always created when `use_reverb=True`, even for `engine="combsub"` which
+never applies reverb. This wastes ~16k–100k parameters and is confusing.
+
+**Fix:** Only instantiate `self.reverb` when the engine will actually use it.
+Currently only `"harmonic"` and `"sinusoidal"` apply reverb:
+
+```python
+# engines that use the reverb module
+_REVERB_ENGINES = {"harmonic", "sinusoidal"}
+
+if use_reverb and self.variant.engine in _REVERB_ENGINES:
+    self.reverb = Reverb(...)
+else:
+    self.reverb = None
+```
+
+All `forward` paths that call `self.reverb` already check `if self.reverb is
+not None` (verify this), so the guard is transparent to forward pass logic.
+
+**Verify:**
+```python
+core_comb = DDSPCore(variant=DDSPVariant(engine="combsub"), use_reverb=True)
+assert core_comb.reverb is None, "combsub should not allocate reverb"
+
+core_harm = DDSPCore(variant=DDSPVariant(engine="harmonic"), use_reverb=True)
+assert core_harm.reverb is not None, "harmonic must keep reverb"
+```
+
+Run `pytest tests/test_synths_engines.py` → all green.
 
 ---
 
@@ -414,12 +616,16 @@ Total: **9 subagent steps** + 3 primary checkpoints.
 
 _References only; full records in [`../bugs.md`](../bugs.md)._
 
-- (none)
+- **BUG-7** — `load_checkpoint` crashes (WeightsOnlyLoad, DDSPConfig not safe global) — open; fix: M9.10
+- **BUG-8** — Sinusoidal path passes `amplitudes` to `FilteredNoiseSynth` when `noise_magnitudes=None` — open; fix: M9.11
 
 ## History
 
 _Append-only, newest first._
 
+- **2026-09-01** — Post-M9 correctness review by ARCHITECT; BUG-7 + BUG-8 filed in bugs.md;
+  improvement steps M9.10–M9.14 added to this plan; execution order and BUGS section updated.
+  No code changed — planning only.
 - **2026-09-01** — M9.1–M9.9 implemented by BUILD agent.
   - M9.1: engine/noise_color/noise_grain_jitter fields on DDSPVariant
   - M9.2: SinusoidalSynth (model/ddsp/sinusoidal.py)

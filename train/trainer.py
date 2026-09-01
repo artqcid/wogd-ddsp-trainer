@@ -76,6 +76,7 @@ class Trainer:
         config: TrainingConfig,
         device: str | None = None,
         optimizer: nn.Module | None = None,
+        loss_fn: nn.Module | None = None,
     ) -> None:
         """Initialize the trainer.
 
@@ -99,7 +100,7 @@ class Trainer:
             optimizer = torch.optim.Adam(self.model.parameters(), lr=config.learning_rate)
         self.optimizer = optimizer
 
-        self.loss_fn = MultiScaleSpectralLoss()
+        self.loss_fn = loss_fn or MultiScaleSpectralLoss()
 
         # Mixed precision: auto-disable on CPU or when CUDA is missing.
         use_amp = bool(config.use_mixed_precision and self.device.type == "cuda")

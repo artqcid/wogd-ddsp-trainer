@@ -3,6 +3,67 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M9.10–M9.14 fixes + M8.1.3–M8.5.1 implementation (DEV)
+
+**User approval:** `"umsetzen. subagents rules beachten... agent rules beachten. llmwiki/rag first beachten"`
+
+**M9 fixes (all verified with pytest + ruff):**
+
+| Step | File | Change | Subagent task_ids |
+|------|------|--------|-------------------|
+| M9.10a | `model/ddsp_model.py` | BUG-7: wrap `torch.load` in `safe_globals([DDSPConfig])` context manager | ses_fa5097b97ffefcGliV7T5us9v8 |
+| M9.10b | `tests/test_synths_engines.py` | Remove manual `add_safe_globals` workaround calls | ses_fa507100cffepNe7Jvg7iL50QX |
+| M9.11 | `model/ddsp/synths.py` | BUG-8: sinusoidal path defaults `noise_magnitudes` to zeros instead of `amplitudes` | ses_fa50931f5ffefwVw98FjOnel06 |
+| M9.12 | `model/ddsp_model.py` | Remove dead `TYPE_CHECKING` import block + unused import | ses_fa506e884ffe9FY1Pxz9lUT5Ox |
+| M9.13 | `model/ddsp/noise_colored.py` | RMS-normalize `_pink_noise`/`_brown_noise` output to unit scale | ses_fa508fc1effes1vaZFufxKPnB0 |
+| M9.14 | `model/ddsp/synths.py` | Guard `DDSPCore` reverb init to only create for `harmonic`/`sinusoidal` | ses_fa506c54bffewEzc5qB6xrYrqd |
+
+**M8 implementation steps:**
+
+| Step | Files | Change | Subagent task_ids |
+|------|-------|--------|-------------------|
+| M8.1.3 | `model/ddsp_model.py` | Add `variant` field to `DDSPConfig` + config.variant fallback in `__init__` + `DDSPVariant` in safe_globals | ses_fa502de0cffeEnfm1qN0eafZYw |
+| M8.1.3 | `server/tasks.py` | Parse variant from model_config in `build_training()` | ses_fa502b9a1ffeTpm9B9fV617rUF |
+| M8.1.3 | `server/presets.py` | Add `"variant"` to `PARAM_KEYS` | ses_fa502aa86ffeGGES2ae3oh1KbB |
+| M8.2+3+6 | `model/ddsp/synths.py` | Inharmonic ratios, FM synthesis, waveform dispatch (`_apply_waveform`), trainable wavetable, phase distortion, angular cumsum | ses_fa50073bbffe61GsU3a3d2gsgm |
+| M8.4.1a | `model/losses.py` | `band_mask` + `sample_rate` params on `MultiScaleSpectralLoss` | ses_fa5005ff2ffejMCY6MZ06wNahL |
+| M8.4.1b | `train/trainer.py` + `server/tasks.py` | `loss_fn` parameter on `Trainer.__init__`; wire variant `loss_band_mask` to loss function in `build_training` | ses_fa4fdb22dffeqft8oaV3bS2XpQ |
+| M8.5.1 | `tests/test_synths_variant.py` | 15 smoke tests covering all M8 hacks | ses_fa4f99efffferp3WSjHiDIFZFU |
+
+**Results:** 213 pytest passed (1 skipped, GPU), ruff clean, wiki lint clean.
+BUG-7 and BUG-8 marked fixed; M9.10–M9.14 all closed.
+
+**Verified fixed (code confirmed):** BUG-5 (AutoVC schema drift) and BUG-6
+(wrong VRAM labels) were already fixed in code (M5.8.1–M5.8.4 all `[x]` in
+`m5-webui.md`) but remained marked `open` in `bugs.md` — corrected to `fixed`.
+
+**Verified open (code confirmed):** BUG-7 (`load_checkpoint` safe-globals crash)
+and BUG-8 (sinusoidal `None` noise_magnitudes fallback) reproduced at runtime —
+correctly remain `open`; fixes tracked in M9.10 + M9.11.
+
+**Result:** bugs.md is now accurate: 1 wont-fix, 5 fixed, 2 open.
+
+## 2026-09-01 — M9 post-release correctness review + planning (ARCHITECT)
+
+**Review:** Ran runtime probes against M8.1/M9 code. Found 2 bugs + 3 code-quality
+improvements. All documented as plans; no code changed yet.
+
+**Creation:** BUG-7 in `bugs.md` — `DDSPModel.load_checkpoint` crashes on PyTorch 2.6+
+(`DDSPConfig` not registered as safe global); `next_id` → 9.
+
+**Creation:** BUG-8 in `bugs.md` — `DDSPCore.forward` sinusoidal path silently passes
+`amplitudes` (wrong shape/semantics) to `FilteredNoiseSynth` when `noise_magnitudes=None`.
+
+**Update:** `implementation/m9-alternative-synth-engines.md` — new steps M9.10–M9.14
+(fix BUG-7, fix BUG-8, remove redundant import, normalize noise helpers, guard reverb init);
+execution order extended; BUGS section updated; History updated.
+
+**Update:** `implementation/m8-experimental-sdk-hacking.md` — BUGS section updated with
+cross-references to BUG-7 + BUG-8; History updated.
+
+**Update:** `checklist.md` — new open items M9.10–M9.14 under "M9 post-release
+correctness fixes" subsection.
+
 ## 2026-09-01 — M8.1 + M9 implemented (BUILD)
 
 **Creation:** `model/ddsp/variant.py` — `DDSPVariant` dataclass with all M8/M9 fields.

@@ -18,6 +18,8 @@ class MultiScaleSpectralLoss(nn.Module):
         self,
         fft_sizes: list[int] | None = None,
         n_fft: int | None = None,  # kept for backward compat; fft_sizes takes precedence
+        band_mask: list[tuple[float, float]] | None = None,
+        sample_rate: int = 16000,
     ) -> None:
         super().__init__()
         if fft_sizes is not None:
@@ -26,6 +28,8 @@ class MultiScaleSpectralLoss(nn.Module):
             self.fft_sizes = [n_fft]
         else:
             self.fft_sizes = [512, 1024, 2048]
+        self.band_mask = band_mask
+        self.sample_rate = sample_rate
 
     def forward(
         self,
@@ -79,6 +83,17 @@ class MultiScaleSpectralLoss(nn.Module):
             # Magnitude
             pred_mag = torch.abs(pred_spec)
             tgt_mag = torch.abs(tgt_spec)
+
+            # Apply band mask if configured
+            if self.band_mask:
+                freq_resolution = self.sample_rate / fft_size
+                mask = torch.ones(pred_mag.shape[-2], device=pred_mag.device, dtype=pred_mag.dtype)
+                for lo_hz, hi_hz in self.band_mask:
+                    lo_bin = int(lo_hz / freq_resolution)
+                    hi_bin = int(hi_hz / freq_resolution) + 1
+                    mask[lo_bin:hi_bin] = 0.0
+                pred_mag = pred_mag * mask.unsqueeze(-1)
+                tgt_mag = tgt_mag * mask.unsqueeze(-1)
 
             # Magnitude L1
             mag_loss = F.l1_loss(pred_mag, tgt_mag)

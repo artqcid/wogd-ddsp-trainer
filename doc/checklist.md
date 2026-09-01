@@ -136,6 +136,27 @@ See [`log.md`](./log.md) for the chronological changelog._
 - [x] **M9.8** `tests/test_synths_engines.py` — 12 pytest.
 - [x] **M9.9** Docs: `experimental-sdk-hacking.md` engine section.
 
+### M9 post-release correctness fixes (required before M9 is closed)
+
+- [ ] **M9.10** FIX BUG-7: `DDSPModel.load_checkpoint` — add
+       `torch.serialization.safe_globals([DDSPConfig])` context manager;
+       remove manual `add_safe_globals` workaround from two tests in
+       `test_synths_engines.py`. (`model/ddsp_model.py`,
+       `tests/test_synths_engines.py`)
+- [ ] **M9.11** FIX BUG-8: `DDSPCore.forward` sinusoidal path — replace
+       `amplitudes`-as-fallback with a proper zero-tensor of shape
+       `(B, T, n_noise_bins)` when `noise_magnitudes=None`.
+       (`model/ddsp/synths.py`)
+- [ ] **M9.12** IMP-A: remove redundant `DDSPVariant` `TYPE_CHECKING` import
+       in `model/ddsp_model.py` (imported twice: runtime + TYPE_CHECKING).
+- [ ] **M9.13** IMP-C: normalize `_pink_noise` / `_brown_noise` output to
+       unit RMS (add `signal / rms.clamp(min=1e-8)` at end of each helper).
+       (`model/ddsp/noise_colored.py`)
+- [ ] **M9.14** IMP-D: guard `DDSPCore` reverb instantiation — only create
+       `self.reverb` for engines that actually use it (`"harmonic"`,
+       `"sinusoidal"`); `"combsub"` gets `self.reverb = None`.
+       (`model/ddsp/synths.py`)
+
 ## Milestone M10 - Neural Waveshaping Unit (NEWT)
 
 - [ ] **M10.1** `SawtoothExciter` — deterministic, no parameters

@@ -24,7 +24,8 @@ from torch.utils.data import DataLoader
 
 from dataset.cache import FeatureCache
 from inference.render import load_model_from_checkpoint, render_to_file
-from model import DDSPConfig, DDSPModel
+from model import DDSPConfig, DDSPModel, MultiScaleSpectralLoss
+from model.ddsp.variant import DDSPVariant
 from server.db import (
     connect,
     run_get,
@@ -91,7 +92,9 @@ def fft_sizes_for_scales(n: int) -> list[int]:
     return [512, 1024, 2048]
 
 
-def build_training(model_config: dict, checkpoint_dir: Path) -> tuple[TrainingConfig, DDSPConfig]:
+def build_training(
+    model_config: dict, checkpoint_dir: Path
+) -> tuple[TrainingConfig, DDSPConfig, MultiScaleSpectralLoss | None]:
     hidden_size = model_config["hidden_size"]
     stft_scales = model_config["stft_scales"]
     mixed_precision = model_config["mixed_precision"]
@@ -100,7 +103,23 @@ def build_training(model_config: dict, checkpoint_dir: Path) -> tuple[TrainingCo
     max_steps = int(model_config.get("max_steps", 1000))
     device = model_config.get("device", "auto")
 
-    dcfg = DDSPConfig(hidden_size=hidden_size, stft_scales=fft_sizes_for_scales(stft_scales))
+    variant_dict = model_config.get("variant", {}) or {}
+    variant = DDSPVariant.from_dict(variant_dict)
+    dcfg = DDSPConfig(
+        hidden_size=hidden_size,
+        stft_scales=fft_sizes_for_scales(stft_scales),
+        variant=variant,
+    )
+
+    band_mask = None
+    if variant.loss_band_mask:
+        band_mask = [tuple(pair) for pair in variant.loss_band_mask]
+    loss_fn = MultiScaleSpectralLoss(
+        fft_sizes=fft_sizes_for_scales(stft_scales),
+        band_mask=band_mask,
+        sample_rate=16000,
+    ) if band_mask else None
+
     use_mixed_precision = mixed_precision in {"required", "recommended"}
     use_gradient_checkpointing = gradient_checkpointing == "enabled"
 
@@ -115,7 +134,7 @@ def build_training(model_config: dict, checkpoint_dir: Path) -> tuple[TrainingCo
         checkpoint_interval=500,
         gradient_accumulation_steps=1,
     )
-    return tcfg, dcfg
+    return tcfg, dcfg, loss_fn
 
 
 def build_tensors(
@@ -193,12 +212,12 @@ def run_training_job(run_id: str) -> dict:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        tcfg, dcfg = build_training(run["config"], checkpoint_dir)
+        tcfg, dcfg, loss_fn = build_training(run["config"], checkpoint_dir)
         model = DDSPModel(dcfg)
 
         latest = latest_checkpoint(run_id)
         if latest is not None:
-            trainer_loader = Trainer(model, tcfg)  # temporary holder to access load_checkpoint
+            trainer_loader = Trainer(model, tcfg, loss_fn=None)  # temporary for load_checkpoint
             trainer_loader.load_checkpoint(str(latest))
             model.eval()
 
@@ -227,7 +246,7 @@ def run_training_job(run_id: str) -> dict:
         else:
             f0, loudness, target = build_tensors(model, None)
 
-        trainer = Trainer(model, tcfg)
+        trainer = Trainer(model, tcfg, loss_fn=loss_fn)
         trainer._checkpoint_dir = str(checkpoint_dir)
 
         stop_event = threading.Event()
