@@ -28,7 +28,6 @@ class SawtoothExciter(nn.Module):
 
 
 class NEWTUnit(nn.Module):
-
     def __init__(self, n_hidden: int = 32, n_layers: int = 4) -> None:
         super().__init__()
         layers = [nn.Linear(1, n_hidden)]

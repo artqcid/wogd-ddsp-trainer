@@ -21,6 +21,13 @@ The LLM-Wiki catalog links to every concept file, plan, checklist, and implement
 
 If the index points to a concept file, read or query it directly (architecture.md, plan.md, checklist.md, implementation plans, etc.).
 
+### Step 2.5: Live Docs via webfetch (if applicable)
+
+For external libraries / frameworks / APIs not covered by project docs:
+- **Known URL schema?** → direct fetch via `webfetch` (e.g. `vuejs.org/api/...`)
+- **Unknown URL?** → Web Search (via `github_search_code` or general search) → `webfetch` the found URL
+- **Fetch fails?** → fallback to model knowledge with explicit uncertainty
+
 ### Step 3: Code-Wiki via MCP
 
 Use `query_code_wiki("<symbol>")` via MCP for code-level symbol lookup (classes, functions, methods with file + line numbers).

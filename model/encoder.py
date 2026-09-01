@@ -5,7 +5,7 @@ from torch import Tensor
 
 class GRUEncoder(nn.Module):
     """Maps per-frame (f0, loudness) features to a Gaussian latent distribution.
-    
+
     Returns (mu, logvar) for the reparameterisation trick.
     """
 

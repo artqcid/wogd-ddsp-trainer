@@ -107,7 +107,9 @@ class HarmonicOscillatorSynth(nn.Module):
         if self.variant.fm_depth > 0.0:
             mod_freq = f0 * self.variant.fm_ratio  # (B, T_frames)
             mod_phase = (
-                2.0 * torch.pi * mod_freq
+                2.0
+                * torch.pi
+                * mod_freq
                 * torch.arange(T_frames, device=device, dtype=dtype).unsqueeze(0)
                 * (hop_length / sample_rate)
             )

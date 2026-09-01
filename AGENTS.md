@@ -99,7 +99,7 @@ mappings. Rules of thumb:
 
 **TOON hard gate (strict compliance, no exceptions):**
 - Before ANY delegation, the primary agent MUST load the `toon-delegation`
-  skill (`.opencode/skills/toon-delegation/SKILL.md`) and apply its
+  skill (Global `~/.config/opencode/skills/toon-delegation/SKILL.md`) and apply its
   pre-delegation checklist while writing the prompt.
 - A delegation prompt is **non-compliant** (must not be sent) if it contains
   structured / uniform / repeating payloads (file lists with attributes,
@@ -269,8 +269,9 @@ Full detail: load the **`post-task-sync`** skill.
 | Skill | Location | Load when |
 |-------|----------|-----------|
 | `knowledge-first` | `.opencode/skills/knowledge-first/SKILL.md` | Start of every task |
-| `toon-delegation` | `.opencode/skills/toon-delegation/SKILL.md` | Before writing any subagent delegation prompt |
-| `subagent-safety` | `.opencode/skills/subagent-safety/SKILL.md` | Before delegating to subagents (B/C/D rules) |
+| `toon-delegation` | Global (`~/.config/opencode/skills/toon-delegation/SKILL.md`) | Before writing any subagent delegation prompt |
+| `subagent-safety` | Global (`~/.config/opencode/skills/subagent-safety/SKILL.md`) | Before delegating to subagents (B/C/D rules) |
+| `mcp-think` | Global (`~/.config/opencode/skills/mcp-think/SKILL.md`) | Before any non-trivial reasoning, debugging, or design — use `@mcp-think` |
 | `definition-of-done` | `.opencode/skills/definition-of-done/SKILL.md` | Before marking a task complete |
 | `post-task-sync` | `.opencode/skills/post-task-sync/SKILL.md` | After every completed task (wiki sync) |
 
