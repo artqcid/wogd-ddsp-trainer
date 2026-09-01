@@ -1,5 +1,8 @@
 <template>
   <div class="tab-hacks" data-testid="tab-hacks">
+    <div v-if="store.synthesisMode === 'midi_synth' || store.synthesisMode === 'both'" class="midi-hint" data-testid="midi-hint-hacks">
+      <p>🎹 <strong>MIDI Synth:</strong> FM hack → FM synthesizer; Wavetable → wavetable synth; Phase Distortion → CZ-style synth; LFO → vibrato/tremolo.</p>
+    </div>
     <div class="form-group">
       <label class="form-label">Waveform</label>
       <select class="form-select" v-model="local.waveform" data-testid="waveform">
@@ -73,4 +76,14 @@ watch(local, (v) => { store.hacksVariant = { ...v } }, { deep: true })
   font-size: 0.875rem;
   cursor: pointer;
 }
+.midi-hint {
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--tier-hacks);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  margin-bottom: var(--space-3);
+}
+.midi-hint p { margin: 0; color: var(--text-secondary); }
+.midi-hint strong { color: var(--text-primary); }
 </style>

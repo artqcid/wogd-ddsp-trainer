@@ -4,12 +4,14 @@ A web UI training application for **DDSP-based speech synthesis** models. It
 exposes a browser UI to prepare datasets, configure and run DDSP training,
 monitor progress (TensorBoard), and synthesize/export vocal output.
 
-**Status:** **M1–M5 implemented** — scaffold, dataset prep, model + training
-loop, the web backend (FastAPI + Celery/Redis, run lifecycle, TensorBoard
-provisioning, preset management with GPU-constraint clamping), and the web UI
-(Vue 3 + Vite + Pinia: dataset/preprocessing, model architecture +
-presets, training dashboard, inference/export). All checks green
-(`ruff`, `pytest`, `vitest`). Milestones M6 (polish) – M8 planned. Roadmap:
+**Status:** **M1–M17 implemented** — scaffold, dataset prep, model + training
+loop, web backend (FastAPI + Celery/Redis), web UI (Vue 3 + Vite + Pinia),
+polish, experimental sound design (M7), synthesis hacks (M8), alternative
+engines (M9), NEWT (M10), latent space & morphing (M11), PolyDDSP (M12),
+voice conversion (M13), dual-mode training UI + tier system (M14),
+parameter manifest backend (M15), parameter builder UI (M16), and
+MIDI synth VST export (M17). All checks green
+(`ruff`, `pytest`, `vitest`). Roadmap:
 [`doc/plan.md`](doc/plan.md) · open tasks: [`doc/checklist.md`](doc/checklist.md).
 
 - **Stack:** Python + PyTorch + torchaudio (self-owned DDSP core) · FastAPI +
@@ -174,7 +176,12 @@ The intended workflow:
 3. **Train & monitor** — start/stop/resume runs; monitor loss, spectrograms and
    checkpoint audio in TensorBoard.
 4. **Inference & export** — timbre transfer (source -> trained timbre), A/B
-   comparison, export as Neutone / ONNX / TorchScript.
+   comparison, export as Neutone / ONNX / TorchScript / **MIDI Synth VST (.pt)**.
+
+   A **MIDI Synth** export wraps the trained model in a `MidiSynthWrapper`
+   that accepts MIDI note input instead of audio analysis — ideal for
+   hacks/engine/advanced tiers. Set the intended usage mode in the Wizard
+   (Step 3: Usage Mode).
 
 ---
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { MockApiClient } from '../mocks/mockApiClient.js'
 import { PARAM_MANIFEST_FIXTURES } from '../mocks/fixtures.js'
 import InferencePlaygroundView from '../views/InferencePlaygroundView.vue'
@@ -38,9 +39,12 @@ global.URL = {
   revokeObjectURL: vi.fn(),
 }
 
+const pinia = createPinia()
+
 const mountOptions = {
   global: {
     provide: { apiClient: new MockApiClient() },
+    plugins: [pinia],
   },
 }
 

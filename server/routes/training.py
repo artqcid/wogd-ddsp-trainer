@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from server.db import (
     connect,
@@ -34,6 +34,15 @@ class RunCreateRequest(BaseModel):
     preset_id: str | None = None
     params: dict | None = None
     model_tier: str = "standard"
+    synthesis_mode: str = "audio_fx"
+
+    @field_validator("synthesis_mode")
+    @classmethod
+    def validate_synthesis_mode(cls, v: str) -> str:
+        allowed = {"audio_fx", "midi_synth", "both"}
+        if v not in allowed:
+            raise ValueError(f"synthesis_mode must be one of {allowed}, got {v!r}")
+        return v
 
 
 class ValidateRequest(BaseModel):
@@ -92,6 +101,7 @@ def create_run(
     try:
         clamped, clamped_fields = _clamp_params(conn, req.preset_id, req.params)
         config = clamped
+        config["synthesis_mode"] = req.synthesis_mode
         run_id = str(uuid4())
         run_dir = runs_dir() / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -116,6 +126,7 @@ def create_run(
             "config": config,
             "clamped_fields": clamped_fields,
             "model_tier": req.model_tier,
+            "synthesis_mode": req.synthesis_mode,
         }
     finally:
         conn.close()

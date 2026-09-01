@@ -7,6 +7,7 @@ export const useModelConfigStore = defineStore('modelConfig', {
     gpuFeasibility: null,
     selectedPreset: null,
     targetMode: 'offline',
+    synthesisMode: 'audio_fx', // 'audio_fx' | 'midi_synth' | 'both'
     coreParams: {
       learning_rate: 0.001,
       batch_size: 1,
@@ -30,11 +31,15 @@ export const useModelConfigStore = defineStore('modelConfig', {
     wizardRequired: (state) => !state.wizardCompleted,
   },
   actions: {
-    setTierFromWizard(tier, preset, targetMode) {
+    setTierFromWizard(tier, preset, targetMode, synthesisMode = 'audio_fx') {
       this.activeTier = tier
       this.wizardCompleted = true
       this.selectedPreset = preset
       this.targetMode = targetMode
+      this.synthesisMode = synthesisMode
+    },
+    setSynthesisMode(mode) {
+      this.synthesisMode = mode
     },
     async checkFeasibility(apiClient) {
       const p = this.advancedParams
@@ -48,6 +53,7 @@ export const useModelConfigStore = defineStore('modelConfig', {
     resetToWizard() {
       this.activeTier = null
       this.wizardCompleted = false
+      this.synthesisMode = 'audio_fx'
     },
     buildFullConfig() {
       const config = {
@@ -70,6 +76,7 @@ export const useModelConfigStore = defineStore('modelConfig', {
       if (this.activeTier === 'advanced') {
         Object.assign(config, this.advancedParams)
       }
+      config.synthesis_mode = this.synthesisMode
       return config
     },
   },

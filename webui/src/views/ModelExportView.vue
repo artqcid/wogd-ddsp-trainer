@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { inject } from 'vue'
+import { useModelConfigStore } from '../stores/modelConfig.js'
 import ModelParameterBuilder from '../components/ModelParameterBuilder.vue'
 
 const apiClient = inject('apiClient')
+const store = useModelConfigStore()
 
 const models = ref([])
 const selectedModel = ref(null)
@@ -22,6 +24,10 @@ const exportStatus = ref(null)
 const statusPollId = ref(null)
 
 const statusFetched = ref(false)
+
+const isExportingMidi = ref(false)
+const midiExportJobId = ref(null)
+const midiExportStatus = ref(null)
 
 onMounted(async () => {
   if (!apiClient) return
@@ -111,6 +117,49 @@ const toggleFormat = (format) => {
     selectedFormats.value.push(format)
   }
 }
+
+const startMidiExport = async () => {
+  if (!selectedModel.value || !apiClient) return
+  isExportingMidi.value = true
+  midiExportJobId.value = null
+  midiExportStatus.value = null
+
+  try {
+    const checkpoint = selectedModel.value.checkpoints[0] || null
+    const response = await apiClient.exportModel({
+      run_id: selectedModel.value.run_id,
+      checkpoint,
+      export_type: 'midi_synth',
+      params: manifest.value ? JSON.stringify(manifest.value.params) : '{}'
+    })
+    midiExportJobId.value = response.job_id
+    pollMidiStatus()
+  } catch (e) {
+    midiExportStatus.value = { state: 'failed', error: String(e) }
+    isExportingMidi.value = false
+  }
+}
+
+const pollMidiStatus = () => {
+  if (statusPollId.value) clearInterval(statusPollId.value)
+  statusPollId.value = setInterval(async () => {
+    if (!apiClient || !midiExportJobId.value) return
+    try {
+      const status = await apiClient.exportStatus(midiExportJobId.value)
+      midiExportStatus.value = status
+      if (status.state === 'completed' || status.state === 'failed') {
+        clearInterval(statusPollId.value)
+        statusPollId.value = null
+        isExportingMidi.value = false
+      }
+    } catch (e) {
+      midiExportStatus.value = { state: 'failed', error: String(e) }
+      clearInterval(statusPollId.value)
+      statusPollId.value = null
+      isExportingMidi.value = false
+    }
+  }, 3000)
+}
 </script>
 
 <template>
@@ -145,6 +194,27 @@ const toggleFormat = (format) => {
 
     <div v-else-if="models.length === 0 && !isExporting" class="empty-state">
       <p>No models available.</p>
+    </div>
+
+    <div v-if="store.synthesisMode === 'midi_synth' || store.synthesisMode === 'both'" class="midi-synth-section" data-testid="midi-synth-section">
+      <h3>MIDI Synth Export</h3>
+      <p class="midi-desc">Export as a MIDI synthesizer VST. The model accepts MIDI note input instead of audio analysis.</p>
+      <button
+        class="export-btn export-btn--midi"
+        :disabled="!selectedModel || isExportingMidi"
+        @click="startMidiExport"
+        data-testid="midi-export-btn"
+      >
+        <span v-if="isExportingMidi">Exporting MIDI Synth...</span>
+        <span v-else>Export → MIDI Synth (.pt)</span>
+      </button>
+      <div v-if="midiExportStatus" class="export-status" :class="midiExportStatus.state" data-testid="midi-export-status">
+        <span v-if="midiExportStatus.state === 'pending'">Pending</span>
+        <span v-else-if="midiExportStatus.state === 'running'">Exporting...</span>
+        <span v-else-if="midiExportStatus.state === 'completed'">MIDI Synth export completed</span>
+        <span v-else-if="midiExportStatus.state === 'failed'">{{ midiExportStatus.error || 'Export failed' }}</span>
+        <span v-else>{{ midiExportStatus.state }}</span>
+      </div>
     </div>
 
     <div class="format-selector">
@@ -217,4 +287,6 @@ const toggleFormat = (format) => {
 .download-link:hover { background: var(--bg-tertiary); }
 .empty-state { color: var(--text-secondary); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.export-btn--midi { background: var(--tier-hacks); }
+.export-btn--midi:hover { filter: brightness(1.1); }
 </style>

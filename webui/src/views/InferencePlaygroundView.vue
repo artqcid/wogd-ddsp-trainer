@@ -19,8 +19,39 @@ const pollInterval = ref(null)
 
 const sourceAudioUrl = ref(null)
 
+const activeTab = ref('synthesize')
+
+const midiNote = ref(60)
+const midiVelocity = ref(100)
+const midiDuration = ref(1.0)
+const isMidiPreviewing = ref(false)
+const midiJobId = ref(null)
+const midiJobStatus = ref(null)
+const midiAudioUrl = ref(null)
+
+const octaveOffset = ref(4)
+
 const paramManifest = ref(null)
 const paramValues = ref({})
+
+const keyboardNotes = computed(() => {
+  const whiteKeys = [0, 2, 4, 5, 7, 9, 11]
+  const base = (octaveOffset.value + 1) * 12
+  return whiteKeys.map(semi => ({
+    note: base + semi,
+    label: ['C','D','E','F','G','A','B'][whiteKeys.indexOf(semi)],
+  }))
+})
+
+function midiNoteToName(note) {
+  const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+  const octave = Math.floor(note / 12) - 1
+  return names[note % 12] + octave
+}
+
+function selectMidiNote(note) {
+  midiNote.value = note
+}
 
 const paramGroups = computed(() => {
   if (!paramManifest.value) return []
@@ -150,6 +181,51 @@ function startPolling() {
   }, 3000)
 }
 
+async function handleMidiPreview() {
+  if (!apiClient || !selectedModelId.value) return
+  isMidiPreviewing.value = true
+  midiJobStatus.value = null
+  midiAudioUrl.value = null
+
+  try {
+    const result = await apiClient.synthesizeMidi({
+      run_id: selectedModelId.value,
+      note: midiNote.value,
+      velocity: midiVelocity.value,
+      duration_s: midiDuration.value,
+    })
+    midiJobId.value = result.job_id
+    midiJobStatus.value = result.status
+    startMidiPolling()
+  } catch (err) {
+    console.error('MIDI preview failed:', err)
+    midiJobStatus.value = 'failed'
+  } finally {
+    isMidiPreviewing.value = false
+  }
+}
+
+function startMidiPolling() {
+  if (pollInterval.value) clearInterval(pollInterval.value)
+  pollInterval.value = setInterval(async () => {
+    if (!apiClient || !midiJobId.value) return
+    try {
+      const status = await apiClient.getInferenceJob(midiJobId.value)
+      midiJobStatus.value = status.status
+      if (status.status === 'completed') {
+        clearInterval(pollInterval.value)
+        pollInterval.value = null
+        midiAudioUrl.value = status.artifact_url
+      } else if (status.status === 'failed') {
+        clearInterval(pollInterval.value)
+        pollInterval.value = null
+      }
+    } catch (err) {
+      console.error('MIDI polling error:', err)
+    }
+  }, 3000)
+}
+
 async function loadArtifacts() {
   if (!apiClient || !jobId.value) return
   try {
@@ -186,93 +262,136 @@ function formatValue(value, param) {
       <p class="view-description">Run timbre transfer and compare audio A/B.</p>
     </header>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="model-select">Model</label>
-        <select id="model-select" v-model="selectedModelId" data-testid="model-select">
-          <option value="">Select a model</option>
-          <option v-for="m in models" :key="m.run_id" :value="m.run_id">
-            {{ m.run_id }} — {{ m.checkpoints?.join(', ') || m.checkpoint }}
-          </option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label for="audio-input">Source Audio</label>
-        <input
-          id="audio-input"
-          type="file"
-          accept="audio/*"
-          @change="onFileChange"
-          data-testid="audio-input"
-        />
-        <span v-if="audioFileName" class="selected-filename">{{ audioFileName }}</span>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group checkbox-group">
-        <label>
-          <input type="checkbox" v-model="enhanceOutput" data-testid="enhance-toggle" />
-          Enable output enhancement
-        </label>
-        <span class="enhance-hint">Improve perceived quality via pre-trained vocoder</span>
-      </div>
-    </div>
-
-    <button
-      class="synthesize-btn"
-      @click="handleSynthesize"
-      :disabled="!selectedModelId || !audioFile || isSynthesizing"
-      data-testid="synthesize-btn"
-    >
-      {{ isSynthesizing ? 'Synthesizing...' : 'Synthesize' }}
-    </button>
-
-    <div v-if="jobId" class="job-status" :class="jobStatus" data-testid="job-status">
-      <span class="job-label">Job:</span>
-      <span class="job-id">{{ jobId }}</span>
-      <span class="job-status-badge">{{ jobStatus }}</span>
-    </div>
-
-    <ABComparisonPlayer
-      v-if="jobStatus === 'completed' && sourceAudioUrl && jobResult?.audio_url"
-      :original-url="sourceAudioUrl"
-      :synthesized-url="jobResult.audio_url"
-      data-testid="ab-player"
-    />
-
-    <div v-if="artifacts.length" class="artifacts-list">
-      <h3>Artifacts</h3>
-      <div v-for="artifact in artifacts" :key="artifact.name" class="artifact-item" data-testid="artifact-item">
-        <span>{{ artifact.name }}</span>
-        <a :href="artifact.url" :download="artifact.name" target="_blank">Download</a>
-      </div>
-    </div>
-
-    <div v-if="paramManifest" class="param-sliders-section" data-testid="param-sliders-section">
-      <h3>Parameters</h3>
+    <div class="tab-bar" data-testid="playground-tab-bar">
       <button
-        class="reset-btn"
-        @click="resetToDefaults"
-        data-testid="param-slider-reset"
+        class="tab-btn"
+        :class="{ 'tab-btn--active': activeTab === 'synthesize' }"
+        @click="activeTab = 'synthesize'"
+        data-testid="tab-synthesize"
+      >Synthesize</button>
+      <button
+        class="tab-btn"
+        :class="{ 'tab-btn--active': activeTab === 'midi-preview' }"
+        @click="activeTab = 'midi-preview'"
+        data-testid="tab-midi-preview"
+      >MIDI Preview</button>
+    </div>
+
+    <div v-if="activeTab === 'synthesize'">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="model-select">Model</label>
+          <select id="model-select" v-model="selectedModelId" data-testid="model-select">
+            <option value="">Select a model</option>
+            <option v-for="m in models" :key="m.run_id" :value="m.run_id">
+              {{ m.run_id }} — {{ m.checkpoints?.join(', ') || m.checkpoint }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="audio-input">Source Audio</label>
+          <input
+            id="audio-input"
+            type="file"
+            accept="audio/*"
+            @change="onFileChange"
+            data-testid="audio-input"
+          />
+          <span v-if="audioFileName" class="selected-filename">{{ audioFileName }}</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" v-model="enhanceOutput" data-testid="enhance-toggle" />
+            Enable output enhancement
+          </label>
+          <span class="enhance-hint">Improve perceived quality via pre-trained vocoder</span>
+        </div>
+      </div>
+
+      <button
+        class="synthesize-btn"
+        @click="handleSynthesize"
+        :disabled="!selectedModelId || !audioFile || isSynthesizing"
+        data-testid="synthesize-btn"
       >
-        Reset to defaults
+        {{ isSynthesizing ? 'Synthesizing...' : 'Synthesize' }}
       </button>
 
-      <div
-        v-for="group in paramGroups"
-        :key="group.name"
-        class="param-slider-group"
-        :data-testid="`param-slider-group-${group.name}`"
-      >
-        <details v-if="group.params.length > 8">
-          <summary>
-            <h5>{{ group.name || 'Other' }} ({{ group.params.length }})</h5>
-          </summary>
-          <div class="param-sliders">
+      <div v-if="jobId" class="job-status" :class="jobStatus" data-testid="job-status">
+        <span class="job-label">Job:</span>
+        <span class="job-id">{{ jobId }}</span>
+        <span class="job-status-badge">{{ jobStatus }}</span>
+      </div>
+
+      <ABComparisonPlayer
+        v-if="jobStatus === 'completed' && sourceAudioUrl && jobResult?.audio_url"
+        :original-url="sourceAudioUrl"
+        :synthesized-url="jobResult.audio_url"
+        data-testid="ab-player"
+      />
+
+      <div v-if="artifacts.length" class="artifacts-list">
+        <h3>Artifacts</h3>
+        <div v-for="artifact in artifacts" :key="artifact.name" class="artifact-item" data-testid="artifact-item">
+          <span>{{ artifact.name }}</span>
+          <a :href="artifact.url" :download="artifact.name" target="_blank">Download</a>
+        </div>
+      </div>
+
+      <div v-if="paramManifest" class="param-sliders-section" data-testid="param-sliders-section">
+        <h3>Parameters</h3>
+        <button
+          class="reset-btn"
+          @click="resetToDefaults"
+          data-testid="param-slider-reset"
+        >
+          Reset to defaults
+        </button>
+
+        <div
+          v-for="group in paramGroups"
+          :key="group.name"
+          class="param-slider-group"
+          :data-testid="`param-slider-group-${group.name}`"
+        >
+          <details v-if="group.params.length > 8">
+            <summary>
+              <h5>{{ group.name || 'Other' }} ({{ group.params.length }})</h5>
+            </summary>
+            <div class="param-sliders">
+              <div
+                v-for="param in group.params"
+                :key="param.slot"
+                class="param-slider-item"
+              >
+                <label :for="'param-' + param.slot">
+                  {{ param.name }}
+                  <span v-if="param.unit_hint" class="param-unit">({{ param.unit_hint }})</span>
+                </label>
+                <input
+                  :id="'param-' + param.slot"
+                  type="range"
+                  :min="param.min_value"
+                  :max="param.max_value"
+                  :step="param.param_type === 'continuous' ? 0.01 : 1"
+                  :value="paramValues[param.slot]"
+                  @input="onSliderInput(param.slot, $event)"
+                  :data-testid="`param-slider-${param.slot}`"
+                  class="param-slider"
+                />
+                <span class="param-value" :data-testid="`param-slider-value-${param.slot}`">
+                  {{ formatValue(paramValues[param.slot], param) }}
+                </span>
+              </div>
+            </div>
+          </details>
+          <div v-else class="param-sliders">
             <div
               v-for="param in group.params"
               :key="param.slot"
@@ -298,33 +417,70 @@ function formatValue(value, param) {
               </span>
             </div>
           </div>
-        </details>
-        <div v-else class="param-sliders">
-          <div
-            v-for="param in group.params"
-            :key="param.slot"
-            class="param-slider-item"
-          >
-            <label :for="'param-' + param.slot">
-              {{ param.name }}
-              <span v-if="param.unit_hint" class="param-unit">({{ param.unit_hint }})</span>
-            </label>
-            <input
-              :id="'param-' + param.slot"
-              type="range"
-              :min="param.min_value"
-              :max="param.max_value"
-              :step="param.param_type === 'continuous' ? 0.01 : 1"
-              :value="paramValues[param.slot]"
-              @input="onSliderInput(param.slot, $event)"
-              :data-testid="`param-slider-${param.slot}`"
-              class="param-slider"
-            />
-            <span class="param-value" :data-testid="`param-slider-value-${param.slot}`">
-              {{ formatValue(paramValues[param.slot], param) }}
-            </span>
-          </div>
         </div>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'midi-preview'" class="midi-preview-section" data-testid="midi-preview-section">
+      <h3>MIDI Preview</h3>
+      <p class="view-description">Click a key to preview the model's MIDI synth output.</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Octave</label>
+          <select v-model.number="octaveOffset" data-testid="midi-octave">
+            <option :value="2">2</option>
+            <option :value="3">3</option>
+            <option :value="4">4</option>
+            <option :value="5">5</option>
+            <option :value="6">6</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Velocity</label>
+          <input type="range" min="0" max="127" v-model.number="midiVelocity" data-testid="midi-velocity" />
+          <span class="param-value">{{ midiVelocity }}</span>
+        </div>
+        <div class="form-group">
+          <label>Duration (s)</label>
+          <input type="range" min="0.25" max="4" step="0.25" v-model.number="midiDuration" data-testid="midi-duration" />
+          <span class="param-value">{{ midiDuration.toFixed(2) }}s</span>
+        </div>
+      </div>
+
+      <div class="virtual-keyboard" data-testid="virtual-keyboard">
+        <button
+          v-for="key in keyboardNotes"
+          :key="key.note"
+          class="key-btn"
+          :class="{ 'key-btn--active': midiNote === key.note }"
+          @click="selectMidiNote(key.note)"
+          :data-testid="`key-${key.note}`"
+        >
+          {{ key.label }}<span class="key-num">{{ key.note }}</span>
+        </button>
+      </div>
+
+      <p class="selected-note">Selected: <strong>{{ midiNote }}</strong> ({{ String(midiNoteToName(midiNote)) }})</p>
+
+      <button
+        class="synthesize-btn"
+        @click="handleMidiPreview"
+        :disabled="!selectedModelId || isMidiPreviewing"
+        data-testid="midi-preview-btn"
+      >
+        {{ isMidiPreviewing ? 'Rendering...' : 'Play Preview' }}
+      </button>
+
+      <div v-if="midiJobStatus" class="job-status" :class="midiJobStatus" data-testid="midi-job-status">
+        <span class="job-label">Job:</span>
+        <span class="job-id">{{ midiJobId }}</span>
+        <span class="job-status-badge">{{ midiJobStatus }}</span>
+      </div>
+
+      <div v-if="midiAudioUrl" class="midi-result" data-testid="midi-result">
+        <audio :src="midiAudioUrl" controls data-testid="midi-audio-player" />
+        <a :href="midiAudioUrl" download class="download-link">Download WAV</a>
       </div>
     </div>
   </section>
@@ -454,4 +610,19 @@ function formatValue(value, param) {
   color: var(--text-secondary);
   text-align: right;
 }
+
+.tab-bar { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+.tab-bar .tab-btn { padding: 0.5rem 1rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.85rem; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab-bar .tab-btn--active { color: var(--accent); border-bottom-color: var(--accent); }
+.midi-preview-section { max-width: 600px; }
+.virtual-keyboard { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; }
+.key-btn { width: 48px; height: 48px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); cursor: pointer; font-size: 0.8rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.key-btn:hover { background: var(--bg-tertiary); }
+.key-btn--active { background: var(--accent); color: #000; border-color: var(--accent); }
+.key-num { font-size: 0.6rem; opacity: 0.7; }
+.selected-note { font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); }
+.midi-result { margin-top: 1rem; }
+.midi-result audio { width: 100%; margin-bottom: 0.5rem; }
+.download-link { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+.download-link:hover { text-decoration: underline; }
 </style>

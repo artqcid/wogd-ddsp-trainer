@@ -56,6 +56,7 @@ class ParamManifest:
     format: str = "wogd-vst-params"
     version: str = "1.0"
     params: list[InferenceParam] = field(default_factory=list)
+    context: str = "audio_fx"
 
     def __post_init__(self) -> None:
         errors = validate_manifest(self)
@@ -117,6 +118,7 @@ VALID_PARAM_TYPES = frozenset({"continuous", "categorical"})
 VALID_MAPPINGS = frozenset({"linear", "log", "exp"})
 VALID_NEUTONE_SLOTS = frozenset({1, 2, 3, 4})
 MAX_PARAMS = 16
+ALLOWED_CONTEXTS = frozenset({"audio_fx", "midi_synth"})
 
 
 def validate_manifest(m: ParamManifest) -> list[str]:
@@ -163,6 +165,9 @@ def validate_manifest(m: ParamManifest) -> list[str]:
         for slot, names in seen_neutone.items():
             if len(names) > 1:
                 errors.append(f"Duplicate neutone_slot {slot} on: {', '.join(names)}")
+
+    if m.context not in ALLOWED_CONTEXTS:
+        errors.append(f"Invalid context {m.context!r}")
 
     return errors
 
@@ -1212,6 +1217,7 @@ _TIER_FACTORIES: dict[str, Any] = {
 def build_default_manifest(
     model_tier: str,
     variant_flags: dict[str, Any] | None = None,
+    context: str = "audio_fx",
 ) -> ParamManifest:
     """Build the default ParamManifest for *model_tier*.
 
@@ -1222,6 +1228,12 @@ def build_default_manifest(
     tiers (see the private builders for available keys).
     """
     tier = (model_tier or "").strip().lower()
+
+    # MIDI synth context takes priority: prepend 5 universal MIDI params to
+    # the tier-specific manifest. The recursive call uses context="audio_fx"
+    # so it hits the tier dispatch below.
+    if context == "midi_synth":
+        return _midi_synth_manifest(model_tier, variant_flags)
 
     if tier == "standard":
         return _standard_manifest()
@@ -1254,3 +1266,101 @@ def build_default_manifest(
 
     # Unknown tier -> fallback.
     return _standard_manifest()
+
+
+def _midi_synth_params(start_slot: int = 1) -> list[InferenceParam]:
+    """Return the 5 universal MIDI synth parameters starting at *start_slot*."""
+    return [
+        InferenceParam(
+            start_slot,
+            "Pitch Shift",
+            "Pitch transposition in semitones",
+            "continuous",
+            -24.0,
+            24.0,
+            0.0,
+            unit_hint="semitones",
+            group="MIDI",
+        ),
+        InferenceParam(
+            start_slot + 1,
+            "Velocity Sensitivity",
+            "How strongly MIDI velocity affects loudness",
+            "continuous",
+            0.0,
+            1.0,
+            0.7,
+            group="MIDI",
+        ),
+        InferenceParam(
+            start_slot + 2,
+            "Attack",
+            "Envelope attack in ms",
+            "continuous",
+            1.0,
+            500.0,
+            10.0,
+            unit_hint="ms",
+            group="MIDI",
+        ),
+        InferenceParam(
+            start_slot + 3,
+            "Release",
+            "Envelope release in ms",
+            "continuous",
+            10.0,
+            2000.0,
+            150.0,
+            unit_hint="ms",
+            group="MIDI",
+        ),
+        InferenceParam(
+            start_slot + 4,
+            "Pitch Bend Range",
+            "Pitch bend wheel range in semitones",
+            "continuous",
+            1.0,
+            24.0,
+            2.0,
+            unit_hint="semitones",
+            group="MIDI",
+        ),
+    ]
+
+
+def _midi_synth_manifest(
+    model_tier: str,
+    variant_flags: dict[str, Any] | None = None,
+) -> ParamManifest:
+    """Build a MIDI synth ParamManifest: 5 universal MIDI params (slots 1-5)
+    prepended to the tier-specific params (slots 6+).
+
+    Context is ``"midi_synth"``; the MIDI params are Custom-VST-only (no
+    neutone_slot).
+    """
+    flags = variant_flags or {}
+    base = build_default_manifest(model_tier, flags, context="audio_fx")
+    shifted: list[InferenceParam] = []
+    for p in base.params:
+        shifted.append(
+            InferenceParam(
+                slot=p.slot + 5,
+                name=p.name,
+                description=p.description,
+                param_type=p.param_type,
+                min_value=p.min_value,
+                max_value=p.max_value,
+                default_value=p.default_value,
+                mapping=p.mapping,
+                unit_hint=p.unit_hint,
+                group=p.group,
+                neutone_slot=None,
+            )
+        )
+    midi_params = _midi_synth_params(1)
+    return ParamManifest(
+        format="wogd-vst-params",
+        version="1.0",
+        params=midi_params + shifted,
+        context="midi_synth",
+    )

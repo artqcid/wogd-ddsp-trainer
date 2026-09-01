@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <!-- Step 3: Target Mode -->
+      <!-- Step 3: Target Mode + Usage Mode -->
       <div v-if="step === 3" class="wizard-step" data-testid="wizard-step-3">
         <h3>Select Target Mode</h3>
         <p class="wizard-hint">Choose how you intend to use the trained model.</p>
@@ -73,6 +73,35 @@
             </div>
           </label>
         </div>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Usage Mode</h4>
+        <p class="wizard-hint">How will you use the trained model after export?</p>
+        <div class="mode-options">
+          <label class="mode-option" :class="{ 'mode-option--selected': selectedSynthesisMode === 'audio_fx' }">
+            <input type="radio" v-model="selectedSynthesisMode" value="audio_fx" data-testid="synthesis-mode-audio-fx" />
+            <div>
+              <strong>Audio FX VST</strong>
+              <p>Process incoming audio; Neutone FX or Custom VST. <em>Suitable for all tiers.</em></p>
+            </div>
+          </label>
+          <label class="mode-option" :class="{ 'mode-option--selected': selectedSynthesisMode === 'midi_synth' }">
+            <input type="radio" v-model="selectedSynthesisMode" value="midi_synth" data-testid="synthesis-mode-midi-synth" />
+            <div>
+              <strong>MIDI Synth VST</strong>
+              <p>Play the model via MIDI notes; Custom VST. <span v-if="isMidiHighlighted" class="badge badge--recommended">Recommended for this tier</span></p>
+            </div>
+          </label>
+          <label class="mode-option" :class="{ 'mode-option--selected': selectedSynthesisMode === 'both' }">
+            <input type="radio" v-model="selectedSynthesisMode" value="both" data-testid="synthesis-mode-both" />
+            <div>
+              <strong>Both</strong>
+              <p>Export both Audio FX and MIDI Synth wrappers from the same checkpoint.</p>
+            </div>
+          </label>
+        </div>
+        <p v-if="selectedTier === 'advanced' && store.advancedParams.use_content_encoder" class="hint-note" data-testid="vc-hybrid-note">
+          Hybrid mode: MIDI drives pitch, a reference audio file sets the source timbre.
+        </p>
         <div class="wizard-actions">
           <button class="btn btn--ghost" @click="step = 2">Back</button>
           <button class="btn btn--primary" @click="completeWizard" data-testid="wizard-start">Start Training Setup ✓</button>
@@ -96,6 +125,7 @@ const step = ref(1)
 const selectedTier = ref(null)
 const selectedQuality = ref(null)
 const selectedMode = ref('offline')
+const selectedSynthesisMode = ref('audio_fx')
 
 const qualityOptions = [
   { key: 'FAST', label: 'FAST', desc: '0.25x size, max speed', vramFactor: 0.25 },
@@ -119,6 +149,14 @@ const currentTierEstimate = computed(() => {
   return tierFeasibility.value[selectedTier.value]?.estimated_gb ?? 2.2
 })
 
+const isMidiHighlighted = computed(() => {
+  return selectedTier.value && ['hacks', 'engine', 'advanced'].includes(selectedTier.value)
+})
+
+function selectTier(tier) {
+  selectedTier.value = tier
+}
+
 function getTierDesc(tier) {
   const descs = {
     standard: 'Core DDSP: harmonic + filtered noise + reverb. Best for clean speech.',
@@ -130,17 +168,13 @@ function getTierDesc(tier) {
   return descs[tier] ?? ''
 }
 
-function selectTier(tier) {
-  selectedTier.value = tier
-}
-
 function skipWizard() {
   store.setTierFromWizard('standard', null, 'offline')
   show.value = false
 }
 
 function completeWizard() {
-  store.setTierFromWizard(selectedTier.value, selectedQuality.value, selectedMode.value)
+  store.setTierFromWizard(selectedTier.value, selectedQuality.value, selectedMode.value, selectedSynthesisMode.value)
   show.value = false
 }
 
@@ -249,5 +283,26 @@ onMounted(async () => {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
+}
+.badge--recommended {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #000;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+.hint-note {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 </style>

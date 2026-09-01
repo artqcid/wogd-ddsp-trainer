@@ -464,7 +464,20 @@ for the full analysis):
 A `param_manifest` dict is stored under `state["param_manifest"]` in every checkpoint.
 It is written by the trainer with tier-specific defaults and can be updated via the
 export UI without touching model weights. Schema: `InferenceParam` dataclass (slot,
-name, description, type, min/max/default, mapping, unit_hint, group, neutone_slot).
+name, description, type, min/max/default, mapping, unit_hint, group, neutone_slot)
++ `ParamManifest` container with `to_dict()`/`from_dict()`, tier-default builders,
+checkpoint embedding, and a `context` field (`"audio_fx"` or `"midi_synth"`).
+
+#### MIDI Synth Export Path (M17)
+
+A separate **MIDI Synth VST export** path (`MidiSynthWrapper`) replaces the
+realtime F0/loudness extractor with a MIDI-note-to-frame generator. Training
+is unchanged — the same checkpoint works for both Audio FX and MIDI Synth
+modes. The MIDI synth manifest prepends 5 universal MIDI parameters (Pitch
+Shift, Velocity Sensitivity, Attack, Release, Pitch Bend Range) to the
+tier-specific params. UI: Usage Mode selector in the Wizard (Step 3) and
+a MIDI Preview virtual keyboard in the Playground.
+
 
 ```python
 # server/routes/models.py — future endpoint

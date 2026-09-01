@@ -9,7 +9,10 @@ import logging
 
 import torch
 
+from inference.midi_synth_wrapper import MidiSynthWrapper
 from model import DDSPModel
+from model.ddsp import DDSPVariant
+from model.ddsp_model import DDSPConfig
 from model.param_manifest import ParamManifest, build_default_manifest
 
 
@@ -274,3 +277,68 @@ def export_neutone(
         f"{len(manifest.neutone_params)} neutone params is ready for when "
         "the SDK is available."
     )
+
+
+def export_midi_synth(
+    model: DDSPModel,
+    out_path: str,
+    manifest: ParamManifest | None = None,
+) -> str:
+    """Export a trained DDSPModel/PolyDDSPModel as a MIDI synthesizer TorchScript module.
+
+    Wraps the model in ``MidiSynthWrapper``, embeds the param_manifest (with
+    ``context="midi_synth"``) and metadata marker ``synth_mode: "midi_synth"``,
+    then traces via ``torch.jit.trace``.
+
+    Args:
+        model: a trained ``DDSPModel`` or ``PolyDDSPModel`` instance.
+        out_path: path to save the exported ``.pt`` file.
+        manifest: optional ``ParamManifest`` (MIDI context). If ``None``, builds
+            the default MIDI synth manifest from the model's tier / engine info.
+
+    Returns:
+        ``out_path`` on success.
+    """
+    _prepare_for_export(model)
+
+    # ---- build manifest (if not supplied) ----
+    if manifest is None:
+        model_tier = "standard"
+        variant_flags: dict[str, object] = {}
+
+        config: DDSPConfig = model.config
+        variant: DDSPVariant = model.variant
+
+        # Derive a sensible model_tier from config/variant.
+        # engine-tier overrides standard when an explicit engine is present.
+        if variant.engine != "harmonic":
+            model_tier = "engine"
+            variant_flags = {"engine": variant.engine}
+        elif config.use_latent or config.use_content_encoder or config.n_voices > 1:
+            model_tier = "advanced"
+            variant_flags = {
+                "use_latent": config.use_latent,
+                "latent_dim": config.latent_dim,
+                "n_voices": config.n_voices,
+                "use_content_encoder": config.use_content_encoder,
+            }
+
+        manifest = build_default_manifest(model_tier, variant_flags, context="midi_synth")
+
+    # ---- wrap with MidiSynthWrapper ----
+    wrapper = MidiSynthWrapper(model)
+
+    # ---- build dummy inputs for tracing ----
+    # Poly path uses (N_voices, T_frames) f0; mono path uses (T_frames,).
+    if hasattr(model, "n_voices") and getattr(model, "n_voices", 1) > 1:
+        f0 = torch.randn(model.n_voices, 10)  # (N_voices, T_frames)
+        loudness = torch.randn(10)  # (T_frames,)
+    else:
+        f0 = torch.randn(10)  # (T_frames,)
+        loudness = torch.randn(10)  # (T_frames,)
+
+    # ---- trace + save ----
+    with torch.no_grad():
+        scripted = torch.jit.trace(wrapper, (f0, loudness), check_trace=False)
+    torch.jit.save(scripted, out_path)
+    return out_path

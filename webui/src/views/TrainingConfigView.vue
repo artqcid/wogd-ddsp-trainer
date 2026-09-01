@@ -97,7 +97,20 @@ onMounted(async () => {
     <template v-if="store.wizardCompleted">
       <GpuFeasibilityBanner :availableGb="store.gpuFeasibility?.available_gb ?? 0" />
 
-      <div class="tab-bar" data-testid="tab-bar">
+      <div
+          v-if="store.synthesisMode === 'midi_synth' || store.synthesisMode === 'both'"
+          class="midi-hint-banner"
+          data-testid="midi-hint-banner"
+        >
+          <span class="midi-hint-icon">🎹</span>
+          <div class="midi-hint-content">
+            <strong>MIDI Synth Training Tip</strong>
+            <p>For best MIDI synth results, quantize the training audio F0 to semitones in the preprocessing step
+            (<a href="/preprocessing" class="hint-link">Dataset → Preprocessing → Pitch Curve Editor</a>).</p>
+          </div>
+        </div>
+
+        <div class="tab-bar" data-testid="tab-bar">
         <button
           v-for="tab in tabs"
           :key="tab.key"
@@ -148,4 +161,21 @@ onMounted(async () => {
 .validation-result { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; }
 .validation-result.ok { background: var(--success); color: #000; }
 .validation-result.err { background: var(--error); color: #fff; }
+
+.midi-hint-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--tier-hacks);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+}
+.midi-hint-icon { font-size: 1.2rem; line-height: 1; }
+.midi-hint-content strong { display: block; margin-bottom: var(--space-1); }
+.midi-hint-content p { color: var(--text-secondary); margin: 0; }
+.hint-link { color: var(--accent); text-decoration: none; }
+.hint-link:hover { text-decoration: underline; }
 </style>

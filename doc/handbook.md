@@ -23,7 +23,8 @@ konfigurieren) – keine Installation und keine Entwicklungsdetails._
    - 4.4 [Hacks-Parameter](#44-hacks-parameter)
    - 4.5 [Engine-Parameter](#45-engine-parameter)
    - 4.6 [Advanced-Parameter](#46-advanced-parameter)
-   - 4.7 [Inferenz-Parameter (VST-Knöpfe & Playground)](#47-inferenz-parameter-vst-knöpfe--playground)
+    - 4.7 [Inferenz-Parameter (VST-Knöpfe & Playground)](#47-inferenz-parameter-vst-knöpfe--playground)
+    - 4.8 [MIDI-Synth-Parameter](#48-midi-synth-parameter)
 
 ---
 
@@ -516,6 +517,32 @@ darüber helfen Gruppierung oder VST-interne Presets. Nutze für
 VAE-/Poly-Modelle den **Custom-VST-Export** (bis 16 Parameter); nur 4 davon
 lassen sich in einem **Neutone FX**-Export abbilden.
 
+### 4.8 MIDI-Synth-Parameter
+
+Bei **MIDI-Synth-Export** (im Wizard unter "Usage Mode" wählbar) wird das
+trainierte Modell als MIDI-Synthesizer VST exportiert. Die MIDI-Synth-Parameter
+ersetzen die Audio-FX-Parameter oder ergänzen sie (Modus "Both"). Fünf
+universelle MIDI-Parameter stehen immer zur Verfügung; die stufenspezifischen
+Parameter (z. B. FM Depth, Timbre Z1) starten ab Slot 6.
+
+**Universelle MIDI-Parameter (Slots 1–5, immer vorhanden):**
+
+| Slot | Name | Typ | Min | Max | Default | Beschreibung |
+|---|---|---|---|---|---|---|
+| 1 | Pitch Shift | continuous | −24 | +24 | 0 | Tonhöhenversatz in Halbtönen relativ zur MIDI-Note |
+| 2 | Velocity Sensitivity | continuous | 0 | 1 | 0.7 | Stärke des Einflusses der MIDI-Anschlagsstärke auf die Lautstärke |
+| 3 | Attack | continuous | 1 | 500 | 10 | Hüllkurven-Einschwingzeit in ms |
+| 4 | Release | continuous | 10 | 2000 | 150 | Hüllkurven-Ausschwingzeit in ms |
+| 5 | Pitch Bend Range | continuous | 1 | 24 | 2 | Tonhöhenrad-Bereich in Halbtönen |
+
+**Tipp für den Export:** MIDI-Synth-Export verwendet nur Custom VST (.pt),
+da Neutone keine MIDI-Eingabe unterstützt. Ab Stufe `hacks` aufwärts wird
+MIDI-Synth im Wizard als **"Recommended for this tier"** markiert.
+
+Der MIDI-Preview-Playground (Tab "MIDI Preview" im Playground) erlaubt das
+Anklicken einer virtuellen Tastatur (1–2 Oktaven) und rendert eine kurze
+Vorschau des MIDI-Synth-Klangs.
+
 ---
 
 ## Übersicht: Schnell-Referenz des Trainingsablaufs
@@ -527,4 +554,4 @@ lassen sich in einem **Neutone FX**-Export abbilden.
 | 3 | Model Architecture → Training Config | Wizard: Tier, Qualität, Zielmodus |
 | 4 | Model Architecture → Training Config | Tabs anpassen, **▶ Start Training** |
 | 5 | Training & Monitor → Training Dashboard | TensorBoard, Stop/Resume, Preset speichern |
-| 6 | Inference & Export | Playground testen, Parameter-Builder, Export |
+| 6 | Inference & Export | Playground testen, Parameter-Builder, Export (Audio FX / MIDI Synth) |

@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
-from server.db import connect, synth_create, synth_get
+from server.db import connect, run_get, synth_create, synth_get
 from server.tasks import TaskRunner, get_task_runner, runs_dir
 from server.tasks import run_morph_job as celery_morph_job
 
@@ -57,6 +57,90 @@ async def synthesize(
             src_path = out_dir / f"{job_id}.src{src_ext}"
             with src_path.open("wb") as dst:
                 shutil.copyfileobj(audio.file, dst)
+
+        synth_create(conn, job_id, run_id, p)
+        conn.commit()
+
+        task_id = runner.submit_synthesis(job_id)
+    finally:
+        conn.close()
+
+    return {"job_id": job_id, "status": "pending", "task_id": task_id}
+
+
+@router.post("/export/midi-synth", status_code=status.HTTP_202_ACCEPTED)
+async def export_midi_synth(
+    run_id: str = Form(...),
+    checkpoint: str = Form(""),
+    params: str = Form("{}"),
+    *,
+    runner: Annotated[TaskRunner, Depends(get_task_runner)],
+) -> dict:
+    """Export MIDI synth artifacts for a trained run (async job)."""
+    job_id = str(uuid4())
+
+    try:
+        extra = json.loads(params) if params else {}
+    except json.JSONDecodeError:
+        extra = {}
+    if not isinstance(extra, dict):
+        extra = {}
+
+    p = {
+        "run_id": run_id,
+        "checkpoint": checkpoint,
+        "export_type": "midi_synth",
+    }
+    p.update(extra)
+
+    conn = connect()
+    try:
+        if run_get(conn, run_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="run not found")
+
+        synth_create(conn, job_id, run_id, p)
+        conn.commit()
+
+        task_id = runner.submit_synthesis(job_id)
+    finally:
+        conn.close()
+
+    return {"job_id": job_id, "status": "pending", "task_id": task_id}
+
+
+@router.post("/synthesize-midi", status_code=status.HTTP_202_ACCEPTED)
+async def synthesize_midi(
+    run_id: str = Form(...),
+    note: int = Form(69),
+    velocity: int = Form(100),
+    duration_s: float = Form(1.0),
+    params: str = Form("{}"),
+    *,
+    runner: Annotated[TaskRunner, Depends(get_task_runner)],
+) -> dict:
+    """Synthesize a preview snippet from a trained model at a given MIDI note."""
+    job_id = str(uuid4())
+
+    try:
+        extra = json.loads(params) if params else {}
+    except json.JSONDecodeError:
+        extra = {}
+    if not isinstance(extra, dict):
+        extra = {}
+
+    p = {
+        "run_id": run_id,
+        "note": note,
+        "velocity": velocity,
+        "duration_s": duration_s,
+        "export_type": "midi_preview",
+    }
+    p.update(extra)
+
+    conn = connect()
+    try:
+        if run_get(conn, run_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="run not found")
 
         synth_create(conn, job_id, run_id, p)
         conn.commit()

@@ -432,3 +432,21 @@ default to `'standard'`._
 - [x] **M8.5.1** `tests/test_synths_variant.py` — 15 pytest + 1 vitest smoke tests.
 - [x] **M8.5.2** Finalize `doc/experimental-sdk-hacking.md` (result table,
       checkpoint compat matrix, gradient behaviour note).
+
+## Milestone M17 - MIDI Synth VST Export
+
+- [x] **M17.1** `model/midi_utils.py` (NEW) — MIDI note→Hz, velocity→dB, frame generation, voice allocator.
+- [x] **M17.2** `inference/midi_synth_wrapper.py` (NEW) — TorchScript-compatible MidiSynthWrapper.
+- [x] **M17.3** `inference/export.py` extend — `export_midi_synth()` function.
+- [x] **M17.4** REST endpoints: `POST …/export/midi-synth` + `POST …/synthesize-midi`.
+- [x] **M17.5** `server/routes/training.py` — `synthesis_mode` field in `RunCreateRequest`.
+- [x] **M17.6** `model/param_manifest.py` — `context` field, `_midi_synth_manifest()` builder.
+- [x] **M17.7** pytest: `test_midi_utils.py` (26), `test_midi_synth_wrapper.py` (5), `test_export_midi_synth.py` (3).
+- [x] **M17.8** `WizardModal.vue` — Usage Mode selector in Step 3.
+- [x] **M17.9** `modelConfig.js` store — `synthesisMode` field + `setSynthesisMode` action.
+- [x] **M17.10** `ModelExportView.vue` — MIDI Synth export button.
+- [x] **M17.11** `TrainingConfigView.vue` — MIDI training hint banner.
+- [x] **M17.12** `InferencePlaygroundView.vue` — MIDI Preview tab (virtual keyboard).
+- [x] **M17.13** `TabHacks/TabEngine/TabAdvanced.vue` — tier-specific MIDI hints.
+- [x] **M17.14** Vitest coverage — 77/77 all green.
+- [x] Full suite: `ruff check`, `ruff format --check`, `pytest` (361/361), `vitest` (77/77) all green.

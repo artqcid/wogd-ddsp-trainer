@@ -111,6 +111,18 @@ _Roadmap / open questions / risks. Active tasks live in
   Full spec: [`parameter-handling.md`](./parameter-handling.md),
   [`ui-requirements.md`](./ui-requirements.md) §ModelParameterBuilder.
 
+- **M17 - MIDI Synth VST Export:** export trained DDSP models as MIDI synthesizer
+  VSTs (alongside the existing Audio FX VST path). Training is **unchanged** —
+  a new `MidiSynthWrapper` (TorchScript) replaces the realtime F0-extractor with
+  a MIDI-note-to-f0 frame generator. Supported for all tiers; most compelling for
+  `hacks` (FM/wavetable/PD synths), `engine` (sinusoidal/combsub/NEWT), and
+  `advanced/VAE` (timbre-morphing synth) / `advanced/Poly` (polyphonic MIDI chords).
+  `advanced/VC` in hybrid mode (MIDI pitch + reference audio timbre).
+  New components: `model/midi_utils.py`, `inference/midi_synth_wrapper.py`,
+  `POST .../export/midi-synth` endpoint, Usage Mode wizard step, MIDI Preview in
+  the Playground, tier-specific synth hints in tabs.
+  Details: [`implementation/m17-midi-synth-vst.md`](./implementation/m17-midi-synth-vst.md).
+
 - **DDSP implementation:** self-owned PyTorch DDSP core (harmonic + filtered
   noise + reverb synth), specified by the DDSP paper (Engel et al. 2020).
   Reference implementations: `acids-ircam/ddsp_pytorch` (Apache-2.0) and

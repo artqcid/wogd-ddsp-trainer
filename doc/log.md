@@ -3,6 +3,65 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-02 — M17 MIDI Synth VST Export
+
+**Creation** of MIDI synth export infrastructure and UI:
+- [`model/midi_utils.py`](../model/midi_utils.py) — MIDI note→Hz, velocity→dB, frame generation, MidiVoiceAllocator. (M17.1)
+- [`inference/midi_synth_wrapper.py`](../inference/midi_synth_wrapper.py) — TorchScript-compatible MidiSynthWrapper for DDSPModel/PolyDDSPModel. (M17.2)
+- [`model/param_manifest.py`](../model/param_manifest.py) — `context` field, MIDI synth manifest builder. (M17.6)
+- [`inference/export.py`](../inference/export.py) — `export_midi_synth()` function. (M17.3)
+- [`server/routes/inference.py`](../server/routes/inference.py) — `POST /export/midi-synth` and `POST /synthesize-midi` endpoints. (M17.4)
+- [`server/routes/training.py`](../server/routes/training.py) — `synthesis_mode` field in RunCreateRequest. (M17.5)
+
+**Update** of UI components for MIDI synth:
+- [`webui/src/stores/modelConfig.js`](../webui/src/stores/modelConfig.js) — `synthesisMode` field, `setSynthesisMode` action. (M17.9)
+- [`webui/src/components/WizardModal.vue`](../webui/src/components/WizardModal.vue) — Usage Mode selector in Step 3. (M17.8)
+- [`webui/src/views/ModelExportView.vue`](../webui/src/views/ModelExportView.vue) — MIDI Synth export button. (M17.10)
+- [`webui/src/views/TrainingConfigView.vue`](../webui/src/views/TrainingConfigView.vue) — MIDI training hint banner. (M17.11)
+- [`webui/src/views/InferencePlaygroundView.vue`](../webui/src/views/InferencePlaygroundView.vue) — MIDI Preview tab with virtual keyboard. (M17.12)
+- [`webui/src/components/TabHacks.vue`](../webui/src/components/TabHacks.vue), [`webui/src/components/TabEngine.vue`](../webui/src/components/TabEngine.vue), [`webui/src/components/TabAdvanced.vue`](../webui/src/components/TabAdvanced.vue) — tier-specific MIDI synth hints. (M17.13)
+
+**Creation** of test files:
+- [`tests/test_midi_utils.py`](../tests/test_midi_utils.py) — 26 tests. (M17.7)
+- [`tests/test_midi_synth_wrapper.py`](../tests/test_midi_synth_wrapper.py) — 5 tests. (M17.7)
+- [`tests/test_export_midi_synth.py`](../tests/test_export_midi_synth.py) — 3 tests. (M17.7)
+
+Checks: ruff clean (pre-existing sync-wiki.py only), pytest 361/361 green, vitest 77/77 green, index_project_code synced, wiki lint clean.
+
+Feasibility analysis: [`doc/implementation/m17-midi-synth-vst.md`](../doc/implementation/m17-midi-synth-vst.md).
+
+## 2026-09-02 — M17 MIDI Synth VST: feasibility analysis + milestone plan
+
+**Creation:**
+- `doc/implementation/m17-midi-synth-vst.md` — full feasibility analysis and
+  implementation plan for MIDI synthesizer VST export. Key findings:
+  - All tiers supported (training unchanged — export-only new wrapper).
+  - `MidiSynthWrapper` replaces runtime F0 extraction with MIDI-note-to-Hz math.
+  - Highlighted tiers: `hacks` (FM/wavetable/PD synths), `engine/sinusoidal`
+    (glass/bell), `engine/combsub` (plucked strings), `engine/newt` (neural
+    waveshaping), `advanced/VAE` (timbre-morphing synth), `advanced/Poly`
+    (polyphonic chords up to 4 voices). `advanced/VC` in hybrid mode.
+  - New components: `model/midi_utils.py`, `inference/midi_synth_wrapper.py`,
+    new REST endpoint, Usage Mode wizard step, MIDI Preview in Playground.
+
+**Update:**
+- `doc/plan.md` — added M17 milestone entry.
+- `doc/index.md` — added `m17-midi-synth-vst.md` to implementation plans.
+
+## 2026-09-02 — Manual test protocol (training acceptance, English)
+
+**Creation:**
+- `doc/manual-test-protokoll.md` — manual end-to-end acceptance tests for the
+  training workflows, ordered chronologically from the simplest model
+  (standard) to the most complex (component → hacks → engine → advanced).
+  English content; based on `doc/handbook.md` (German manual). 19 test cases
+  (MT-A1…MT-E3) with preconditions, steps, expected results and fillable
+  PASS/FAIL result rows; representative cases for the complex tiers (not one
+  case per parameter change). References `doc/bugs.md` for failure recording.
+
+**Update:**
+- `doc/index.md` — added `manual-test-protokoll.md` to Operations & Quality.
+
 ## 2026-09-02 — User Manual (German training handbook)
 
 **Creation:**

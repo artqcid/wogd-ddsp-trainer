@@ -1,5 +1,11 @@
 <template>
   <div class="tab-advanced" data-testid="tab-advanced">
+    <div v-if="store.synthesisMode === 'midi_synth' || store.synthesisMode === 'both'" class="midi-hint" data-testid="midi-hint-advanced">
+      <p v-if="store.advancedParams.use_latent">🎹 <strong>MIDI Synth:</strong> Latent Z sliders morph the timbre in real time while playing MIDI. Unique expressive instrument.</p>
+      <p v-else-if="store.advancedParams.n_voices > 1">🎹 <strong>MIDI Synth:</strong> Each MIDI note routes to one PolyDDSP voice (up to N). Enables polyphonic chords.</p>
+      <p v-else-if="store.advancedParams.use_content_encoder">🎹 <strong>MIDI Synth:</strong> Hybrid mode: MIDI drives pitch, a reference audio sample sets the source timbre.</p>
+      <p v-else>🎹 <strong>MIDI Synth:</strong> Full MIDI control with advanced model features.</p>
+    </div>
     <div class="adv-section">
       <h4 class="adv-section-title">VAE / Latent Space</h4>
       <div class="form-group">
@@ -76,4 +82,14 @@ const store = useModelConfigStore()
   cursor: pointer;
 }
 .hint-warning { font-size: 0.75rem; color: var(--warning); margin-top: var(--space-1); }
+.midi-hint {
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--tier-hacks);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  margin-bottom: var(--space-3);
+}
+.midi-hint p { margin: 0; color: var(--text-secondary); }
+.midi-hint strong { color: var(--text-primary); }
 </style>

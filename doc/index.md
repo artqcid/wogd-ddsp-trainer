@@ -41,9 +41,11 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md) - M14 granular steps: Backend-first (DB, gpu.py, presets, tasks, feasibility endpoint) then Frontend (Wizard, Tabs, Banner, store)
 - [`implementation/m15-param-manifest.md`](./implementation/m15-param-manifest.md) - M15 granular steps: ParamManifest dataclass + tier-default builders, checkpoint embedding, REST GET/PUT params, dynamic Neutone wrapper, CustomVSTWrapper + export endpoint, N-param synthesize
 - [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md) - M16 granular steps: ParamCard, ModelParameterBuilder, NeutoneSlotPanel (drag & drop), ModelExportView dual-export, InferencePlaygroundView dynamic N-param sliders
+- [`implementation/m17-midi-synth-vst.md`](./implementation/m17-midi-synth-vst.md) - M17 feasibility analysis + granular steps: MidiSynthWrapper, MIDI-synth export, Usage Mode wizard step, MIDI Preview, tier-specific synth hints
 
 ## Operations & Quality
 - [`handbook.md`](./handbook.md) - User manual (German): training operation only — quick start (standard model), complex models per tier, full parameter reference
+- [`manual-test-protokoll.md`](./manual-test-protokoll.md) - Manual test protocol (English): end-to-end training acceptance tests, ordered from simplest (standard) to most complex (component → hacks → engine → advanced) model training; representative cases for complex tiers
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)
 - [`workspace-workflow.md`](./workspace-workflow.md) - Setup/run/workflow: venv, ruff/pytest, uvicorn, Vite hot-reload
 - [`oss-dependencies.md`](./oss-dependencies.md) - OSS dependency/license review (M1.6.2): every dep OSI-approved, neutone_sdk/rmvpe flagged
