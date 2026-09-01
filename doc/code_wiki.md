@@ -4115,20 +4115,20 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m7-experimental.md:179` (section) [wogd_ddsp_f163b4272dc6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:328` (section) [wogd_ddsp_4f8b29ec3b30]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:1` (module) [wogd_ddsp_be647f383a7f]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:92` (function) [wogd_ddsp_e9829629dd8f]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:109` (function) [wogd_ddsp_befa9a0ca5e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:121` (function) [wogd_ddsp_b5f3f3aa80ee]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:133` (function) [wogd_ddsp_ec94ae27c465]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:164` (function) [wogd_ddsp_4612d7a6fb3e]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:94` (function) [wogd_ddsp_1ebf7eb1f135]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:111` (function) [wogd_ddsp_884a93817a3f]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:123` (function) [wogd_ddsp_372f41e671a3]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:135` (function) [wogd_ddsp_10b96e98204d]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:166` (function) [wogd_ddsp_9e6df2a05545]
 - `extract_ir` (function, lines 80-101) - def extract_ir(reverb, out_path, sample_rate=16000) - Save SimpleReverb's current kernel buffer as a .wav file.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\reverb.py:1` (module) [wogd_ddsp_cd35e62fa5e2]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\reverb.py:70` (function) [wogd_ddsp_701f9c080226]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m7-experimental.md:179` (section) [wogd_ddsp_f163b4272dc6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:328` (section) [wogd_ddsp_4f8b29ec3b30]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:1` (module) [wogd_ddsp_be647f383a7f]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:140` (function) [wogd_ddsp_5da56ee63a93]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:156` (function) [wogd_ddsp_ffa113e3c2a4]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:164` (function) [wogd_ddsp_4612d7a6fb3e]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:142` (function) [wogd_ddsp_bfa5866ca6e2]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:158` (function) [wogd_ddsp_2faf328b7dd4]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_model.py:166` (function) [wogd_ddsp_9e6df2a05545]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\opencode.json
 
@@ -4226,7 +4226,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:51` (function) [wogd_ddsp_15744e3c4457]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:239` (function) [wogd_ddsp_532c28d6fa02]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:243` (function) [wogd_ddsp_cb7bd4e15e44]
 - `preset_get` (function, lines 195-202) - def preset_get(conn, preset_id) - Return a single presets by id, or None.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:87` (function) [wogd_ddsp_3ace316c7af8]
@@ -4242,14 +4242,14 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:51` (function) [wogd_ddsp_15744e3c4457]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:215` (function) [wogd_ddsp_22da80891c81]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:219` (function) [wogd_ddsp_2e4431f7cf59]
 - `preset_update` (function, lines 215-246) - def preset_update(conn, preset_id, name, params) - Update optional name/params fields and bump updated_at.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:87` (function) [wogd_ddsp_3ace316c7af8]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:51` (function) [wogd_ddsp_15744e3c4457]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:239` (function) [wogd_ddsp_532c28d6fa02]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:243` (function) [wogd_ddsp_cb7bd4e15e44]
 - `preset_delete` (function, lines 249-256) - def preset_delete(conn, preset_id) - Delete a presets by id.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:111` (function) [wogd_ddsp_697a9798a24a]
@@ -4342,13 +4342,13 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\paths.py:79` (function) [wogd_ddsp_40d9b55079db]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\paths.py:156` (function) [wogd_ddsp_d23c0f8073dd]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:262` (function) [wogd_ddsp_0c62b1a62cbb]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:266` (function) [wogd_ddsp_2904e747ae94]
 - `meta_set` (function, lines 449-458) - def meta_set(conn, key, value) - Insert or replace a meta key/value pair.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:177` (function) [wogd_ddsp_e60e190f71c7]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\paths.py:156` (function) [wogd_ddsp_d23c0f8073dd]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:262` (function) [wogd_ddsp_0c62b1a62cbb]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:266` (function) [wogd_ddsp_2904e747ae94]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\errors.py
 
@@ -4518,7 +4518,7 @@ Symbols:
 - Dependencies: import here., from __future__ import annotations, import json, from dataclasses import asdict, from server.db import (, from train.gpu import (
 
 Symbols:
-- `PARAM_KEYS` (constant, lines 29-38) - PARAM_KEYS: tuple = (
+- `PARAM_KEYS` (constant, lines 29-42) - PARAM_KEYS: tuple = (
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\architecture.md:160` (section) [wogd_ddsp_4c41e1c4fa1d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m12-polyddsp.md:47` (section) [wogd_ddsp_6f1cf7eca318]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m12-polyddsp.md:188` (section) [wogd_ddsp_66413b9e017e]
@@ -4529,12 +4529,12 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m8-experimental-sdk-hacking.md:173` (section) [wogd_ddsp_3da4a29989af]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:173` (section) [wogd_ddsp_5aaab5a47c77]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:190` (section) [wogd_ddsp_354e0ce4ea63]
-- `ALLOWED_MIXED_PRECISION` (constant, lines 39-39) - ALLOWED_MIXED_PRECISION = ("required", "recommended", "optional")
-- `ALLOWED_CHECKPOINTING` (constant, lines 40-40) - ALLOWED_CHECKPOINTING = ("enabled", "optional", "disabled")
-- `LEARNING_RATE_MIN` (constant, lines 41-41) - LEARNING_RATE_MIN = 1e-6
-- `LEARNING_RATE_MAX` (constant, lines 42-42) - LEARNING_RATE_MAX = 1e-1
-- `DEFAULT_LEARNING_RATE` (constant, lines 43-43) - DEFAULT_LEARNING_RATE = 1e-3
-- `get_bounds` (function, lines 46-52) - def get_bounds() - Largest GPU total VRAM -> propose_parameters(); no GPU -> 6.0 baseline.
+- `ALLOWED_MIXED_PRECISION` (constant, lines 43-43) - ALLOWED_MIXED_PRECISION = ("required", "recommended", "optional")
+- `ALLOWED_CHECKPOINTING` (constant, lines 44-44) - ALLOWED_CHECKPOINTING = ("enabled", "optional", "disabled")
+- `LEARNING_RATE_MIN` (constant, lines 45-45) - LEARNING_RATE_MIN = 1e-6
+- `LEARNING_RATE_MAX` (constant, lines 46-46) - LEARNING_RATE_MAX = 1e-1
+- `DEFAULT_LEARNING_RATE` (constant, lines 47-47) - DEFAULT_LEARNING_RATE = 1e-3
+- `get_bounds` (function, lines 50-56) - def get_bounds() - Largest GPU total VRAM -> propose_parameters(); no GPU -> 6.0 baseline.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:64` (function) [wogd_ddsp_c9ec1b44cc8b]
@@ -4545,10 +4545,10 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\training.py:61` (function) [wogd_ddsp_a2338f1f42a7]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:40` (function) [wogd_ddsp_ffb54cb8dd68]
-- `get_gpu_summary` (function, lines 55-62) - def get_gpu_summary() - Return GPU list (detect_gpus) and vram_tier of largest GPU, or None.
+- `get_gpu_summary` (function, lines 59-66) - def get_gpu_summary() - Return GPU list (detect_gpus) and vram_tier of largest GPU, or None.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
-- `bounds_to_dict` (function, lines 65-67) - def bounds_to_dict(bounds) - Convert ParameterBounds to a plain dict.
+- `bounds_to_dict` (function, lines 69-71) - def bounds_to_dict(bounds) - Convert ParameterBounds to a plain dict.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\training.py:1` (module) [wogd_ddsp_a3ec82f9a534]
@@ -4558,7 +4558,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m4-backend.md:121` (section) [wogd_ddsp_df0df320b899]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1661` (section) [wogd_ddsp_2cef55de6f24]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:565` (section) [wogd_ddsp_8baec3d6e450]
-- `clamp_params` (function, lines 70-183) - def clamp_params(params, bounds) - Clamp bounded keys and return (clamped_params, clamped_fields).
+- `clamp_params` (function, lines 74-187) - def clamp_params(params, bounds) - Clamp bounded keys and return (clamped_params, clamped_fields).
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:64` (function) [wogd_ddsp_c9ec1b44cc8b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:87` (function) [wogd_ddsp_3ace316c7af8]
@@ -4569,7 +4569,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:66` (function) [wogd_ddsp_35ad3bf832d6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:74` (function) [wogd_ddsp_089c339b0d29]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:82` (function) [wogd_ddsp_1f31d3f8adcd]
-- `build_builtin_presets` (function, lines 186-212) - def build_builtin_presets(bounds) - Produce built-in FAST/NORMAL/QUALITY preset dicts from *bounds*.
+- `build_builtin_presets` (function, lines 190-216) - def build_builtin_presets(bounds) - Produce built-in FAST/NORMAL/QUALITY preset dicts from *bounds*.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
@@ -4578,7 +4578,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1598` (section) [wogd_ddsp_6f125daf2c00]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1842` (section) [wogd_ddsp_f0a72a28a2bf]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:229` (section) [wogd_ddsp_3e701a02f658]
-- `seed_builtin_presets` (function, lines 215-230) - def seed_builtin_presets(conn, bounds) - Insert missing built-in presets; commit after all; return inserted count.
+- `seed_builtin_presets` (function, lines 219-234) - def seed_builtin_presets(conn, bounds) - Insert missing built-in presets; commit after all; return inserted count.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:190` (function) [wogd_ddsp_e96703193d54]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:199` (function) [wogd_ddsp_04f894dadbdb]
@@ -4589,19 +4589,19 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1598` (section) [wogd_ddsp_6f125daf2c00]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1842` (section) [wogd_ddsp_f0a72a28a2bf]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:229` (section) [wogd_ddsp_3e701a02f658]
-- `with_clamp_status` (function, lines 233-236) - def with_clamp_status(preset, bounds) - Return the preset dict with a ``clamped_fields`` entry.
+- `with_clamp_status` (function, lines 237-240) - def with_clamp_status(preset, bounds) - Return the preset dict with a ``clamped_fields`` entry.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:209` (function) [wogd_ddsp_c3809b873d2e]
-- `reclamp_all_custom` (function, lines 239-250) - def reclamp_all_custom(conn, bounds) - Clamp all custom presets; update changed ones; commit; return updated ids.
+- `reclamp_all_custom` (function, lines 243-254) - def reclamp_all_custom(conn, bounds) - Clamp all custom presets; update changed ones; commit; return updated ids.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:224` (function) [wogd_ddsp_db73ca25f3c8]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:248` (function) [wogd_ddsp_ee22de630b79]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:1` (module) [wogd_ddsp_d6876028eaa9]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:51` (function) [wogd_ddsp_e7f04d79d68c]
-- `compute_hardware_fingerprint` (function, lines 253-259) - def compute_hardware_fingerprint() - Stable JSON fingerprint of GPU name + total VRAM, or "no-gpu".
-- `check_hardware_change` (function, lines 262-269) - def check_hardware_change(conn) - Persist new fingerprint; return (changed, fingerprint).
+- `compute_hardware_fingerprint` (function, lines 257-263) - def compute_hardware_fingerprint() - Stable JSON fingerprint of GPU name + total VRAM, or "no-gpu".
+- `check_hardware_change` (function, lines 266-273) - def check_hardware_change(conn) - Persist new fingerprint; return (changed, fingerprint).
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:273` (function) [wogd_ddsp_aa5b721ee8e4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:1` (module) [wogd_ddsp_d6876028eaa9]
@@ -5258,19 +5258,19 @@ Symbols:
 - Dependencies: from __future__ import annotations, import os, import numpy as np, import pytest, import soundfile as sf, import torch, from model import DDSPConfig, DDSPModel, from model.ddsp.synths import SimpleReverb, from model.reverb_injection import extract_ir, inject_ir
 
 Symbols:
-- `test_forward_returns_keys_and_shapes` (function, lines 18-34) - def test_forward_returns_keys_and_shapes()
-- `test_harmonic_distribution_softmaxes_to_one` (function, lines 37-46) - def test_harmonic_distribution_softmaxes_to_one()
-- `test_deterministic_forward` (function, lines 49-60) - def test_deterministic_forward()
+- `test_forward_returns_keys_and_shapes` (function, lines 18-36) - def test_forward_returns_keys_and_shapes()
+- `test_harmonic_distribution_softmaxes_to_one` (function, lines 39-48) - def test_harmonic_distribution_softmaxes_to_one()
+- `test_deterministic_forward` (function, lines 51-62) - def test_deterministic_forward()
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m3-model-training.md:130` (section) [wogd_ddsp_4157c1f94e80]
-- `test_custom_config` (function, lines 63-72) - def test_custom_config()
-- `test_forward_cpu_no_gpu_hardcode` (function, lines 75-84) - def test_forward_cpu_no_gpu_hardcode()
-- `test_inject_ir_replaces_kernel` (function, lines 92-106) - def test_inject_ir_replaces_kernel(tmp_path) - inject_ir loads a .wav IR and replaces the kernel buffer.
-- `test_inject_ir_resamples` (function, lines 109-118) - def test_inject_ir_resamples(tmp_path) - inject_ir resamples IR from 48kHz to 16kHz.
-- `test_inject_ir_mono_conversion` (function, lines 121-130) - def test_inject_ir_mono_conversion(tmp_path) - inject_ir converts stereo IR to mono.
-- `test_inject_ir_file_not_found` (function, lines 133-137) - def test_inject_ir_file_not_found() - inject_ir raises FileNotFoundError for missing path.
-- `test_extract_ir_writes_wav` (function, lines 140-153) - def test_extract_ir_writes_wav(tmp_path) - extract_ir saves kernel buffer as .wav.
-- `test_extract_ir_returns_path` (function, lines 156-161) - def test_extract_ir_returns_path(tmp_path) - extract_ir returns the absolute path.
-- `test_inject_then_extract_roundtrip` (function, lines 164-177) - def test_inject_then_extract_roundtrip(tmp_path) - Inject an IR, extract it, compare (lossy via wav).
+- `test_custom_config` (function, lines 65-74) - def test_custom_config()
+- `test_forward_cpu_no_gpu_hardcode` (function, lines 77-86) - def test_forward_cpu_no_gpu_hardcode()
+- `test_inject_ir_replaces_kernel` (function, lines 94-108) - def test_inject_ir_replaces_kernel(tmp_path) - inject_ir loads a .wav IR and replaces the kernel buffer.
+- `test_inject_ir_resamples` (function, lines 111-120) - def test_inject_ir_resamples(tmp_path) - inject_ir resamples IR from 48kHz to 16kHz.
+- `test_inject_ir_mono_conversion` (function, lines 123-132) - def test_inject_ir_mono_conversion(tmp_path) - inject_ir converts stereo IR to mono.
+- `test_inject_ir_file_not_found` (function, lines 135-139) - def test_inject_ir_file_not_found() - inject_ir raises FileNotFoundError for missing path.
+- `test_extract_ir_writes_wav` (function, lines 142-155) - def test_extract_ir_writes_wav(tmp_path) - extract_ir saves kernel buffer as .wav.
+- `test_extract_ir_returns_path` (function, lines 158-163) - def test_extract_ir_returns_path(tmp_path) - extract_ir returns the absolute path.
+- `test_inject_then_extract_roundtrip` (function, lines 166-179) - def test_inject_then_extract_roundtrip(tmp_path) - Inject an IR, extract it, compare (lossy via wav).
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_newt.py
 
@@ -5488,10 +5488,10 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:192` (function) [wogd_ddsp_fe55028f40ec]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:199` (function) [wogd_ddsp_a8cf256b8807]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1765` (section) [wogd_ddsp_5297a114ae9d]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:46` (function) [wogd_ddsp_eb1cc73ef92a]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:55` (function) [wogd_ddsp_b53ea1a89cb0]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:253` (function) [wogd_ddsp_9016e313249c]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:50` (function) [wogd_ddsp_b38b38f6d145]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:59` (function) [wogd_ddsp_3a64c41e64fe]
 - `vram_tier` (function, lines 45-60) - def vram_tier(total_vram_gb) - Map total VRAM in GB to a tier string.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\train\__init__.py:1` (module) [wogd_ddsp_2c99e4e4f2c5]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:1` (module) [wogd_ddsp_e061484ca3fd]
@@ -5501,7 +5501,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:47` (function) [wogd_ddsp_f24f6f836dd0]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:62` (function) [wogd_ddsp_59f2d374afa0]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:55` (function) [wogd_ddsp_b53ea1a89cb0]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:59` (function) [wogd_ddsp_3a64c41e64fe]
 - `ParameterBounds` (class, lines 64-87) - class ParameterBounds - Proposed training parameter bounds for a VRAM tier.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\train\__init__.py:1` (module) [wogd_ddsp_2c99e4e4f2c5]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:1` (module) [wogd_ddsp_8a16739b9338]
@@ -5536,8 +5536,8 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:148` (function) [wogd_ddsp_c107e75fb586]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:178` (function) [wogd_ddsp_93cda7f101e9]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1491` (section) [wogd_ddsp_b557fe23570b]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:1` (module) [wogd_ddsp_5278cd7d12e8]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\presets.py:186` (function) [wogd_ddsp_8a57aa712533]
 - `suggest_for_host` (function, lines 218-243) - def suggest_for_host() - Return a host summary for the local machine.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\train\__init__.py:1` (module) [wogd_ddsp_2c99e4e4f2c5]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\host.py:1` (module) [wogd_ddsp_4853c727fd80]
