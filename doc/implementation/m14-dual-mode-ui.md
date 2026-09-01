@@ -40,12 +40,14 @@ Prerequisite: none (M8–M13 are parallel; M14 is infrastructure)._
 
 ```
 Phase 0 — Design System (prerequisite for all Phase 2 work)
-webui/index.html                   MOD  — Inter + JetBrains Mono font links (M14.2.0)
-webui/src/style.css                NEW  — global design tokens, reset, utilities (M14.2.0)
-webui/src/main.js                  MOD  — import './style.css' (M14.2.0)
-webui/src/App.vue                  MOD  — remove scoped :root, update shell layout (M14.2.0)
-webui/src/components/Sidebar.vue   MOD  — modern nav: gradient brand, icons, active glow (M14.2.0)
-webui/src/components/TopBar.vue    MOD  — pill badges, gradient accent, GPU tier chip (M14.2.0)
+webui/index.html                        MOD  — Inter + JetBrains Mono font links (M14.2.0-A)
+webui/src/style.css                     NEW  — global design tokens incl. tier colors, reset, utilities (M14.2.0-B)
+webui/src/main.js                       MOD  — import './style.css' (M14.2.0-C)
+webui/src/App.vue                       MOD  — remove scoped :root, update shell layout (M14.2.0-D)
+webui/src/components/Sidebar.vue        MOD  — modern nav: gradient brand, icons, active glow (M14.2.0-E)
+webui/src/components/TopBar.vue         MOD  — pill badges, GPU chip, tier badge (M14.2.0-F)
+webui/src/utils/tierColors.js           NEW  — tier identity color utility + Vitest (M14.2.0-H)
+tests/tierColors.test.js                NEW  — Vitest for tierColors utility (M14.2.0-H)
 
 Phase 1 — Backend
 train/gpu.py                       MOD  — VRAMEstimate + estimate_model_vram (M14.1.1)
@@ -253,6 +255,39 @@ Full file content:
 
   /* --- TopBar --- */
   --topbar-height:       52px;
+
+  /* ── Tier identity colors ───────────────────────────────────
+     Each tier owns a unique signal color used on: active-tab
+     indicator, tab label, Wizard tier card border/icon,
+     ModelTierCard header, GpuFeasibilityBanner tier chip,
+     TopBar tier badge. --accent (Indigo) is NOT repurposed
+     for tiers — it stays the global interactive/nav accent.
+     ─────────────────────────────────────────────────────────── */
+
+  /* standard — Emerald: familiar, safe entry point */
+  --tier-standard:        #10B981;
+  --tier-standard-subtle: rgba(16, 185, 129, 0.12);
+  --tier-standard-glow:   rgba(16, 185, 129, 0.30);
+
+  /* component — Sky/Cyan: precision, sliders, fine-tuning */
+  --tier-component:        #06B6D4;
+  --tier-component-subtle: rgba(6, 182, 212, 0.12);
+  --tier-component-glow:   rgba(6, 182, 212, 0.30);
+
+  /* hacks — Amber: experimental, caution, creative risk */
+  --tier-hacks:        #F59E0B;
+  --tier-hacks-subtle: rgba(245, 158, 11, 0.12);
+  --tier-hacks-glow:   rgba(245, 158, 11, 0.30);
+
+  /* engine — Violet: power, alternative architecture */
+  --tier-engine:        #8B5CF6;
+  --tier-engine-subtle: rgba(139, 92, 246, 0.12);
+  --tier-engine-glow:   rgba(139, 92, 246, 0.30);
+
+  /* advanced — Rose: expert-only, high VRAM, danger zone */
+  --tier-advanced:        #F43F5E;
+  --tier-advanced-subtle: rgba(244, 63, 94, 0.12);
+  --tier-advanced-glow:   rgba(244, 63, 94, 0.30);
 }
 
 /* ── 2. Reset & Base ───────────────────────────────────────── */
@@ -1105,10 +1140,12 @@ setup>` unchanged):
 
 ---
 
-#### M14.2.0-F — `webui/src/components/TopBar.vue`: pill badges, GPU chip
+#### M14.2.0-F — `webui/src/components/TopBar.vue`: pill badges, GPU chip, tier badge
 
 Replace the entire component (script, template, style). Keep the same logic,
-upgrade the visual layer:
+upgrade the visual layer. **New in this revision:** a persistent **tier badge**
+shows the active model tier in its signal color on every view — so the user
+always sees which model complexity is active, not just inside Training Config.
 
 **Template:**
 
@@ -1123,6 +1160,17 @@ upgrade the visual layer:
     </div>
 
     <div class="topbar-right">
+      <!-- Active tier badge — visible on ALL views; uses tier signal color -->
+      <span
+        v-if="activeTier"
+        class="topbar-tier-badge text-xs text-mono"
+        :style="tierBadgeStyle"
+        data-testid="tier-badge"
+        :title="`Active model tier: ${tierLabel(activeTier)}`"
+      >
+        {{ tierIcon(activeTier) }} {{ tierLabel(activeTier) }}
+      </span>
+
       <!-- Backend status -->
       <span
         :class="['badge', 'badge-dot', healthBadgeClass]"
@@ -1167,13 +1215,31 @@ upgrade the visual layer:
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
+import { useModelConfigStore } from '@/stores/modelConfig'
+import { tierColor, tierLabel, tierIcon } from '@/utils/tierColors'
 
 const apiClient = inject('apiClient')
 const route     = useRoute()
+const modelConfig = useModelConfigStore()
 const version   = ref(null)
 const healthOk  = ref(null)
 const tbRunning = ref(null)
 const gpuInfo   = ref(null)
+
+// Active tier from Pinia store (null when Wizard not yet completed)
+const activeTier = computed(() => modelConfig.activeTier)
+
+// Tier badge: subtle-opacity background + full-color border + full-color text
+const tierBadgeStyle = computed(() => {
+  if (!activeTier.value) return {}
+  const color = tierColor(activeTier.value)
+  return {
+    '--_tier-color': color,
+    color:           color,
+    background:      `color-mix(in srgb, ${color} 12%, transparent)`,
+    borderColor:     `color-mix(in srgb, ${color} 50%, transparent)`,
+  }
+})
 
 const SECTION_MAP = {
   '/datasets':                   'Dataset & Preprocessing',
@@ -1274,6 +1340,20 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+/* Tier badge — inherits color via inline style (--_tier-color) */
+.topbar-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;   /* filled by inline style */
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition: opacity var(--transition-base);
+}
+
 .topbar-gpu-chip {
   max-width: 200px;
   overflow: hidden;
@@ -1295,9 +1375,114 @@ onMounted(async () => {
 Run `vitest` after completing M14.2.0-A through M14.2.0-F. All existing tests
 must remain green. The design changes are CSS-only and do not touch any
 `data-testid` selectors. If any test fails it is due to a structural template
-change (e.g. removed element) — fix before proceeding to M14.2.1.
+change (e.g. removed element) — fix before proceeding.
 
-Expected result: **all existing Vitest pass; no new tests needed for M14.2.0**.
+Expected result: **all existing Vitest pass; no new tests needed for M14.2.0-A–F**.
+
+---
+
+#### M14.2.0-H — `webui/src/utils/tierColors.js` (new utility)
+
+Create `webui/src/utils/tierColors.js`. No external dependencies.
+
+This utility is imported by `TopBar.vue` (M14.2.0-F), and later by
+`ModelTierCard.vue` (M14.2.3), `WizardModal.vue` (M14.2.5),
+`TabCore.vue` (M14.2.6), `GpuFeasibilityBanner.vue` (M14.2.4).
+It must never be imported in any backend or server file.
+
+```js
+// webui/src/utils/tierColors.js
+/**
+ * Tier identity color system.
+ *
+ * Each tier has a unique signal color applied consistently across:
+ * - TopBar tier badge (every view)
+ * - Wizard ModelTierCard border + icon tint
+ * - Tab bar active-tab indicator + label
+ * - GpuFeasibilityBanner per-tier chip
+ * - Disabled tab tooltip tier name
+ *
+ * Colors are defined as CSS custom properties in style.css :root.
+ * tierColor() resolves the live computed value at runtime via
+ * getComputedStyle — never hardcode hex values in components.
+ */
+
+export const TIER_META = {
+  standard:  { label: 'Standard',  token: '--tier-standard',  icon: '🟢' },
+  component: { label: 'Component', token: '--tier-component', icon: '🔵' },
+  hacks:     { label: 'Hacks',     token: '--tier-hacks',     icon: '🟡' },
+  engine:    { label: 'Engine',    token: '--tier-engine',    icon: '🟣' },
+  advanced:  { label: 'Advanced',  token: '--tier-advanced',  icon: '🔴' },
+}
+
+/**
+ * Returns the resolved hex/rgb color string for a tier from the live
+ * CSS custom properties. Falls back to --text-muted for unknown tiers.
+ * Must be called in a browser context (document must exist).
+ */
+export function tierColor(tier) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(TIER_META[tier]?.token ?? '--text-muted')
+    .trim()
+}
+
+/** Returns the human-readable label for a tier (e.g. 'Standard'). */
+export function tierLabel(tier) { return TIER_META[tier]?.label ?? tier }
+
+/** Returns the emoji indicator for compact display (e.g. '🟢'). */
+export function tierIcon(tier)  { return TIER_META[tier]?.icon  ?? '⚪' }
+
+/** Returns all tier keys in ascending complexity order. */
+export const TIER_ORDER = ['standard', 'component', 'hacks', 'engine', 'advanced']
+
+/**
+ * Returns true when candidateTier >= requiredTier in complexity order.
+ * Used by tab-bar to determine disabled state.
+ */
+export function tierAtLeast(candidateTier, requiredTier) {
+  return TIER_ORDER.indexOf(candidateTier) >= TIER_ORDER.indexOf(requiredTier)
+}
+```
+
+**Vitest for this step** (`tests/tierColors.test.js`):
+
+```js
+import { describe, it, expect } from 'vitest'
+import { TIER_META, TIER_ORDER, tierLabel, tierIcon, tierAtLeast } from '@/utils/tierColors'
+
+describe('tierColors', () => {
+  it('has all 5 tiers in TIER_META', () => {
+    expect(Object.keys(TIER_META)).toHaveLength(5)
+  })
+
+  it('TIER_ORDER has 5 entries in correct order', () => {
+    expect(TIER_ORDER).toEqual(['standard', 'component', 'hacks', 'engine', 'advanced'])
+  })
+
+  it('tierLabel returns correct labels', () => {
+    expect(tierLabel('standard')).toBe('Standard')
+    expect(tierLabel('advanced')).toBe('Advanced')
+    expect(tierLabel('unknown')).toBe('unknown')
+  })
+
+  it('tierIcon returns emoji', () => {
+    expect(tierIcon('standard')).toBe('🟢')
+    expect(tierIcon('unknown')).toBe('⚪')
+  })
+
+  it('tierAtLeast: engine >= component', () => {
+    expect(tierAtLeast('engine', 'component')).toBe(true)
+  })
+
+  it('tierAtLeast: standard < hacks', () => {
+    expect(tierAtLeast('standard', 'hacks')).toBe(false)
+  })
+
+  it('tierAtLeast: advanced >= advanced', () => {
+    expect(tierAtLeast('advanced', 'advanced')).toBe(true)
+  })
+})
+```
 
 ---
 

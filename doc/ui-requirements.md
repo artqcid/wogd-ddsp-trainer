@@ -245,6 +245,79 @@ features are activated. The tier is the primary configuration axis:
 | `engine` | M9/M10 | Hacks + alternative synth engine (Sinusoidal/CombSub/NEWT) | 4 GB |
 | `advanced` | M11–M13 | Engine + VAE latent space / PolyDDSP / Voice Conversion | 6–12 GB |
 
+### Tier identity color system (M14.2.0)
+
+Each tier owns a **unique signal color** that is applied consistently across
+every UI surface that shows tier context: the active-tab indicator, the tab
+label, the Wizard tier card border/icon, the `ModelTierCard` header,
+the `GpuFeasibilityBanner` tier chip, and the TopBar tier badge. The global
+`--accent` (Indigo) is never repurposed for tier identity — it remains the
+universal interactive / button / navigation accent.
+
+| Tier | Color name | Hex | CSS token | Rationale |
+|---|---|---|---|---|
+| `standard` | **Emerald** | `#10B981` | `--tier-standard` | Familiar, "works", safe entry point |
+| `component` | **Sky / Cyan** | `#06B6D4` | `--tier-component` | Precision, sliders, fine-tuning |
+| `hacks` | **Amber** | `#F59E0B` | `--tier-hacks` | Experimental, caution, creative risk |
+| `engine` | **Violet** | `#8B5CF6` | `--tier-engine` | Power, alternative architecture |
+| `advanced` | **Rose** | `#F43F5E` | `--tier-advanced` | Expert-only, high VRAM, danger zone |
+
+Each tier token also has a `-subtle` (12 % opacity fill) and a `-glow`
+(30 % opacity) companion, following the same pattern as `--accent-subtle`
+and `--accent-glow`. All six values per tier live in `style.css `:root`.
+
+#### Surfaces where tier color must appear
+
+1. **Tab bar** (`TrainingConfigView`): active tab's bottom border-line and
+   label use the active tier's `--tier-<name>` color. Inactive (accessible)
+   tabs: `--text-secondary`. Disabled (locked) tabs: `--text-muted`.
+2. **Tier chip in TopBar**: a small pill badge showing the active tier name
+   uses `--tier-<name>` as background (at subtle opacity) with the full color
+   as text/border. Visible on every view, not just Training Config.
+3. **Wizard tier cards** (`ModelTierCard`): card border and icon tint use the
+   tier's signal color. The selected card gets the full color as a glowing
+   border (`box-shadow: 0 0 0 2px --tier-<name>, 0 0 18px --tier-<name>-glow`).
+4. **GPU Feasibility Banner**: each per-tier chip in the multi-tier summary row
+   is tinted with that tier's signal color (`--tier-<name>-subtle` background,
+   full color text).
+5. **Sidebar nav**: the active route's left-accent bar remains `--accent`
+   (Indigo) — **not** tier-colored. Tier is a model config concept, not a
+   navigation concept.
+6. **Disabled tab tooltip** "Upgrade to `engine`" — the tier name in the
+   tooltip is rendered in that tier's color.
+
+#### Helper: `tierColor(tier)` utility
+
+A tiny JS utility in `webui/src/utils/tierColors.js` (no deps) maps a tier
+string to its CSS custom property name and a readable label:
+
+```js
+// webui/src/utils/tierColors.js
+export const TIER_META = {
+  standard:  { label: 'Standard',  token: '--tier-standard',  icon: '🟢' },
+  component: { label: 'Component', token: '--tier-component', icon: '🔵' },
+  hacks:     { label: 'Hacks',     token: '--tier-hacks',     icon: '🟡' },
+  engine:    { label: 'Engine',    token: '--tier-engine',    icon: '🟣' },
+  advanced:  { label: 'Advanced',  token: '--tier-advanced',  icon: '🔴' },
+}
+
+/** Returns the resolved hex color from the CSS custom property at runtime. */
+export function tierColor(tier) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(TIER_META[tier]?.token ?? '--text-muted').trim()
+}
+
+/** Returns the tier label. */
+export function tierLabel(tier) { return TIER_META[tier]?.label ?? tier }
+
+/** Returns the emoji indicator (for compact display). */
+export function tierIcon(tier)  { return TIER_META[tier]?.icon  ?? '⚪' }
+```
+
+This utility is used by `ModelTierCard`, `WizardModal`, `TabCore` (tab bar
+renderer), `GpuFeasibilityBanner`, and `TopBar`. It must not be imported in
+any backend or server file.
+
 ### Mode A — Wizard (simple users)
 
 A `WizardModal` opens automatically on first visit to Training Config (when

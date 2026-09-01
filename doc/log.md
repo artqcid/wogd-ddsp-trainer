@@ -3,6 +3,44 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M14.2.0 Tier Identity Color System added (ARCHITECT)
+
+**Decision:** Each of the 5 model tiers gets a unique signal color applied
+consistently across every UI surface that shows tier context, so the user
+always knows at a glance which model complexity / variant is active — even
+when navigating outside Training Config.
+
+| Tier | Color | Hex | Token |
+|---|---|---|---|
+| standard | Emerald | #10B981 | `--tier-standard` |
+| component | Sky/Cyan | #06B6D4 | `--tier-component` |
+| hacks | Amber | #F59E0B | `--tier-hacks` |
+| engine | Violet | #8B5CF6 | `--tier-engine` |
+| advanced | Rose | #F43F5E | `--tier-advanced` |
+
+Global `--accent` (Indigo #6366F1) is NOT repurposed for tier identity —
+it remains the universal interactive / button / navigation accent.
+
+**Update:** [`ui-requirements.md`](./ui-requirements.md) — new subsection
+"Tier identity color system (M14.2.0)": color table, 6 surfaces listed
+(tab bar, TopBar tier chip, Wizard tier cards, GPU feasibility banner chips,
+sidebar note, disabled-tab tooltip), `tierColor(tier)` JS utility spec.
+
+**Update:** [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md)
+— `style.css` token block extended with 15 new custom properties (5 tiers ×
+3: base / -subtle / -glow). M14.2.0-F TopBar sub-step rewritten to include
+the tier badge (persistent across all views), with `tierBadgeStyle` computed
+using `color-mix()`. New sub-step **M14.2.0-H**: `webui/src/utils/tierColors.js`
+— `TIER_META`, `TIER_ORDER`, `tierColor()`, `tierLabel()`, `tierIcon()`,
+`tierAtLeast()` + 7 Vitest assertions (`tests/tierColors.test.js`).
+File map updated to include `tierColors.js` and `tests/tierColors.test.js`.
+
+**Update:** [`checklist.md`](./checklist.md) — M14.2.0 task updated:
+6 sub-steps → 8 sub-steps (G = verify, H = tierColors.js); tier-token list
+added to step B; TopBar F-step notes tier badge and Pinia stub requirement.
+
+Wiki: 152 files, re-index pending.
+
 ## 2026-09-01 — M14.2.0 Design System spec added (ARCHITECT)
 
 **Decision:** Modern AI-dashboard visual language adopted. Design reference:

@@ -240,41 +240,43 @@ default to `'standard'`._
 
 ### Phase 0 — Design System (prerequisite for Phase 2; no backend required)
 
-- [ ] **M14.2.0** Design System upgrade — modern AI-dashboard visual language.
-      Spec: `implementation/m14-dual-mode-ui.md` §"Phase 0". Six sub-steps:
+- [ ] **M14.2.0** Design System upgrade — modern AI-dashboard visual language
+      with **per-tier signal colors** so the active model complexity is
+      always visible across the entire UI.
+      Spec: `implementation/m14-dual-mode-ui.md` §"Phase 0". Eight sub-steps:
       - **A** `webui/index.html` — Inter + JetBrains Mono `<link>` tags,
         update `<title>`.
       - **B** `webui/src/style.css` (NEW) — full global design token file:
         `--bg-*`, `--text-*`, `--accent` (Indigo #6366F1) + `--accent-2`
-        (Cyan #06B6D4), semantic colors, borders, shadows (`--shadow-glow`),
-        radii (`--radius-lg: 16px`), spacing scale, font stacks
-        (`'Inter'`/`'JetBrains Mono'`), transition vars, z-index layers,
-        sidebar/topbar size vars. Global reset + base. Utility classes: `.card`,
-        `.card-header`, `.card-icon`, `.btn-primary` (gradient + glow),
-        `.btn-secondary`, `.btn-ghost`, `.btn-cyan`, `.btn-sm`/`.btn-lg`,
-        `.badge` + semantic variants (`badge-success`, `badge-warning`,
-        `badge-error`, `badge-accent`, `badge-cyan`, `badge-muted`,
-        `badge-dot`), `.form-group`, all form element styles (input/select/
-        range/checkbox/radio), `.tab-bar`/`.tab-btn`/`.tab-btn--active`/
-        `.tab-btn--disabled`, `.modal-overlay`/`.modal-box`/`.modal-header`/
-        `.modal-body`/`.modal-footer`, `.gradient-text`, `.glow-accent`,
-        `.glow-cyan`, grid + flex utilities.
+        (Cyan #06B6D4), semantic colors, borders, shadows, radii, spacing,
+        fonts, transitions. **Tier identity tokens (per tier: base, -subtle,
+        -glow):** `--tier-standard` (Emerald #10B981), `--tier-component`
+        (Sky #06B6D4), `--tier-hacks` (Amber #F59E0B), `--tier-engine`
+        (Violet #8B5CF6), `--tier-advanced` (Rose #F43F5E). Global reset +
+        utility classes: `.card`, `.btn-*`, `.badge` + semantic variants,
+        `.form-group`, `.tab-bar`/`.tab-btn`/`.tab-btn--active`/
+        `.tab-btn--disabled`, modals, `.gradient-text`, `.glow-*`, grid/flex.
       - **C** `webui/src/main.js` — `import './style.css'` as first import.
-      - **D** `webui/src/App.vue` — remove scoped `:root` block; update shell
-        layout vars to use `--sidebar-width`, `--topbar-height`, `--bg-base`,
-        `--bg-primary`, `--font-sans`.
-      - **E** `webui/src/components/Sidebar.vue` — gradient SVG waveform brand
-        mark, `.gradient-text` app name, group icons (emoji prefix), thin
-        `.sidebar-divider` between groups, `router-link-active` state with
-        `--accent-subtle` bg + `--accent` left border + inward glow shadow,
-        footer Settings link.
-      - **F** `webui/src/components/TopBar.vue` — pill `.badge` status
-        indicators (replaces colored dots), breadcrumb section label (derived
-        from route path), GPU chip badge (name + VRAM) when GPU detected,
-        version in mono font. Script: computed `currentSection` map,
-        `gpuChip` computed from `apiClient.getHostInfo()`.
-      Verify: `vitest` all green after M14.2.0 (CSS-only; no `data-testid`
-      selectors changed).
+      - **D** `webui/src/App.vue` — remove scoped `:root` block; use token vars.
+      - **E** `webui/src/components/Sidebar.vue` — gradient SVG brand mark,
+        emoji nav icons, active-link glow (`--accent` left border + inward
+        shadow), sidebar-divider, footer Settings link. Sidebar uses global
+        `--accent` (NOT tier color) for nav state — tier is a model-config
+        concept, not a navigation concept.
+      - **F** `webui/src/components/TopBar.vue` — **tier badge** (visible on
+        ALL views; pill colored with active tier's signal color from
+        `--tier-<name>`; `data-testid="tier-badge"`), pill `.badge` status
+        indicators, breadcrumb section label, GPU chip badge, mono version.
+        Imports `tierColor`/`tierLabel`/`tierIcon` from `tierColors.js`
+        (step H) and `useModelConfigStore` from Pinia (step M14.2.1).
+        **Note:** TopBar import of `useModelConfigStore` means M14.2.0-F must
+        be committed BUT the store import can be wrapped in a `try/catch` or
+        the store created as a stub so Vitest does not fail before M14.2.1.
+      - **G** Vitest verify: `vitest` all green after A–F.
+      - **H** `webui/src/utils/tierColors.js` (NEW) — `TIER_META`, `TIER_ORDER`,
+        `tierColor()`, `tierLabel()`, `tierIcon()`, `tierAtLeast()`. Includes
+        own Vitest (`tests/tierColors.test.js`, 7 tests for label/icon/order/
+        tierAtLeast logic).
 
 ### Phase 2 — Frontend (requires Phase 0 + Phase 1 complete)
 
