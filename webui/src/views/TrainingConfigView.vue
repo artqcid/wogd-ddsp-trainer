@@ -22,6 +22,7 @@ const nFilterBanks = ref(32)
 const gpuInfo = ref(null)
 const showVramWarning = ref(false)
 const vramAdjustmentParams = ref(null)
+const nVoices = ref(1)
 
 const presetOptions = computed(() => {
   const builtin = presets.value.filter(p => p.is_builtin === true)
@@ -43,6 +44,7 @@ const currentParams = computed(() => {
     gradient_checkpointing: p.gradient_checkpointing ?? 'optional',
     decoder_type: p.decoder_type ?? 'gru',
     use_reverb: p.use_reverb ?? true,
+    n_voices: nVoices.value,
   }
 })
 
@@ -410,7 +412,22 @@ async function handleStartTraining() {
         <div class="popup-actions">
           <button class="btn-primary" @click="acceptVramAdjustment">Anpassungen annehmen</button>
           <button class="btn-secondary" @click="dismissVramWarning">Abbrechen</button>
+      <div class="config-section">
+        <h3>Polyphony</h3>
+        <div class="form-group">
+          <label for="n-voices">Number of Voices</label>
+          <input
+            id="n-voices"
+            type="number"
+            min="1"
+            max="4"
+            data-testid="n-voices"
+            v-model.number="nVoices"
+          />
+          <p v-if="nVoices > 2" class="hint-warning">N voices × ~500 MB. Reduce hidden_size if VRAM is tight.</p>
         </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -429,8 +446,9 @@ async function handleStartTraining() {
         gradient_checkpointing: selectedPreset?.params?.gradient_checkpointing ?? 'optional',
         decoder_type: selectedPreset?.params?.decoder_type ?? 'gru',
         use_reverb: selectedPreset?.params?.use_reverb ?? true,
-        n_harmonics: selectedPreset?.params?.n_harmonics ?? nHarmonics,
-        n_filter_banks: selectedPreset?.params?.n_filter_banks ?? nFilterBanks,
+         n_harmonics: selectedPreset?.params?.n_harmonics ?? nHarmonics,
+         n_filter_banks: selectedPreset?.params?.n_filter_banks ?? nFilterBanks,
+         n_voices: nVoices,
       }
       }"
       @close="showDialog = false"
@@ -488,4 +506,5 @@ async function handleStartTraining() {
 .popup-box p { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.25rem; }
 .popup-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.hint-warning { font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem; }
 </style>

@@ -3,6 +3,46 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M13: Voice Conversion (HuBERT/ContentVec) implemented
+
+**Creation:**
+- `model/content_encoder.py` — `ContentEncoderWrapper` (HuBERT-Soft mock/real, `resample_content`)
+- `webui/src/views/VoiceConversionView.vue` — VC UI panel
+- `tests/test_content_encoder.py` — 4 pytest
+- `tests/test_vc_pipeline.py` — 6 pytest
+
+**Update:**
+- `dataset/features.py` — `extract_content_embedding()` function
+- `dataset/loader.py` — `DDSPDataset` loads `content_embedding.npy`
+- `model/ddsp_model.py` — `DDSPConfig.use_content_encoder`/`content_encoder_name`/`content_dim` + content_proj layer + forward(content_embedding)
+- `server/tasks.py` — content encoder fields in `build_training()`
+- `server/presets.py` — `PARAM_KEYS` for `use_content_encoder`, `content_encoder_name`
+- `server/routes/inference.py` — `POST /api/inference/voice-convert` endpoint
+- `server/routes/dataset.py` — `POST /api/datasets/{id}/extract-content` endpoint
+- `webui/src/api/apiClient.js` — `voiceConvert()` method
+- `webui/src/mocks/fixtures.js` — `voiceConvertFixture`
+- `webui/src/mocks/mockApiClient.js` — `voiceConvert()` mock
+- `webui/src/router/index.js` — `/voice-conversion` route
+- `webui/src/components/Sidebar.vue` — Voice Conversion nav link
+- `doc/related-work.md` — M13 Implementation Notes section
+
+## 2026-09-01 — M12: PolyDDSP (Polyphony) implemented
+
+**Creation:**
+- `dataset/multi_pitch.py` — STFT-based spectral peak-picking multi-pitch tracker
+- `model/polyddsp_model.py` — `PolyDDSPModel` with shared/independent N voices
+- `tests/test_polyddsp.py` — 9 pytest (shape, forward, backward, checkpoint, clamp)
+
+**Update:**
+- `dataset/features.py` — `compute_features_poly()` + `save_features` extended for `f0_hz_voices.npy`
+- `dataset/loader.py` — `DDSPDataset` `n_voices` parameter, yields N f0 tracks
+- `model/ddsp_model.py` — `DDSPConfig.n_voices`, `n_voices_independent` fields
+- `server/tasks.py` — `build_training` + `run_training_job` PolyDDSPModel wiring
+- `server/presets.py` — `n_voices` in `PARAM_KEYS`, VRAM clamp [1,4]
+- `webui/src/views/TrainingConfigView.vue` — n_voices number input
+- `webui/src/views/PreprocessingView.vue` — multi-F0 track display section
+- `doc/ddsp-concepts.md` — Polyphony section added
+
 ## 2026-09-01 — M11: Latent Space & Morphing implemented
 
 **Creation:** M11 milestone complete. New files:

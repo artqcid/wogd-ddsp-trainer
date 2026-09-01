@@ -41,6 +41,11 @@ class DDSPConfig:
     variant: DDSPVariant | None = None
     use_latent: bool = False
     latent_dim: int = 32
+    n_voices: int = 1
+    n_voices_independent: bool = False
+    use_content_encoder: bool = False
+    content_encoder_name: str = "hubert_soft"
+    content_dim: int = 256
     stft_scales: list[int] = None  # set in __post_init__
 
     def __post_init__(self) -> None:
@@ -69,6 +74,11 @@ class DDSPModel(nn.Module):
         n_noise_bins = n_noise_bins if n_noise_bins is not None else config.n_noise_bins
 
         input_dim = 2 + (config.latent_dim if config.use_latent else 0)
+        if config.use_content_encoder:
+            self.content_proj = nn.Linear(config.content_dim, 64)
+            input_dim += 64  # projected content embeddings
+        else:
+            self.content_proj = None
 
         self.gru = nn.GRU(
             input_size=input_dim,
@@ -127,25 +137,34 @@ class DDSPModel(nn.Module):
         self,
         f0: torch.Tensor,
         loudness: torch.Tensor,
+        content_embedding: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         """Run the model.
 
         Args:
             f0: per-frame fundamental frequency in Hz, shape (B, T_frames).
             loudness: per-frame log energy, shape (B, T_frames).
+            content_embedding: optional content encoder embedding, shape (B, T_frames, D).
 
         Returns:
             Dict with engine-dependent decoded parameters and synthesized audio.
         """
         B, T_frames = f0.shape
 
-        # Stack conditioning features: (B, T_frames, 2)
-        features = torch.stack([f0, loudness], dim=-1)
+        # Stack conditioning features: (B, T_frames, 2) or (B, T, 64+2) with content
+        if content_embedding is not None:
+            content_proj = F.relu(self.content_proj(content_embedding))  # (B, T, 64)
+            features = torch.cat([content_proj, f0.unsqueeze(-1), loudness.unsqueeze(-1)], dim=-1)
+        else:
+            features = torch.stack([f0, loudness], dim=-1)
+            if self.config.use_content_encoder:
+                pad = torch.zeros(B, T_frames, 64, device=f0.device, dtype=f0.dtype)
+                features = torch.cat([pad, features], dim=-1)
 
         if self.config.use_latent:
             mu, logvar = self.encoder(f0, loudness)
             z = mu + torch.randn_like(mu) * torch.exp(0.5 * logvar) if self.training else mu
-            features = torch.cat([features, z], dim=-1)  # (B, T_frames, 2+latent_dim)
+            features = torch.cat([features, z], dim=-1)
         else:
             mu = None
             logvar = None
@@ -274,11 +293,15 @@ class DDSPModel(nn.Module):
         if self.config.use_latent:
             state["use_latent"] = True
             state["latent_dim"] = self.config.latent_dim
+        if self.config.use_content_encoder:
+            state["use_content_encoder"] = True
+            state["content_encoder_name"] = self.config.content_encoder_name
         torch.save(state, path)
 
     @classmethod
     def load_checkpoint(cls, path: str, variant: DDSPVariant | None = None) -> DDSPModel:
         import torch.serialization as _ts
+
         with _ts.safe_globals([DDSPConfig, DDSPVariant]):
             state = torch.load(path, map_location="cpu", weights_only=True)
         saved_engine = state.get("engine", "harmonic")
@@ -292,6 +315,9 @@ class DDSPModel(nn.Module):
         config = state["config"]
         if not isinstance(config, DDSPConfig):
             config = DDSPConfig(**config)
+        saved_use_ce = state.get("use_content_encoder", False)
+        config.use_content_encoder = saved_use_ce
+        config.content_encoder_name = state.get("content_encoder_name", "hubert_soft")
         model = cls(config=config, variant=variant)
         model.load_state_dict(state["model_state_dict"])
         return model

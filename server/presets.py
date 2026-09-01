@@ -39,12 +39,17 @@ PARAM_KEYS: tuple = (
     "latent_dim",
     "kl_beta",
     "kl_warmup_steps",
+    "n_voices",
+    "use_content_encoder",
+    "content_encoder_name",
 )
 ALLOWED_MIXED_PRECISION = ("required", "recommended", "optional")
 ALLOWED_CHECKPOINTING = ("enabled", "optional", "disabled")
 LEARNING_RATE_MIN = 1e-6
 LEARNING_RATE_MAX = 1e-1
 DEFAULT_LEARNING_RATE = 1e-3
+N_VOICES_MIN = 1
+N_VOICES_MAX = 4
 
 
 def get_bounds() -> ParameterBounds:
@@ -183,6 +188,21 @@ def clamp_params(params: dict, bounds: ParameterBounds) -> tuple[dict, list[str]
     else:
         clamped["learning_rate"] = DEFAULT_LEARNING_RATE
         flags.append("learning_rate")
+
+    if "n_voices" in clamped:
+        try:
+            value = int(clamped["n_voices"])
+        except (ValueError, TypeError):
+            value = N_VOICES_MIN
+            flags.append("n_voices")
+        else:
+            if value < N_VOICES_MIN:
+                value = N_VOICES_MIN
+                flags.append("n_voices")
+            elif value > N_VOICES_MAX:
+                value = N_VOICES_MAX
+                flags.append("n_voices")
+            clamped["n_voices"] = value
 
     return clamped, flags
 

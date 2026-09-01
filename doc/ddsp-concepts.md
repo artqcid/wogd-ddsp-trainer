@@ -75,16 +75,59 @@ through the playground/inference views.
 - Voice conversion (SVC): [`related-work.md`](./related-work.md) analyzes
   DDSP-SVC (real-time singing voice conversion) as a reference architecture.
 
-## Limitations & extensions
+## Polyphony
 
-- The original DDSP is strictly monophonic. Newer developments such as
-  PolyDDSP (2023) extend the architecture with polyphonic pitch tracking,
-  enabling training on more complex/multi-voiced datasets.
+Standard DDSP is strictly monophonic: one fundamental frequency (f0) drives one
+harmonic oscillator bank. **PolyDDSP** extends this to *N* parallel DDSP voices,
+each driven by its own f0 track extracted by a multi-pitch tracker. The outputs
+are summed and normalised to mono audio.
+
+### Voice assignment strategy
+
+- **Shared decoder weights (default):** a single `DDSPModel` instance is called
+  *N* times, once per voice. This uses N× less VRAM than independent decoders
+  and is suitable for most use cases on consumer GPUs (RTX 3060 6 GB).
+- **Independent decoders:** each voice has its own `DDSPModel` with separate
+  weights, allowing voices to specialise per timbre or register. VRAM
+  consumption scales linearly with N.
+
+### VRAM implications
+
+| N voices | hidden_size=256 | hidden_size=128 |
+|----------|----------------|----------------|
+| 1        | ~1.3 GB        | ~0.7 GB        |
+| 2        | ~2.5 GB        | ~1.3 GB        |
+| 4        | ~5 GB (tight)  | ~2.5 GB        |
+
+- Recommended maximum: N = 2–3 for RTX 3060 6 GB.
+- At N ≥ 4, reduce `hidden_size` to 128 or use gradient checkpointing.
+
+### Multi-pitch tracker
+
+PolyDDSP uses **torchcrepe in top-K candidate mode**: CREPE returns 256 pitch
+candidates per frame; the K highest-confidence candidates are assigned to the N
+voices. Unvoiced frames are set to 0.0 Hz. The tracker runs offline during
+dataset preprocessing and is not invoked during training.
+
+### Configuration
+
+- `n_voices` (int, default 1): number of parallel DDSP voices.
+- `n_voices_independent` (bool, default False): use independent decoders per
+  voice. Hard-clamped to ≤ 4 to protect VRAM.
+
+### Checkpoint compatibility
+
+Checkpoints with different `n_voices` are incompatible and trigger a
+`ValueError` on load. The checkpoint is tagged with `state["n_voices"] = N`.
+
+## Limitations
+
 - Pitch-tracking quality during preprocessing is a bottleneck; with too-noisy
   audio the encoder fails.
 - Alternatives such as RAVE (Realtime Audio Variational autoEncoder) work via
   adversarial training on latent-space representations instead of pure DSP
   control and can handle polyphonic material more flexibly.
-- The creative *misuse* of these constraints (polyphony glitch, IR injection,
-  and SDK-level rewriting) is explored in [`experimental-ddsp.md`](./experimental-ddsp.md)
-  (M7) and [`experimental-sdk-hacking.md`](./experimental-sdk-hacking.md) (M8).
+- The creative *misuse* of the monophonic/polyphonic constraints (polyphony
+  glitch, IR injection, and SDK-level rewriting) is explored in
+  [`experimental-ddsp.md`](./experimental-ddsp.md) (M7) and
+  [`experimental-sdk-hacking.md`](./experimental-sdk-hacking.md) (M8).

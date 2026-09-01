@@ -167,6 +167,12 @@ export const morphFixture = {
   task_id: 'task_morph_001',
 }
 
+export const voiceConvertFixture = {
+  job_id: 'job_vc_001',
+  status: 'pending',
+  task_id: 'task_vc_001',
+}
+
 const _SPEED_FACTORS = {
   FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
   NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },

@@ -27,6 +27,7 @@ from dataset.cache import FeatureCache
 from inference.render import load_model_from_checkpoint, render_to_file
 from model import DDSPConfig, DDSPModel, MultiScaleSpectralLoss
 from model.ddsp.variant import DDSPVariant
+from model.polyddsp_model import PolyDDSPModel
 from server.db import (
     connect,
     run_get,
@@ -110,22 +111,33 @@ def build_training(
     latent_dim = int(model_config.get("latent_dim", 32))
     kl_beta = float(model_config.get("kl_beta", 0.0001))
     kl_warmup = int(model_config.get("kl_warmup_steps", 2000))
+    use_content_encoder = model_config.get("use_content_encoder", False)
+    content_encoder_name = model_config.get("content_encoder_name", "hubert_soft")
     dcfg = DDSPConfig(
         hidden_size=hidden_size,
         stft_scales=fft_sizes_for_scales(stft_scales),
         variant=variant,
         use_latent=use_latent,
         latent_dim=latent_dim,
+        use_content_encoder=use_content_encoder,
+        content_encoder_name=content_encoder_name,
     )
+
+    n_voices = int(model_config.get("n_voices", 1))
+    dcfg.n_voices = n_voices  # propagate to config
 
     band_mask = None
     if variant.loss_band_mask:
         band_mask = [tuple(pair) for pair in variant.loss_band_mask]
-    loss_fn = MultiScaleSpectralLoss(
-        fft_sizes=fft_sizes_for_scales(stft_scales),
-        band_mask=band_mask,
-        sample_rate=16000,
-    ) if band_mask else None
+    loss_fn = (
+        MultiScaleSpectralLoss(
+            fft_sizes=fft_sizes_for_scales(stft_scales),
+            band_mask=band_mask,
+            sample_rate=16000,
+        )
+        if band_mask
+        else None
+    )
 
     use_mixed_precision = mixed_precision in {"required", "recommended"}
     use_gradient_checkpointing = gradient_checkpointing == "enabled"
@@ -222,7 +234,10 @@ def run_training_job(run_id: str) -> dict:
 
     try:
         tcfg, dcfg, loss_fn = build_training(run["config"], checkpoint_dir)
-        model = DDSPModel(dcfg)
+        if dcfg.n_voices > 1:
+            model = PolyDDSPModel(dcfg, n_voices=dcfg.n_voices)
+        else:
+            model = DDSPModel(dcfg)
 
         latest = latest_checkpoint(run_id)
         if latest is not None:

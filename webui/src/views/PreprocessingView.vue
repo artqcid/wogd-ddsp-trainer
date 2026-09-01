@@ -11,6 +11,9 @@ const ws = ref(null)
 const isRunning = ref(false)
 const completed = ref(false)
 
+const nVoices = ref(1)
+const showMultiF0 = computed(() => nVoices.value > 1)
+
 const confidence = ref(0.85)
 
 onMounted(async () => {
@@ -114,6 +117,14 @@ const resultsText = computed(() => {
       v-if="selectedDataset"
       :confidence="confidence"
     />
+
+    <div v-if="showMultiF0" class="multi-f0-section" data-testid="multi-f0-section">
+      <h3>Multi-Voice F0 Tracks</h3>
+      <div v-for="v in nVoices" :key="v" class="f0-track" :data-testid="'f0-track-' + v">
+        <span class="voice-label">Voice {{ v }}</span>
+        <div class="f0-confidence-bar" :style="{ width: (confidence * 100) + '%' }"></div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -128,4 +139,10 @@ const resultsText = computed(() => {
 .progress-bar-fill { height: 100%; background: var(--accent); animation: progress-indeterminate 1.5s infinite; width: 60%; }
 @keyframes progress-indeterminate { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 .results { padding: 0.75rem 1rem; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.875rem; color: var(--text-secondary); }
+
+.multi-f0-section { margin-top: 1.5rem; }
+.multi-f0-section h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.75rem; }
+.f0-track { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+.voice-label { font-size: 0.8rem; color: var(--text-primary); min-width: 4rem; }
+.f0-confidence-bar { height: 0.5rem; background: var(--accent); border-radius: 4px; max-width: 100%; }
 </style>

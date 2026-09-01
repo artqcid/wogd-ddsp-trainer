@@ -188,4 +188,12 @@ export class ApiClient {
   async morph(formData) {
     throw new Error('ApiClient.morph not implemented')
   }
+
+  /**
+   * @param {FormData} formData run_id, source_audio, optional pitch_shift, loudness_shift, enhance
+   * @returns {Promise<{job_id: string, status: string, task_id: string}>}
+   */
+  async voiceConvert(formData) {
+    throw new Error('ApiClient.voiceConvert not implemented')
+  }
 }

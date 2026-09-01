@@ -77,3 +77,40 @@ content encoder (HubertSoft / ContentVec) and a vocoder-based enhancer
 - [`checklist.md`](./checklist.md) - M6.5 output enhancer.
 - [`implementation/m6-polish.md`](./implementation/m6-polish.md) - enhancer steps.
 - [`ddsp-concepts.md`](./ddsp-concepts.md) - DDSP background.
+
+## M13 Implementation Notes
+
+Our voice conversion (VC) pipeline mirrors the DDSP-SVC architecture, implemented
+in our own PyTorch stack. Key differences:
+
+- **DDSP core:** We use our own `DDSPModel` + `DDSPCore` (harmonic oscillator, filtered
+noise, reverb) instead of the DDSP-SVC `CombSubSynth` comb-filter subtractive model.
+This gives us full control over the synthesis engine.
+- **Content encoder:** HuBERT-Soft (MIT, `bshall/hubert-soft`) extracts 256-dim
+semantic embeddings at 50 Hz (320-sample hop at 16 kHz). These are linearly
+interpolated to match our DDSP frame rate (125 Hz, 128-sample hop).
+- **Offline extraction:** Content embeddings are extracted once per dataset during
+preprocessing and cached as `content_embedding.npy`, identical to the existing
+`f0_hz.npy` / `loudness_db.npy` pattern.
+- **Frozen encoder:** The content encoder weights are never updated during training.
+Only the DDSP decoder + synth are trained, keeping VRAM usage low (~1.9 GB total
+with HuBERT loaded).
+- **Conditioning:** The projected content embedding (256→64 via linear) is concatenated
+with f0 and loudness as the GRU input. This replaces the f0+loudness-only
+conditioning from the standard DDSP autoencoder.
+- **Signal flow:** `ContentEncoder → (content, f0, loudness) → GRU decoder →
+DDSP synth params → audio`.
+
+### Use cases
+
+- **Timbre transfer:** Train on target speaker A, run inference with source speaker
+B's audio → output sounds like A saying B's words.
+- **Cross-language VC:** Content encoder captures phoneme-agnostic prosody, enabling
+conversion across languages.
+- **Creative misuse:** Train on sung audio and convert spoken content → melodic voice
+synthesis.
+
+### Dependencies
+
+- `huggingface_hub` (already installed) for downloading HuBERT-Soft weights.
+- ContentVec (`lengyue233/content-vec-best`, MIT) is declared but not yet implemented.

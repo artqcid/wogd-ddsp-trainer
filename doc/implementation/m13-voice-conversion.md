@@ -379,4 +379,5 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M13 implemented: ContentEncoderWrapper (mock/real HuBERT), extract_content_embedding, DDSPModel content conditioning, server wiring (tasks.py + presets.py), VC endpoint + extract-content endpoint, VoiceConversionView.vue + router + sidebar + api mocks, 10 pytest, related-work.md docs.
 - **2026-09-01** — Initial granular step breakdown written by ARCHITECT agent.

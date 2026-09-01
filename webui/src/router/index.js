@@ -81,6 +81,11 @@ const routes = [
     name: 'latent-explore',
     component: () => import('../views/LatentExploreView.vue'),
   },
+  {
+    path: '/voice-conversion',
+    name: 'voice-conversion',
+    component: () => import('../views/VoiceConversionView.vue'),
+  },
 ]
 
 const router = createRouter({

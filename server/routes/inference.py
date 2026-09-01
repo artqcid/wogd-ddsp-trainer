@@ -146,3 +146,42 @@ async def morph(
         conn.close()
 
     return {"job_id": job_id, "status": "pending", "task_id": task_result.id}
+
+
+@router.post("/voice-convert", status_code=status.HTTP_202_ACCEPTED)
+async def voice_convert(
+    source_audio: Annotated[UploadFile, File()],
+    run_id: str = Form(...),
+    pitch_shift: float = Form(0.0),
+    loudness_shift: float = Form(0.0),
+    enhance: bool = Form(False),
+    *,
+    runner: Annotated[TaskRunner, Depends(get_task_runner)],
+) -> dict:
+    """Voice conversion: extract content from source audio, render with target timbre."""
+    job_id = str(uuid4())
+    params = {
+        "run_id": run_id,
+        "pitch_shift": pitch_shift,
+        "loudness_shift": loudness_shift,
+        "enhance": enhance,
+        "seed": 0,
+    }
+
+    conn = connect()
+    try:
+        src_ext = Path(_sanitized_filename(source_audio.filename or "")).suffix
+        out_dir = Path(runs_dir()) / run_id / "synthesis"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        src_path = out_dir / f"{job_id}.src{src_ext}"
+        with src_path.open("wb") as dst:
+            shutil.copyfileobj(source_audio.file, dst)
+
+        synth_create(conn, job_id, run_id, params)
+        conn.commit()
+
+        task_id = runner.submit_synthesis(job_id)
+    finally:
+        conn.close()
+
+    return {"job_id": job_id, "status": "pending", "task_id": task_id}

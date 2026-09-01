@@ -81,7 +81,7 @@ def test_dataset_shapes_and_types(synthetic_cache: tuple[pytest.Path, dict]) -> 
     cache_dir, info = synthetic_cache
     ds = DDSPDataset(cache_dir, key="train", seq_len=info["seq_len"], seed=42)
 
-    f0, loudness, audio = ds[0]
+    f0, loudness, audio, _content = ds[0]
 
     assert isinstance(f0, torch.Tensor)
     assert isinstance(loudness, torch.Tensor)
@@ -106,7 +106,7 @@ def test_dataset_iterates_one_epoch(synthetic_cache: tuple[pytest.Path, dict]) -
 
     # Iterate over the full epoch; verify shapes/types and that content is monotonic.
     seen = 0
-    for _idx, (f0, loudness, audio) in enumerate(ds):
+    for _idx, (f0, loudness, audio, _content) in enumerate(ds):
         assert f0.shape == (1, info["seq_len"] // AUDIO_SAMPLES_PER_FRAME)
         assert loudness.shape == (1, info["seq_len"] // AUDIO_SAMPLES_PER_FRAME)
         assert audio.shape == (1, info["seq_len"])

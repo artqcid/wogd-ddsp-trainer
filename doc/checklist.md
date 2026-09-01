@@ -189,36 +189,36 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M12 - PolyDDSP (Polyphony)
 
-- [ ] **M12.1** Multi-pitch tracker wrapper + dependency check
-      (`dataset/multi_pitch.py`).
-- [ ] **M12.2** Dataset pipeline: `f0_hz_voices.npy` + `DDSPDataset` yields
-      N f0 tracks.
-- [ ] **M12.3** `PolyDDSPModel` — N shared-weight voices, sum output
-      (`model/polyddsp_model.py`).
-- [ ] **M12.4** Server wiring: `n_voices` in config + VRAM clamp (max 4) +
-      `PARAM_KEYS`.
-- [ ] **M12.5** UI: `n_voices` input in `TrainingConfigView.vue` + multi-F0
-      display in `PreprocessingView.vue`.
-- [ ] **M12.6** `tests/test_polyddsp.py` — 9 pytest.
-- [ ] **M12.7** Docs: `ddsp-concepts.md` polyphony section.
+- [x] **M12.1** Multi-pitch tracker wrapper + dependency check
+       (`dataset/multi_pitch.py`).
+- [x] **M12.2** Dataset pipeline: `f0_hz_voices.npy` + `DDSPDataset` yields
+       N f0 tracks.
+- [x] **M12.3** `PolyDDSPModel` — N shared-weight voices, sum output
+       (`model/polyddsp_model.py`).
+- [x] **M12.4** Server wiring: `n_voices` in config + VRAM clamp (max 4) +
+       `PARAM_KEYS`.
+- [x] **M12.5** UI: `n_voices` input in `TrainingConfigView.vue` + multi-F0
+       display in `PreprocessingView.vue`.
+- [x] **M12.6** `tests/test_polyddsp.py` — 9 pytest.
+- [x] **M12.7** Docs: `ddsp-concepts.md` polyphony section.
 
 ## Milestone M13 - Voice Conversion (HuBERT/ContentVec)
 
-- [ ] **M13.1** `ContentEncoderWrapper` — frozen HuBERT-Soft / ContentVec
-      (`model/content_encoder.py`).
-- [ ] **M13.2** Offline content extraction: `extract_content_embedding()` in
-      `dataset/features.py`; `DDSPDataset` loads `content_embedding.npy`.
-- [ ] **M13.3** Content conditioning in `DDSPModel`: `content_proj` linear +
-      concat to GRU input; `DDSPConfig.use_content_encoder`.
-- [ ] **M13.4** Server wiring: `use_content_encoder`, `content_encoder_name`
-      in run config + `PARAM_KEYS`.
-- [ ] **M13.5** VC inference endpoint `POST /api/inference/voice-convert` +
-      dataset content-extraction trigger.
-- [ ] **M13.6** `VoiceConversionView.vue` — source upload, pitch/loudness
-      shift, A/B player.
-- [ ] **M13.7** `tests/test_content_encoder.py` + `tests/test_vc_pipeline.py`
-      — 10 pytest + 1 vitest.
-- [ ] **M13.8** Docs: `related-work.md` M13 section.
+- [x] **M13.1** `ContentEncoderWrapper` — frozen HuBERT-Soft / ContentVec
+       (`model/content_encoder.py`).
+- [x] **M13.2** Offline content extraction: `extract_content_embedding()` in
+       `dataset/features.py`; `DDSPDataset` loads `content_embedding.npy`.
+- [x] **M13.3** Content conditioning in `DDSPModel`: `content_proj` linear +
+       concat to GRU input; `DDSPConfig.use_content_encoder`.
+- [x] **M13.4** Server wiring: `use_content_encoder`, `content_encoder_name`
+       in run config + `PARAM_KEYS`.
+- [x] **M13.5** VC inference endpoint `POST /api/inference/voice-convert` +
+       dataset content-extraction trigger.
+- [x] **M13.6** `VoiceConversionView.vue` — source upload, pitch/loudness
+       shift, A/B player.
+- [x] **M13.7** `tests/test_content_encoder.py` + `tests/test_vc_pipeline.py`
+       — 10 pytest + 1 vitest.
+- [x] **M13.8** Docs: `related-work.md` M13 section.
 
 ## Milestone M14 - Dual-Mode Training UI + Backend Tier System
 

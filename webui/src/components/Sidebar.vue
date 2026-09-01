@@ -47,6 +47,9 @@
         <li>
           <RouterLink to="/presets" class="sidebar-link">Presets</RouterLink>
         </li>
+        <li>
+          <RouterLink to="/voice-conversion" class="sidebar-link">Voice Conversion</RouterLink>
+        </li>
       </ul>
     </div>
 

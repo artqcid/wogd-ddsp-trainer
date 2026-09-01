@@ -164,3 +164,44 @@ async def delete_f0_override(dataset_id: str, filename: str) -> dict:
     out_path.unlink()
 
     return {"status": "deleted"}
+
+
+@router.post("/{dataset_id}/extract-content")
+async def extract_content(
+    dataset_id: str,
+    model_name: str = Form("hubert_soft"),
+) -> dict:
+    """Trigger offline content embedding extraction for all files in a dataset."""
+    if not dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+    dataset_path = datasets_dir() / dataset_id
+    import librosa
+
+    from dataset.features import extract_content_embedding
+
+    audio_files = sorted(
+        p for p in dataset_path.iterdir()
+        if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
+    )
+
+    if not audio_files:
+        raise HTTPException(status_code=400, detail="no audio files in dataset")
+
+    for af in audio_files:
+        try:
+            audio, sr = librosa.load(str(af), sr=16000, mono=True)
+            # Compute target_frames to match DDSP frame rate
+            target_frames = len(audio) // 256 + 1
+            emb = extract_content_embedding(
+                audio, sr, model_name=model_name, target_frames=target_frames
+            )
+            out_path = dataset_path / f"{af.stem}.content_embedding.npy"
+            np.save(out_path, emb, allow_pickle=False)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"failed to extract content for {af.name}: {exc}",
+            ) from exc
+
+    return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}

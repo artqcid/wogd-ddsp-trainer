@@ -269,4 +269,5 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M12 implemented: multi_pitch.py (STFT peak-picking), features.py/loader.py poly extensions, PolyDDSPModel, server wiring (tasks.py + presets.py), UI (n_voices input + multi-F0 display), tests (9/9 pytest + vitest), docs.
 - **2026-09-01** — Initial granular step breakdown written by ARCHITECT agent.
