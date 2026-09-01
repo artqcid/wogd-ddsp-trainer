@@ -180,4 +180,12 @@ export class ApiClient {
   async getFeatures(datasetId, filename) {
     throw new Error('ApiClient.getFeatures not implemented')
   }
+
+  /**
+   * @param {FormData} formData run_id_a, run_id_b, alpha, optional audio
+   * @returns {Promise<{job_id: string, status: string, task_id: string}>}
+   */
+  async morph(formData) {
+    throw new Error('ApiClient.morph not implemented')
+  }
 }

@@ -327,4 +327,17 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M11 implemented by DEV agent. All 9 steps complete.
+  Parallel batches: Batch 1 (3 subagents: encoder.py, presets PARAM_KEYS, docs),
+  Batch 2 (2 subagents: ddsp_model.py VAE, trainer.py KL loss),
+  Batch 3 (2 subagents: tasks.py wiring, inference.py morph endpoint),
+  Batch 4 (2 subagents: MorphingView.vue, LatentExploreView.vue),
+  Batch 5 (1 subagent: tests/test_latent.py).
+  Subagent IDs: `ses_fa4748fd2ffebavA3c72dCTcJF` (M11.1),
+  `ses_fa474750fffeAsoG9SaTgCczl9` (M11.4b), `ses_fa4743e77ffeYyQVcSHAG9Q0Sm` (M11.9),
+  `ses_fa4735302ffeqs5buh6z2aDyml` (M11.2), `ses_fa47326caffenr9Z80dLDlsApp` (M11.3),
+  `ses_fa46fcf2dffenuHAOzUr4GD3Ia` (M11.4a), `ses_fa46f8c2cffeVI59hiKYrxVFzS` (M11.5),
+  `ses_fa46c312cffeU45gxOuyRDgPvP` (M11.6), `ses_fa46b8080ffeSg56FEDcVn5MH6` (M11.7),
+  `ses_fa46a900dffeZFV9TWO8YpH1F1` (M11.8).
+  233/233 pytest + 1 skipped, 23/23 vitest, ruff clean (only pre-existing sync-wiki.py issues).
 - **2026-09-01** — Initial granular step breakdown written by ARCHITECT agent.

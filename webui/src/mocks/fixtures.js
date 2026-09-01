@@ -161,13 +161,19 @@ export const variantFixture = {
   newt_n_layers: 4,
 }
 
+export const morphFixture = {
+  job_id: 'job_morph_001',
+  status: 'pending',
+  task_id: 'task_morph_001',
+}
+
 const _SPEED_FACTORS = {
   FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
   NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },
   QUALITY: { hidden: 0.90, scales: 'keep', mp: 'tier', ckpt: 'disabled' },
 }
 
-export function validatePresetFixture(params, training_speed) {
+export const validatePresetFixture = (params, training_speed) => {
   const speed = training_speed || 'NORMAL'
   const factor = _SPEED_FACTORS[speed] || _SPEED_FACTORS.NORMAL
   const bounds = { ...gpuHostInfoFixture.bounds }

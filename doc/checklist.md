@@ -172,20 +172,20 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M11 - Latent Space & Morphing
 
-- [ ] **M11.1** `GRUEncoder` → (μ, σ) latent distribution
-      (`model/encoder.py`).
-- [ ] **M11.2** VAE mode in `DDSPModel`: reparameterisation, z concat,
-      `DDSPConfig.use_latent`, checkpoint tag.
-- [ ] **M11.3** β-VAE loss term + KL warmup schedule in `Trainer` +
-      `TrainingConfig.kl_beta`.
-- [ ] **M11.4** Server wiring: `use_latent`, `latent_dim`, `kl_beta` in run
-      config + `PARAM_KEYS`.
-- [ ] **M11.5** Morphing endpoint `POST /api/inference/morph`.
-- [ ] **M11.6** `MorphingView.vue` — model A/B selector, alpha slider, render.
-- [ ] **M11.7** `LatentExploreView.vue` — per-dimension sliders + scatter
-      (optional PCA scatter).
-- [ ] **M11.8** `tests/test_latent.py` — 10 pytest + 1 vitest.
-- [ ] **M11.9** Docs: `experimental-ddsp.md` latent space section.
+- [x] **M11.1** `GRUEncoder` → (μ, σ) latent distribution
+       (`model/encoder.py`).
+- [x] **M11.2** VAE mode in `DDSPModel`: reparameterisation, z concat,
+       `DDSPConfig.use_latent`, checkpoint tag.
+- [x] **M11.3** β-VAE loss term + KL warmup schedule in `Trainer` +
+       `TrainingConfig.kl_beta`.
+- [x] **M11.4** Server wiring: `use_latent`, `latent_dim`, `kl_beta` in run
+       config + `PARAM_KEYS`.
+- [x] **M11.5** Morphing endpoint `POST /api/inference/morph`.
+- [x] **M11.6** `MorphingView.vue` — model A/B selector, alpha slider, render.
+- [x] **M11.7** `LatentExploreView.vue` — per-dimension sliders + scatter
+       (optional PCA scatter).
+- [x] **M11.8** `tests/test_latent.py` — 10 pytest + 1 vitest.
+- [x] **M11.9** Docs: `experimental-ddsp.md` latent space section.
 
 ## Milestone M12 - PolyDDSP (Polyphony)
 

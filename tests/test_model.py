@@ -22,7 +22,9 @@ def test_forward_returns_keys_and_shapes() -> None:
     loudness = torch.rand(2, 16).log()
     out = model(f0, loudness)
 
-    assert set(out.keys()) == {"amplitudes", "harmonic_distribution", "magnitudes", "audio"}
+    assert set(out.keys()) == {
+        "amplitudes", "harmonic_distribution", "magnitudes", "audio", "mu", "logvar"
+    }
 
     assert out["amplitudes"].shape == (2, 16, 60)
     assert out["harmonic_distribution"].shape == (2, 16, 60)
@@ -30,7 +32,8 @@ def test_forward_returns_keys_and_shapes() -> None:
     assert out["audio"].shape == (2, 1921)  # (T-1)*frame_size + 1
 
     for name, tensor in out.items():
-        assert torch.isfinite(tensor).all(), f"{name} not all finite"
+        if tensor is not None:
+            assert torch.isfinite(tensor).all(), f"{name} not all finite"
 
 
 def test_harmonic_distribution_softmaxes_to_one() -> None:

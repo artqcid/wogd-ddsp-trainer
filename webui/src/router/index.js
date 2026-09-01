@@ -71,6 +71,16 @@ const routes = [
     name: 'synth-hacks',
     component: () => import('../views/SynthHacksView.vue'),
   },
+  {
+    path: '/experimental/morphing',
+    name: 'morphing',
+    component: () => import('../views/MorphingView.vue'),
+  },
+  {
+    path: '/experimental/latent-explore',
+    name: 'latent-explore',
+    component: () => import('../views/LatentExploreView.vue'),
+  },
 ]
 
 const router = createRouter({

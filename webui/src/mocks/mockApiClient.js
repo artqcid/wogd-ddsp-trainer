@@ -25,6 +25,7 @@ import {
   settingsFixture,
   gpuHostInfoFixture,
   validatePresetFixture,
+  morphFixture,
 } from './fixtures.js'
 
 /**
@@ -168,5 +169,9 @@ export class MockApiClient {
       f0_confidence: Array.from({ length: len }, () => Math.random()),
       loudness_db: Array.from({ length: len }, () => Math.random() * 60 - 60),
     }
+  }
+
+  async morph(formData) {
+    return { ...morphFixture }
   }
 }

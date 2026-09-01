@@ -3,6 +3,29 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M11: Latent Space & Morphing implemented
+
+**Creation:** M11 milestone complete. New files:
+- `model/encoder.py` — `GRUEncoder` → (μ, log σ²)
+- `webui/src/views/MorphingView.vue` — model A/B blend UI
+- `webui/src/views/LatentExploreView.vue` — per-dimension latent steering
+- `tests/test_latent.py` — 10 pytest
+
+**Update:**
+- `model/ddsp_model.py` — VAE mode: reparameterisation, z concat, `DDSPConfig.use_latent`
+- `train/trainer.py` — `TrainingConfig.kl_beta`/`kl_warmup_steps`, β-VAE KL loss in train_step
+- `server/presets.py` — `PARAM_KEYS` + `use_latent`, `latent_dim`, `kl_beta`, `kl_warmup_steps`
+- `server/tasks.py` — `build_training` wiring + `run_morph_job` Celery task
+- `server/routes/inference.py` — `POST /api/inference/morph` endpoint
+- `webui/src/router/index.js` — 2 new routes
+- `webui/src/components/Sidebar.vue` — 2 new links
+- `webui/src/api/apiClient.js` — `morph()` method
+- `webui/src/mocks/mockApiClient.js` + `fixtures.js` — morph mock
+- `tests/test_model.py` — updated expected keys for mu/logvar
+- `doc/experimental-ddsp.md` — latent space section
+
+Checks: 233/233 pytest, 23/23 vitest, ruff clean (pre-existing sync-wiki.py only)
+
 ## 2026-09-01 — M10: Neural Waveshaping Unit (NEWT) implemented
 
 **Creation:** NEWT milestone complete. New files:

@@ -35,6 +35,10 @@ PARAM_KEYS: tuple = (
     "gradient_checkpointing",
     "learning_rate",
     "variant",
+    "use_latent",
+    "latent_dim",
+    "kl_beta",
+    "kl_warmup_steps",
 )
 ALLOWED_MIXED_PRECISION = ("required", "recommended", "optional")
 ALLOWED_CHECKPOINTING = ("enabled", "optional", "disabled")

@@ -60,6 +60,8 @@ class TrainingConfig:
     use_gradient_checkpointing: bool = False
     gradient_accumulation_steps: int = 1
     log_dir: str = "runs"
+    kl_beta: float = 0.0
+    kl_warmup_steps: int = 1000
 
 
 class Trainer:
@@ -184,8 +186,17 @@ class Trainer:
             ctx = nullcontext()
 
         with ctx:
-            predicted = self.model(f0, loudness)["audio"]
+            out = self.model(f0, loudness)
+            predicted = out["audio"]
             loss = self.loss_fn(predicted, target_audio)
+
+            if self.config.kl_beta > 0.0 and out.get("mu") is not None:
+                mu = out["mu"]
+                logvar = out["logvar"]
+                kl = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp()).mean()
+                step_ratio = min(1.0, self._step / max(1, self.config.kl_warmup_steps))
+                effective_beta = self.config.kl_beta * step_ratio
+                loss = loss + effective_beta * kl
 
         # Backward + step.
         if self.use_amp:

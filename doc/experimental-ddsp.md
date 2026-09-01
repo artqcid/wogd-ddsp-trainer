@@ -149,6 +149,28 @@ powerful architectural interventions.
   the source - a new texture created by an AI trying to acoustically "fight" an
   inappropriate room. `[Spekulation]`.
 
+## Latent Space & Morphing (M11)
+
+- **Architecture:** a small GRU encoder maps (f0, loudness) → (μ, log σ²), and
+  the reparameterisation trick z = μ + ε·σ produces a latent vector that is
+  concatenated with the conditioning features before the decoder GRU.
+  `[Architektur-Fakt]`
+- **β-VAE loss:** the KL divergence term D_KL(N(μ, σ²) || N(0,1)) is added to
+  the multi-scale spectral loss with a linear warmup schedule to prevent
+  posterior collapse. β starts at 0 and ramps to the configured value over
+  `kl_warmup_steps` steps. `[Architektur-Fakt]`
+- **Checkpoint morphing:** two latent-trained checkpoints A and B both run
+  their encoders on the same source audio to produce z_A and z_B. The
+  interpolated z = α·z_A + (1-α)·z_B is fed through decoder A to produce a
+  blend. α=0 gives model B's rendering, α=1 gives model A's.
+  `[Logische Erweiterung]`
+- **Latent steering:** each dimension of z can be manually overridden via UI
+  sliders to explore the latent space. Random sampling z ~ N(0,1) produces
+  novel textures not seen in training data. `[Spekulation]`
+- **Checkpoint incompatibility:** M11 checkpoints have `state["use_latent"] = True`
+  and are not compatible with M1–M10 standard checkpoints (different decoder
+  input dimension).
+
 ## References
 
 - `checklist.md` - M7 open tasks.

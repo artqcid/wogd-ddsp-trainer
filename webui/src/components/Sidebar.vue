@@ -65,6 +65,12 @@
         <li>
           <RouterLink to="/experimental/synth-hacks" class="sidebar-link">Synth Hacks</RouterLink>
         </li>
+        <li>
+          <RouterLink to="/experimental/morphing" class="sidebar-link">Checkpoint Morphing</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/latent-explore" class="sidebar-link">Latent Explorer</RouterLink>
+        </li>
        </ul>
     </div>
 

@@ -10,6 +10,7 @@ import torch.nn.functional as F
 
 from model.ddsp import DDSPCore, DDSPVariant
 from model.ddsp.newt import NEWTUnit, SawtoothExciter
+from model.encoder import GRUEncoder
 
 
 @dataclass
@@ -38,6 +39,8 @@ class DDSPConfig:
     decoder_type: str = "gru"
     use_reverb: bool = True
     variant: DDSPVariant | None = None
+    use_latent: bool = False
+    latent_dim: int = 32
     stft_scales: list[int] = None  # set in __post_init__
 
     def __post_init__(self) -> None:
@@ -65,7 +68,7 @@ class DDSPModel(nn.Module):
         self.variant = variant or config.variant or DDSPVariant()
         n_noise_bins = n_noise_bins if n_noise_bins is not None else config.n_noise_bins
 
-        input_dim = 2  # f0 + loudness
+        input_dim = 2 + (config.latent_dim if config.use_latent else 0)
 
         self.gru = nn.GRU(
             input_size=input_dim,
@@ -106,12 +109,18 @@ class DDSPModel(nn.Module):
 
         self.sawtooth: SawtoothExciter | None = None
         self.newt: NEWTUnit | None = None
+        self.encoder: GRUEncoder | None = None
 
         if self.variant.engine == "newt":
             self.sawtooth = SawtoothExciter()
             self.newt = NEWTUnit(
                 n_hidden=self.variant.newt_n_hidden,
                 n_layers=self.variant.newt_n_layers,
+            )
+
+        if self.config.use_latent:
+            self.encoder = GRUEncoder(
+                hidden_size=config.hidden_size // 2, latent_dim=config.latent_dim
             )
 
     def forward(
@@ -132,6 +141,14 @@ class DDSPModel(nn.Module):
 
         # Stack conditioning features: (B, T_frames, 2)
         features = torch.stack([f0, loudness], dim=-1)
+
+        if self.config.use_latent:
+            mu, logvar = self.encoder(f0, loudness)
+            z = mu + torch.randn_like(mu) * torch.exp(0.5 * logvar) if self.training else mu
+            features = torch.cat([features, z], dim=-1)  # (B, T_frames, 2+latent_dim)
+        else:
+            mu = None
+            logvar = None
 
         # GRU encoder
         gru_out, _ = self.gru(features)  # (B, T_frames, hidden_size)
@@ -160,6 +177,8 @@ class DDSPModel(nn.Module):
                 "sinusoidal_freqs": sinusoidal_freqs,
                 "magnitudes": magnitudes,
                 "audio": audio,
+                "mu": mu,
+                "logvar": logvar,
             }
 
         if engine == "combsub":
@@ -178,6 +197,8 @@ class DDSPModel(nn.Module):
                 "magnitudes": magnitudes,
                 "voiced": voiced,
                 "audio": audio,
+                "mu": mu,
+                "logvar": logvar,
             }
 
         if engine == "newt":
@@ -208,6 +229,8 @@ class DDSPModel(nn.Module):
                 "bias_frames": bias_frames,
                 "magnitudes": magnitudes,
                 "audio": audio,
+                "mu": mu,
+                "logvar": logvar,
             }
 
         # "harmonic" (default)
@@ -238,6 +261,8 @@ class DDSPModel(nn.Module):
             "harmonic_distribution": harmonic_distribution,
             "magnitudes": magnitudes,
             "audio": audio,
+            "mu": mu,
+            "logvar": logvar,
         }
 
     def save_checkpoint(self, path: str) -> None:
@@ -246,6 +271,9 @@ class DDSPModel(nn.Module):
             "config": self.config,
             "engine": self.variant.engine,
         }
+        if self.config.use_latent:
+            state["use_latent"] = True
+            state["latent_dim"] = self.config.latent_dim
         torch.save(state, path)
 
     @classmethod

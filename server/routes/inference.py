@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 
 from server.db import connect, synth_create, synth_get
 from server.tasks import TaskRunner, get_task_runner, runs_dir
+from server.tasks import run_morph_job as celery_morph_job
 
 router = APIRouter(prefix="/inference", tags=["inference"])
 
@@ -102,3 +103,46 @@ async def get_artifact(job_id: str) -> FileResponse:
         )
     finally:
         conn.close()
+
+
+@router.post("/morph", status_code=status.HTTP_202_ACCEPTED)
+async def morph(
+    run_id_a: str = Form(...),
+    run_id_b: str = Form(...),
+    alpha: float = Form(0.5),
+    pitch_shift: float = Form(0.0),
+    loudness_shift: float = Form(0.0),
+    enhance: bool = Form(False),
+    audio: Annotated[UploadFile | None, File()] = None,
+    *,
+    runner: Annotated[TaskRunner, Depends(get_task_runner)],
+) -> dict:
+    job_id = str(uuid4())
+    params = {
+        "run_id_a": run_id_a,
+        "run_id_b": run_id_b,
+        "alpha": alpha,
+        "pitch_shift": pitch_shift,
+        "loudness_shift": loudness_shift,
+        "enhance": enhance,
+        "seed": 0,
+    }
+
+    conn = connect()
+    try:
+        if audio is not None:
+            src_ext = Path(_sanitized_filename(audio.filename or "")).suffix
+            out_dir = Path(runs_dir()) / run_id_a / "synthesis"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            src_path = out_dir / f"{job_id}.src{src_ext}"
+            with src_path.open("wb") as dst:
+                shutil.copyfileobj(audio.file, dst)
+
+        synth_create(conn, job_id, run_id_a, params)
+        conn.commit()
+
+        task_result = celery_morph_job.apply_async(args=[job_id])
+    finally:
+        conn.close()
+
+    return {"job_id": job_id, "status": "pending", "task_id": task_result.id}
