@@ -70,6 +70,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+
 @dataclass
 class DDSPVariant:
     """Opt-in synthesis hacks for the DDSP core.
@@ -77,6 +78,7 @@ class DDSPVariant:
     All fields default to the standard (no-op) behaviour so existing
     checkpoints are unaffected when no variant is supplied.
     """
+
     # --- M8.2 Inharmonic multipliers ---
     # None  → standard integer ratios [1, 2, …, n_harmonics]
     # list  → explicit ratio per partial, e.g. [1.0, 1.414, 2.73, 3.14, …]
@@ -109,7 +111,7 @@ class DDSPVariant:
 
     # --- M8.4.2 LFO injection ---
     # lfo_freq=0.0 → disabled (no-op)
-    lfo_freq: float = 0.0   # Hz; injected into noise magnitudes
+    lfo_freq: float = 0.0  # Hz; injected into noise magnitudes
     lfo_depth: float = 0.0  # amplitude multiplier [0, 1]
 
     # --- M8.6 Angular cumulative sum (phase-drift fix) ---
@@ -174,6 +176,7 @@ behaviour change. Existing tests must still pass.
 
 ```python
 from model.ddsp.variant import DDSPVariant
+
 
 def build_training(model_config: dict, checkpoint_dir: Path):
     ...
@@ -264,9 +267,7 @@ if self.variant.harmonic_ratios is not None:
     # Pad or truncate to n_harmonics
     if len(_ratios) < self.n_harmonics:
         _ratios = _ratios + list(range(len(_ratios) + 1, self.n_harmonics + 1))
-    harmonic_indices = torch.tensor(
-        _ratios[: self.n_harmonics], device=device, dtype=dtype
-    )
+    harmonic_indices = torch.tensor(_ratios[: self.n_harmonics], device=device, dtype=dtype)
 else:
     harmonic_indices = torch.arange(1, self.n_harmonics + 1, device=device, dtype=dtype)
 ```
@@ -298,12 +299,16 @@ computing `phase_increments`:
 ```python
 if self.variant.fm_depth > 0.0:
     # Modulator: sine at fm_ratio × f0, applied per-frame
-    mod_freq = f0 * self.variant.fm_ratio           # (B, T_frames)
+    mod_freq = f0 * self.variant.fm_ratio  # (B, T_frames)
     # Frame-level modulator phase (scalar offset per frame)
-    mod_phase = 2.0 * torch.pi * mod_freq * torch.arange(
-        T_frames, device=device, dtype=dtype
-    ).unsqueeze(0) * (hop_length / sample_rate)
-    mod_phase = torch.cumsum(mod_phase, dim=1)      # (B, T_frames)
+    mod_phase = (
+        2.0
+        * torch.pi
+        * mod_freq
+        * torch.arange(T_frames, device=device, dtype=dtype).unsqueeze(0)
+        * (hop_length / sample_rate)
+    )
+    mod_phase = torch.cumsum(mod_phase, dim=1)  # (B, T_frames)
     mod_signal = self.variant.fm_depth * torch.sin(mod_phase)  # (B, T_frames)
     # Add modulation to all harmonics (broadcast over H)
     harmonic_freqs = harmonic_freqs + mod_signal.unsqueeze(-1) * f0.unsqueeze(-1)
@@ -391,7 +396,7 @@ Already included in `_apply_waveform` above via `pd_k`.
 
 **Separate verify:**
 ```python
-v = DDSPVariant(pd_k=0.8)   # Casio CZ-style shaping
+v = DDSPVariant(pd_k=0.8)  # Casio CZ-style shaping
 out = HarmonicOscillatorSynth(n_harmonics=8, variant=v)(amps, dist, f0)
 assert torch.isfinite(out).all()
 ```
@@ -441,9 +446,7 @@ def _apply_waveform(
 
 And call site in `forward`:
 ```python
-audio = (amp_audio * _apply_waveform(
-    phase_audio, self.variant, self.wavetable
-)).sum(dim=-1)
+audio = (amp_audio * _apply_waveform(phase_audio, self.variant, self.wavetable)).sum(dim=-1)
 ```
 
 **Checkpoint tagging** — `model/ddsp_model.py` → `save_checkpoint`:
@@ -493,7 +496,7 @@ if self.band_mask:
         mask[lo_bin:hi_bin] = 0.0
     # mask: (freq_bins,) → broadcast over (B, freq_bins, time_frames)
     pred_mag = pred_mag * mask.unsqueeze(-1)
-    tgt_mag  = tgt_mag  * mask.unsqueeze(-1)
+    tgt_mag = tgt_mag * mask.unsqueeze(-1)
 ```
 
 The `sample_rate` default (16000) must be added to `MultiScaleSpectralLoss.__init__`.
@@ -517,9 +520,7 @@ The `Trainer` already accepts a `loss_fn` or constructs one — check
 
 **Verify:**
 ```python
-loss = MultiScaleSpectralLoss(
-    fft_sizes=[512], band_mask=[(200.0, 2000.0)], sample_rate=16000
-)
+loss = MultiScaleSpectralLoss(fft_sizes=[512], band_mask=[(200.0, 2000.0)], sample_rate=16000)
 val = loss(pred_audio, tgt_audio)
 assert torch.isfinite(val) and val > 0
 ```
@@ -694,6 +695,10 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M8.1.1, M8.1.2, M8.1.4 implemented by BUILD agent (as M9 prerequisite).
+  - M8.1.1: DDSPVariant dataclass in model/ddsp/variant.py
+  - M8.1.2: variant param in HarmonicOscillatorSynth/FilteredNoiseSynth/DDSPCore/DDSPModel + LFO injection
+  - M8.1.4: SynthHacksView.vue created, route+sidebar+fixtures updated
 - **2026-09-01** — Full granular step breakdown written by ARCHITECT agent.
   Previous stub (M8.1–M8.5, 5 steps) replaced with 14-step analysis
   including M8.2b (FM), M8.3b (phase distortion), M8.3c (trainable

@@ -11,6 +11,9 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
+from .noise_colored import _brown_noise, _pink_noise
+from .variant import DDSPVariant
+
 
 @dataclass
 class SynthConfig:
@@ -33,9 +36,10 @@ class HarmonicOscillatorSynth(nn.Module):
     Output length is derived from the frame count and hop.
     """
 
-    def __init__(self, n_harmonics: int = 60) -> None:
+    def __init__(self, n_harmonics: int = 60, variant: DDSPVariant | None = None) -> None:
         super().__init__()
         self.n_harmonics = n_harmonics
+        self.variant = variant or DDSPVariant()
 
     def forward(
         self,
@@ -174,9 +178,15 @@ class FilteredNoiseSynth(nn.Module):
     via upsampling of the energy envelope.
     """
 
-    def __init__(self, hop_length: int = 128, max_noise_len: int = 1 << 20) -> None:
+    def __init__(
+        self,
+        hop_length: int = 128,
+        max_noise_len: int = 1 << 20,
+        variant: DDSPVariant | None = None,
+    ) -> None:
         super().__init__()
         self.hop_length = hop_length
+        self.variant = variant or DDSPVariant()
         generator = torch.Generator().manual_seed(0)
         noise_buffer = torch.randn(max_noise_len, generator=generator)
         self.register_buffer("noise_buffer", noise_buffer)
@@ -219,9 +229,31 @@ class FilteredNoiseSynth(nn.Module):
         )  # (B, 1, n_samples)
         amp_audio = amp_audio.squeeze(1)  # (B, n_samples)
 
-        # Generate white noise at audio rate from deterministic buffer.
-        noise = self.noise_buffer[:n_samples].to(device=device, dtype=dtype)
-        noise = noise.unsqueeze(0).expand(B, n_samples)
+        # Generate noise at audio rate, respecting variant noise_color and jitter.
+        if self.variant.noise_color == "pink":
+            noise = _pink_noise(n_samples, device=device, dtype=dtype)
+            noise = noise.unsqueeze(0).expand(B, n_samples)
+        elif self.variant.noise_color == "brown":
+            noise = _brown_noise(n_samples, device=device, dtype=dtype)
+            noise = noise.unsqueeze(0).expand(B, n_samples)
+        elif self.variant.noise_grain_jitter > 0 and B > 0:
+            jitter_samples = int(self.variant.noise_grain_jitter * self.hop_length)
+            if jitter_samples > 0:
+                noise_slices = []
+                max_offset = max(0, len(self.noise_buffer) - n_samples)
+                for _i in range(B):
+                    offset = torch.randint(0, min(jitter_samples, max_offset + 1), (1,)).item()
+                    buf = self.noise_buffer[offset : offset + n_samples].to(
+                        device=device, dtype=dtype
+                    )
+                    noise_slices.append(buf)
+                noise = torch.stack(noise_slices, dim=0)
+            else:
+                noise = self.noise_buffer[:n_samples].to(device=device, dtype=dtype)
+                noise = noise.unsqueeze(0).expand(B, n_samples)
+        else:
+            noise = self.noise_buffer[:n_samples].to(device=device, dtype=dtype)
+            noise = noise.unsqueeze(0).expand(B, n_samples)
 
         # Apply amplitude envelope
         audio = noise * amp_audio  # (B, n_samples)
@@ -229,7 +261,11 @@ class FilteredNoiseSynth(nn.Module):
 
 
 class DDSPCore(nn.Module):
-    """Composed DDSP core: harmonic oscillator + filtered noise + reverb.
+    """Composed DDSP core: selects synths based on variant.engine.
+
+    For ``harmonic``: HarmonicOscillatorSynth + FilteredNoiseSynth + reverb.
+    For ``sinusoidal``: SinusoidalSynth + FilteredNoiseSynth + reverb.
+    For ``combsub``: CombSubSynth only (self-contained harmonic + noise).
 
     This is the self-owned synthesis backbone. It does NOT depend on the
     external ddsp Python library.
@@ -243,14 +279,35 @@ class DDSPCore(nn.Module):
         reverb_delay: float = 0.03,
         reverb_decay: float = 0.5,
         use_reverb: bool = True,
+        variant: DDSPVariant | None = None,
     ) -> None:
         super().__init__()
         self.sample_rate = sample_rate
         self.hop_length = hop_length
         self.use_reverb = use_reverb
+        self.variant = variant or DDSPVariant()
 
-        self.harmonic_synth = HarmonicOscillatorSynth(n_harmonics=n_harmonics)
-        self.noise_synth = FilteredNoiseSynth(hop_length=hop_length)
+        engine = self.variant.engine
+        if engine == "combsub":
+            from .combsub import CombSubSynth
+
+            self.harmonic_synth = CombSubSynth(
+                n_fir_taps=64,
+                sample_rate=sample_rate,
+                hop_length=hop_length,
+            )
+            self.noise_synth = None
+        elif engine == "sinusoidal":
+            from .sinusoidal import SinusoidalSynth
+
+            self.harmonic_synth = SinusoidalSynth()
+            self.noise_synth = FilteredNoiseSynth(hop_length=hop_length, variant=self.variant)
+        else:
+            self.harmonic_synth = HarmonicOscillatorSynth(
+                n_harmonics=n_harmonics, variant=self.variant
+            )
+            self.noise_synth = FilteredNoiseSynth(hop_length=hop_length, variant=self.variant)
+
         if use_reverb:
             self.reverb = SimpleReverb(
                 delay_seconds=reverb_delay,
@@ -260,42 +317,53 @@ class DDSPCore(nn.Module):
 
     def forward(
         self,
-        amplitudes: torch.Tensor,
-        harmonic_distribution: torch.Tensor,
-        f0: torch.Tensor,
-        noise_magnitudes: torch.Tensor,
-        n_samples: int,
+        amplitudes: torch.Tensor | None = None,
+        harmonic_distribution: torch.Tensor | None = None,
+        f0: torch.Tensor | None = None,
+        noise_magnitudes: torch.Tensor | None = None,
+        sinusoidal_freqs: torch.Tensor | None = None,
+        voiced: torch.Tensor | None = None,
+        n_samples: int | None = None,
     ) -> torch.Tensor:
-        """Synthesize full audio from DDSP parameters.
+        engine = self.variant.engine
 
-        Args:
-            amplitudes: per-frame harmonic amplitudes, (B, T_frames, H).
-            harmonic_distribution: softmax over harmonics, (B, T_frames, H).
-            f0: fundamental frequency in Hz, (B, T_frames).
-            noise_magnitudes: noise filter magnitudes, (B, T_frames, filter_bins).
-            n_samples: total output audio length.
+        if engine == "combsub":
+            audio = self.harmonic_synth(
+                comb_magnitudes=noise_magnitudes,
+                f0=f0,
+                voiced=voiced,
+                n_samples=n_samples,
+            )
+        elif engine == "sinusoidal":
+            harmonic_audio = self.harmonic_synth(
+                amplitudes=amplitudes,
+                frequencies=sinusoidal_freqs,
+                sample_rate=self.sample_rate,
+                hop_length=self.hop_length,
+            )
+            noise_audio = self.noise_synth(
+                noise_magnitudes if noise_magnitudes is not None else amplitudes,
+                n_samples=n_samples,
+                sample_rate=self.sample_rate,
+            )
+            if self.use_reverb and self.reverb is not None:
+                noise_audio = self.reverb(noise_audio)
+            audio = harmonic_audio + noise_audio
+        else:
+            harmonic_audio = self.harmonic_synth(
+                amplitudes,
+                harmonic_distribution,
+                f0,
+                sample_rate=self.sample_rate,
+                hop_length=self.hop_length,
+            )
+            noise_audio = self.noise_synth(
+                noise_magnitudes,
+                n_samples=n_samples,
+                sample_rate=self.sample_rate,
+            )
+            if self.use_reverb and self.reverb is not None:
+                noise_audio = self.reverb(noise_audio)
+            audio = harmonic_audio + noise_audio
 
-        Returns:
-            Mixed audio of shape (B, n_samples).
-        """
-        harmonic_audio = self.harmonic_synth(
-            amplitudes,
-            harmonic_distribution,
-            f0,
-            sample_rate=self.sample_rate,
-            hop_length=self.hop_length,
-        )
-
-        noise_audio = self.noise_synth(
-            noise_magnitudes,
-            n_samples=n_samples,
-            sample_rate=self.sample_rate,
-        )
-
-        # Apply reverb only to noise branch (common DDSP pattern)
-        if self.use_reverb:
-            noise_audio = self.reverb(noise_audio)
-
-        # Mix: harmonic + filtered noise
-        audio = harmonic_audio + noise_audio
         return audio

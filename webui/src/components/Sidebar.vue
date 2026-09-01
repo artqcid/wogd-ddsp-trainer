@@ -59,9 +59,12 @@
        <li>
          <RouterLink to="/experimental/f0-editor" class="sidebar-link">F0 Editor</RouterLink>
        </li>
-       <li>
-         <RouterLink to="/experimental/mixer" class="sidebar-link">Component Mixer</RouterLink>
-       </li>
+<li>
+          <RouterLink to="/experimental/mixer" class="sidebar-link">Component Mixer</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/synth-hacks" class="sidebar-link">Synth Hacks</RouterLink>
+        </li>
        </ul>
     </div>
 

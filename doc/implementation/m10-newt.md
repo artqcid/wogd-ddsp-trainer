@@ -76,17 +76,17 @@ class SawtoothExciter(nn.Module):
 
     def forward(
         self,
-        f0: Tensor,           # (B, T_frames) Hz
+        f0: Tensor,  # (B, T_frames) Hz
         sample_rate: int,
         hop_length: int,
-    ) -> Tensor:              # (B, T_audio) in [-1, 1]
+    ) -> Tensor:  # (B, T_audio) in [-1, 1]
         B, T_frames = f0.shape
         device, dtype = f0.device, f0.dtype
         T_audio = (T_frames - 1) * hop_length + 1
 
         # Phase increments: f0 / sample_rate per sample
-        phase_inc = f0 / sample_rate                           # (B, T_frames)
-        phase_per_frame = phase_inc * hop_length               # (B, T_frames)
+        phase_inc = f0 / sample_rate  # (B, T_frames)
+        phase_per_frame = phase_inc * hop_length  # (B, T_frames)
         phase_frames = torch.cumsum(phase_per_frame, dim=1) % 1.0  # (B, T_frames)
 
         # Upsample to audio rate
@@ -150,30 +150,30 @@ class NEWTUnit(nn.Module):
         nn.init.uniform_(self.layers[0].weight, -torch.pi, torch.pi)
         for layer in self.layers[1:-1]:
             fan_in = layer.weight.shape[1]
-            bound = 1.0 / fan_in ** 0.5
+            bound = 1.0 / fan_in**0.5
             nn.init.uniform_(layer.weight, -bound, bound)
 
     def forward(
         self,
-        excitation: Tensor,   # (B, T_audio)
-        gain: Tensor,         # (B, T_audio) — upsampled from frames
-        bias: Tensor,         # (B, T_audio) — upsampled from frames
-    ) -> Tensor:              # (B, T_audio)
-        x = excitation * gain + bias       # (B, T_audio)
-        x = x.unsqueeze(-1)                # (B, T_audio, 1)
+        excitation: Tensor,  # (B, T_audio)
+        gain: Tensor,  # (B, T_audio) — upsampled from frames
+        bias: Tensor,  # (B, T_audio) — upsampled from frames
+    ) -> Tensor:  # (B, T_audio)
+        x = excitation * gain + bias  # (B, T_audio)
+        x = x.unsqueeze(-1)  # (B, T_audio, 1)
         for i, layer in enumerate(self.layers[:-1]):
             x = torch.sin(layer(x))
         x = torch.tanh(self.layers[-1](x))
-        return x.squeeze(-1)               # (B, T_audio)
+        return x.squeeze(-1)  # (B, T_audio)
 ```
 
 **Verify:**
 ```python
 unit = NEWTUnit()
-exc  = torch.randn(1, 1024)
+exc = torch.randn(1, 1024)
 gain = torch.ones(1, 1024)
 bias = torch.zeros(1, 1024)
-out  = unit(exc, gain, bias)
+out = unit(exc, gain, bias)
 assert out.shape == (1, 1024)
 assert torch.isfinite(out).all()
 # Backward
@@ -194,8 +194,8 @@ engine: Literal["harmonic", "sinusoidal", "combsub", "newt"] = "harmonic"
 
 Also add NEWT-specific tuning parameters:
 ```python
-newt_n_hidden: int = 32     # MLP hidden units per layer
-newt_n_layers: int = 4      # MLP depth
+newt_n_hidden: int = 32  # MLP hidden units per layer
+newt_n_layers: int = 4  # MLP depth
 ```
 
 ---
@@ -208,27 +208,28 @@ When `variant.engine == "newt"`:
 
 1. **Replace harmonic synth with NEWT pipeline:**
    ```python
-   self.sawtooth   = SawtoothExciter()
-   self.newt       = NEWTUnit(n_hidden=variant.newt_n_hidden,
-                               n_layers=variant.newt_n_layers)
+   self.sawtooth = SawtoothExciter()
+   self.newt = NEWTUnit(n_hidden=variant.newt_n_hidden, n_layers=variant.newt_n_layers)
    ```
 
 2. **Add NEWT-specific decoder heads** (replace amplitude + distribution):
    ```python
-   self.newt_gain_out = nn.Linear(config.hidden_size, 1)   # → sigmoid → gain
-   self.newt_bias_out = nn.Linear(config.hidden_size, 1)   # → tanh → bias
+   self.newt_gain_out = nn.Linear(config.hidden_size, 1)  # → sigmoid → gain
+   self.newt_bias_out = nn.Linear(config.hidden_size, 1)  # → tanh → bias
    ```
 
 3. **Forward pass for NEWT:**
    ```python
    gain_frames = torch.sigmoid(self.newt_gain_out(hidden)).squeeze(-1)  # (B, T_frames)
-   bias_frames = torch.tanh(self.newt_bias_out(hidden)).squeeze(-1)     # (B, T_frames)
+   bias_frames = torch.tanh(self.newt_bias_out(hidden)).squeeze(-1)  # (B, T_frames)
 
    # Upsample to audio rate
-   gain_audio = F.interpolate(gain_frames.unsqueeze(1), size=n_samples, mode="linear",
-                               align_corners=False).squeeze(1)
-   bias_audio = F.interpolate(bias_frames.unsqueeze(1), size=n_samples, mode="linear",
-                               align_corners=False).squeeze(1)
+   gain_audio = F.interpolate(
+       gain_frames.unsqueeze(1), size=n_samples, mode="linear", align_corners=False
+   ).squeeze(1)
+   bias_audio = F.interpolate(
+       bias_frames.unsqueeze(1), size=n_samples, mode="linear", align_corners=False
+   ).squeeze(1)
 
    excitation = self.sawtooth(f0, self.config.sample_rate, self.config.frame_size)
    harmonic_audio = self.newt(excitation, gain_audio, bias_audio)

@@ -109,8 +109,8 @@ amplitudes = amplitudes * nyquist_mask
 
 **Verify (CPU smoke):**
 ```python
-freqs = torch.rand(1, 32, 16) * 4000 + 100   # 100–4100 Hz
-amps  = torch.rand(1, 32, 16)
+freqs = torch.rand(1, 32, 16) * 4000 + 100  # 100–4100 Hz
+amps = torch.rand(1, 32, 16)
 out = SinusoidalSynth()(amps, freqs, 16000, 128)
 assert out.shape == (1, 31 * 128 + 1)
 assert torch.isfinite(out).all()
@@ -145,9 +145,9 @@ Audio output
 rectangular window positioned at integer multiples of `1/f0` in time.
 Implemented via phase modulo:
 ```python
-phase_inc = f0 / sample_rate          # (B, T_frames)
+phase_inc = f0 / sample_rate  # (B, T_frames)
 phase = torch.cumsum(phase_inc, dim=1) % 1.0
-pulse = (phase < pulse_width).float() * 2 - 1   # bipolar pulse
+pulse = (phase < pulse_width).float() * 2 - 1  # bipolar pulse
 ```
 Upsampled to audio rate via `F.interpolate`.
 
@@ -184,7 +184,7 @@ class CombSubSynth(nn.Module):
 ```python
 synth = CombSubSynth(n_fir_taps=32)
 mags = torch.rand(1, 32, 32)
-f0   = torch.full((1, 32), 220.0)
+f0 = torch.full((1, 32), 220.0)
 voiced = torch.ones(1, 32)
 out = synth(mags, f0, voiced, n_samples=31 * 128 + 1)
 assert torch.isfinite(out).all()
@@ -206,10 +206,11 @@ def _pink_noise(n: int, device, dtype) -> Tensor:
     white = torch.randn(n, device=device, dtype=dtype)
     fft = torch.fft.rfft(white)
     freqs = torch.fft.rfftfreq(n, device=device, dtype=dtype)
-    freqs[0] = 1.0          # avoid division by zero at DC
+    freqs[0] = 1.0  # avoid division by zero at DC
     pink_filter = 1.0 / freqs.sqrt()
     fft = fft * pink_filter
     return torch.fft.irfft(fft, n=n)
+
 
 def _brown_noise(n: int, device, dtype) -> Tensor:
     """Generate brown noise (1/f² spectrum) of length n."""
@@ -251,7 +252,7 @@ read position to create granular texture.
 
 **Extend `DDSPVariant`:**
 ```python
-noise_grain_jitter: float = 0.0   # max jitter in frames; 0.0 = off
+noise_grain_jitter: float = 0.0  # max jitter in frames; 0.0 = off
 ```
 
 **Implementation in `FilteredNoiseSynth.forward`:** when
@@ -262,10 +263,7 @@ jitter_samples = int(variant.noise_grain_jitter * hop_length)
 if jitter_samples > 0:
     offset = torch.randint(0, jitter_samples, (B,))
     # slice per batch item — use a loop (B is always 1 in training)
-    noise_slices = [
-        self.noise_buffer[offset[i]: offset[i] + n_samples]
-        for i in range(B)
-    ]
+    noise_slices = [self.noise_buffer[offset[i] : offset[i] + n_samples] for i in range(B)]
     noise = torch.stack(noise_slices, dim=0).to(device=device, dtype=dtype)
 else:
     noise = self.noise_buffer[:n_samples].unsqueeze(0).expand(B, -1)
@@ -280,7 +278,7 @@ v = DDSPVariant(noise_grain_jitter=2.0)
 synth = FilteredNoiseSynth(variant=v)
 out1 = synth(mags, n_samples=1024)
 out2 = synth(mags, n_samples=1024)
-assert not torch.allclose(out1, out2)   # jitter produces different outputs
+assert not torch.allclose(out1, out2)  # jitter produces different outputs
 ```
 
 ---
@@ -422,4 +420,15 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M9.1–M9.9 implemented by BUILD agent.
+  - M9.1: engine/noise_color/noise_grain_jitter fields on DDSPVariant
+  - M9.2: SinusoidalSynth (model/ddsp/sinusoidal.py)
+  - M9.3: CombSubSynth (model/ddsp/combsub.py)
+  - M9.4: _pink_noise/_brown_noise (model/ddsp/noise_colored.py)
+  - M9.5: colored noise + granular jitter in FilteredNoiseSynth
+  - M9.6: engine dispatch in DDSPCore + DDSPModel __init__/forward/checkpoint
+  - M9.7: SynthHacksView.vue with engine/noise/color/jitter controls
+  - M9.8: 12 pytest tests (test_synths_engines.py)
+  - M9.9: docs + checklist update
+  - Also: M8.1.1 (DDSPVariant dataclass), M8.1.2 (plumb into synths+model), M8.1.4 (UI shell) completed.
 - **2026-09-01** — Initial granular step breakdown written by ARCHITECT agent.

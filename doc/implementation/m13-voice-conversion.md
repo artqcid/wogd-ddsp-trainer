@@ -110,13 +110,15 @@ class ContentEncoderWrapper(nn.Module):
 
     def _load(self, name: str, cache_dir: str | None):
         from huggingface_hub import hf_hub_download
+
         if name == "hubert_soft":
             # HuBERT-Soft: bshall/hubert-soft, model.pt
-            path = hf_hub_download("bshall/hubert-soft", "hubert-soft.pt",
-                                    cache_dir=cache_dir)
+            path = hf_hub_download("bshall/hubert-soft", "hubert-soft.pt", cache_dir=cache_dir)
             import torch
-            return torch.hub.load("bshall/hubert-soft:main", "hubert_soft",
-                                   path=path, trust_repo=True)
+
+            return torch.hub.load(
+                "bshall/hubert-soft:main", "hubert_soft", path=path, trust_repo=True
+            )
         elif name == "content_vec":
             # ContentVec: use torchaudio or direct checkpoint load
             raise NotImplementedError("ContentVec loader TBD in M13.1")
@@ -134,7 +136,7 @@ class ContentEncoderWrapper(nn.Module):
             content: (B, T_frames_hub, 256) — HuBERT frame rate is 50 Hz
                      (320 samples/frame at 16 kHz).
         """
-        return self._model.units(audio)   # API varies by model; adapt
+        return self._model.units(audio)  # API varies by model; adapt
 ```
 
 **Note:** HuBERT-Soft outputs at 50 Hz (320-sample hop). Our DDSP frames
@@ -186,10 +188,10 @@ def extract_content_embedding(
     encoder = ContentEncoderWrapper(model_name, cache_dir=cache_dir)
     audio_t = torch.from_numpy(audio).float().unsqueeze(0)
     with torch.no_grad():
-        emb = encoder(audio_t, sample_rate)     # (1, T_hub, 256)
+        emb = encoder(audio_t, sample_rate)  # (1, T_hub, 256)
     if target_frames is not None:
         emb = resample_content(emb, target_frames)
-    return emb.squeeze(0).numpy()               # (T_frames, 256)
+    return emb.squeeze(0).numpy()  # (T_frames, 256)
 ```
 
 Save as `content_embedding.npy` alongside `f0_hz.npy` and `loudness_db.npy`
@@ -216,7 +218,7 @@ else:
 ```python
 use_content_encoder: bool = False
 content_encoder_name: Literal["hubert_soft", "content_vec"] = "hubert_soft"
-content_dim: int = 256    # HuBERT output dim
+content_dim: int = 256  # HuBERT output dim
 ```
 
 **`DDSPModel.__init__`** when `use_content_encoder=True`:

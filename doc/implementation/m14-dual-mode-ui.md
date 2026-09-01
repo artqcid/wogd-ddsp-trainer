@@ -1503,6 +1503,7 @@ class VRAMEstimate:
     ``warning`` is a human-readable message when the estimate exceeds a
     known threshold (e.g. PolyDDSP N>2 on 6 GB), or ``None``.
     """
+
     peak_gb: float
     warning: str | None = None
 
@@ -1575,8 +1576,7 @@ def _migrate_add_model_tier(cur: sqlite3.Cursor) -> None:
         cols = {row[1] for row in cur.fetchall()}
         if "model_tier" not in cols:
             cur.execute(
-                f"ALTER TABLE {table} "
-                "ADD COLUMN model_tier TEXT NOT NULL DEFAULT 'standard'"
+                f"ALTER TABLE {table} ADD COLUMN model_tier TEXT NOT NULL DEFAULT 'standard'"
             )
 ```
 
@@ -1596,20 +1596,28 @@ Add after `PARAM_KEYS`:
 
 ```python
 # Tier-specific param keys (not VRAM-bounded; validated, not clamped)
-VARIANT_KEYS: tuple = (          # M8 DDSPVariant fields
-    "waveform", "harmonic_ratios", "fm_depth", "fm_ratio",
-    "pd_k", "use_lfo", "lfo_freq", "lfo_depth",
-    "use_trainable_wavetable", "use_angular_cumsum",
-    "band_mask_low_hz", "band_mask_high_hz",
+VARIANT_KEYS: tuple = (  # M8 DDSPVariant fields
+    "waveform",
+    "harmonic_ratios",
+    "fm_depth",
+    "fm_ratio",
+    "pd_k",
+    "use_lfo",
+    "lfo_freq",
+    "lfo_depth",
+    "use_trainable_wavetable",
+    "use_angular_cumsum",
+    "band_mask_low_hz",
+    "band_mask_high_hz",
 )
-ENGINE_KEYS: tuple = (           # M9/M10 engine fields
-    "engine",            # "harmonic" | "sinusoidal" | "combsub" | "newt"
-    "noise_color",       # "white" | "pink" | "brown"
+ENGINE_KEYS: tuple = (  # M9/M10 engine fields
+    "engine",  # "harmonic" | "sinusoidal" | "combsub" | "newt"
+    "noise_color",  # "white" | "pink" | "brown"
     "noise_grain_jitter",
     "newt_hidden_size",
     "newt_n_layers",
 )
-ADVANCED_KEYS: tuple = (         # M11–M13 advanced fields
+ADVANCED_KEYS: tuple = (  # M11–M13 advanced fields
     "use_latent",
     "latent_dim",
     "kl_beta",
@@ -1660,12 +1668,13 @@ class RunCreateRequest(BaseModel):
     dataset_id: str | None = None
     preset_id: str | None = None
     params: dict | None = None
-    model_tier: str = "standard"     # NEW — default preserves all existing callers
+    model_tier: str = "standard"  # NEW — default preserves all existing callers
+
 
 class ValidateRequest(BaseModel):
     preset_id: str | None = None
     params: dict | None = None
-    model_tier: str = "standard"     # NEW
+    model_tier: str = "standard"  # NEW
 ```
 
 In `validate()` response, add:
@@ -1677,16 +1686,22 @@ return {
     "params": clamped,
     "clamped_fields": clamped_fields,
     "bounds": bounds_to_dict(bounds),
-    "model_tier_mismatch": model_tier_mismatch,   # NEW
+    "model_tier_mismatch": model_tier_mismatch,  # NEW
 }
 ```
 
 In `create_run()`, store `model_tier` in the run record:
 
 ```python
-run_create(conn, run_id, req.name, config, req.dataset_id,
-           created_from_preset=req.preset_id,
-           model_tier=req.model_tier)   # NEW
+run_create(
+    conn,
+    run_id,
+    req.name,
+    config,
+    req.dataset_id,
+    created_from_preset=req.preset_id,
+    model_tier=req.model_tier,
+)  # NEW
 ```
 
 Update `run_create()` in `server/db.py` to accept and persist `model_tier`.
@@ -1721,20 +1736,22 @@ model_tier = model_config.get("model_tier", "standard")
 # --- Tier: hacks / engine / advanced → DDSPVariant (M8) ---
 if model_tier in ("hacks", "engine", "advanced"):
     from model.ddsp.variant import DDSPVariant
+
     variant = DDSPVariant.from_dict(model_config.get("variant", {}))
 else:
     from model.ddsp.variant import DDSPVariant
-    variant = DDSPVariant()   # all-default no-op
+
+    variant = DDSPVariant()  # all-default no-op
 
 # --- Tier: engine / advanced → engine field (M9/M10) ---
 engine = model_config.get("engine", "harmonic")
 
 # --- Tier: advanced → latent / poly / VC (M11–M13) ---
-use_latent           = bool(model_config.get("use_latent", False))
-latent_dim           = int(model_config.get("latent_dim", 32))
-kl_beta              = float(model_config.get("kl_beta", 1.0))
-n_voices             = int(model_config.get("n_voices", 1))
-use_content_encoder  = bool(model_config.get("use_content_encoder", False))
+use_latent = bool(model_config.get("use_latent", False))
+latent_dim = int(model_config.get("latent_dim", 32))
+kl_beta = float(model_config.get("kl_beta", 1.0))
+n_voices = int(model_config.get("n_voices", 1))
+use_content_encoder = bool(model_config.get("use_content_encoder", False))
 content_encoder_name = model_config.get("content_encoder_name", "hubert-soft")
 ```
 
@@ -1761,8 +1778,7 @@ def gpu_feasibility(
     from train.gpu import estimate_model_vram, detect_gpus
 
     gpus = detect_gpus()
-    available_gb = max((g["available_vram_gb"] or g["total_vram_gb"]
-                        for g in gpus), default=6.0)
+    available_gb = max((g["available_vram_gb"] or g["total_vram_gb"] for g in gpus), default=6.0)
 
     # Current config estimate
     est = estimate_model_vram(model_tier, n_voices, use_latent, use_content_encoder)
@@ -1801,6 +1817,7 @@ Mount in `server/main.py`:
 
 ```python
 from server.routes import gpu as gpu_routes
+
 app.include_router(gpu_routes.router, prefix="/api")
 ```
 

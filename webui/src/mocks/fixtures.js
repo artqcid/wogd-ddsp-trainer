@@ -143,6 +143,22 @@ export const reverbInjectionFixture = {
   run_id: 'run_abc123',
 }
 
+export const variantFixture = {
+  engine: 'harmonic',
+  noise_color: 'white',
+  noise_grain_jitter: 0,
+  harmonic_ratios: null,
+  waveform: 'sin',
+  pd_k: 0,
+  use_trainable_wavetable: false,
+  fm_depth: 0,
+  fm_ratio: 2,
+  loss_band_mask: null,
+  lfo_freq: 0,
+  lfo_depth: 0,
+  use_angular_cumsum: false,
+}
+
 const _SPEED_FACTORS = {
   FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
   NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },

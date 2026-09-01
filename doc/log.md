@@ -3,6 +3,22 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M8.1 + M9 implemented (BUILD)
+
+**Creation:** `model/ddsp/variant.py` — `DDSPVariant` dataclass with all M8/M9 fields.
+**Creation:** `model/ddsp/sinusoidal.py` — `SinusoidalSynth` (free partials).
+**Creation:** `model/ddsp/combsub.py` — `CombSubSynth` (comb-filter subtractive).
+**Creation:** `model/ddsp/noise_colored.py` — `_pink_noise`, `_brown_noise` FFT helpers.
+**Creation:** `webui/src/views/SynthHacksView.vue` — engine/noise/hacks UI panel.
+**Creation:** `tests/test_synths_engines.py` — 12 pytest.
+
+**Update:** `model/ddsp/synths.py` — `DDSPCore` engine dispatch (harmonic/sinusoidal/combsub), `FilteredNoiseSynth` variant color+jitter.
+**Update:** `model/ddsp_model.py` — `DDSPModel` engine-aware decoder heads + `save_checkpoint`/`load_checkpoint` with engine tag + mismatch guard.
+**Update:** `model/ddsp/__init__.py` — export new synths.
+**Update:** `webui/src/router/index.js`, `webui/src/components/Sidebar.vue`, `webui/src/mocks/fixtures.js` — route, link, variant fixture.
+
+Tests: 198 passed (12 new), ruff 0, ruff format 0.
+
 ## 2026-09-01 — M14.2.0 Tier Identity Color System added (ARCHITECT)
 
 **Decision:** Each of the 5 model tiers gets a unique signal color applied

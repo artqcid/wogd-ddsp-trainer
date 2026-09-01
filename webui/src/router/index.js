@@ -66,6 +66,11 @@ const routes = [
     name: 'component-mixer',
     component: () => import('../views/ComponentMixerView.vue'),
   },
+  {
+    path: '/experimental/synth-hacks',
+    name: 'synth-hacks',
+    component: () => import('../views/SynthHacksView.vue'),
+  },
 ]
 
 const router = createRouter({

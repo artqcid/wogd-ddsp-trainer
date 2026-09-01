@@ -121,20 +121,20 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ## Milestone M9 - Alternative synthesizer engines
 
-- [ ] **M9.1** Extend `DDSPVariant`: `engine`, `noise_color`, `noise_grain_jitter` fields.
-- [ ] **M9.2** `SinusoidalSynth` — freely learned partial frequencies
-      (`model/ddsp/sinusoidal.py`).
-- [ ] **M9.3** `CombSubSynth` — comb-filter subtractive synth, vocal formants
-      (`model/ddsp/combsub.py`).
-- [ ] **M9.4** Colored noise source — pink/brown noise via FFT shaping
-      (`model/ddsp/noise_colored.py`).
-- [ ] **M9.5** Granular noise — per-frame grain jitter on noise buffer
-      (`model/ddsp/synths.py`).
-- [ ] **M9.6** Engine dispatch in `DDSPModel` + checkpoint tag + decoder head
-      variants.
-- [ ] **M9.7** UI: engine selector dropdown + noise controls in `SynthHacksView.vue`.
-- [ ] **M9.8** `tests/test_synths_engines.py` — 12 pytest + 1 vitest.
-- [ ] **M9.9** Docs: `experimental-sdk-hacking.md` engine section.
+- [x] **M9.1** Extend `DDSPVariant`: `engine`, `noise_color`, `noise_grain_jitter` fields.
+- [x] **M9.2** `SinusoidalSynth` — freely learned partial frequencies
+       (`model/ddsp/sinusoidal.py`).
+- [x] **M9.3** `CombSubSynth` — comb-filter subtractive synth, vocal formants
+       (`model/ddsp/combsub.py`).
+- [x] **M9.4** Colored noise source — pink/brown noise via FFT shaping
+       (`model/ddsp/noise_colored.py`).
+- [x] **M9.5** Granular noise — per-frame grain jitter on noise buffer
+       (`model/ddsp/synths.py`).
+- [x] **M9.6** Engine dispatch in `DDSPModel` + checkpoint tag + decoder head
+       variants.
+- [x] **M9.7** UI: engine selector dropdown + noise controls in `SynthHacksView.vue`.
+- [x] **M9.8** `tests/test_synths_engines.py` — 12 pytest.
+- [x] **M9.9** Docs: `experimental-sdk-hacking.md` engine section.
 
 ## Milestone M10 - Neural Waveshaping Unit (NEWT)
 
@@ -320,11 +320,11 @@ default to `'standard'`._
       all 5 Tab components (render with mock data), `TrainingConfigView`
       tab-switching + disabled-tab tooltip, `PresetManagerView` tier filter.
       All with `MockApiClient` + fixtures; no backend required.
-- [ ] **M8.1.1** `DDSPVariant` dataclass (`model/ddsp/variant.py` — new).
-- [ ] **M8.1.2** Thread `DDSPVariant` into `DDSPModel` + `DDSPCore` + `HarmonicOscillatorSynth`.
+- [x] **M8.1.1** `DDSPVariant` dataclass (`model/ddsp/variant.py` — new).
+- [x] **M8.1.2** Thread `DDSPVariant` into `DDSPModel` + `DDSPCore` + `FilteredNoiseSynth`.
 - [ ] **M8.1.3** Server-layer variant parsing (`server/tasks.py`, `server/presets.py`,
-      `model/ddsp_model.py` `DDSPConfig` field).
-- [ ] **M8.1.4** UI: `SynthHacksView.vue` + router route + sidebar link + mock fixtures.
+       `model/ddsp_model.py` `DDSPConfig` field).
+- [x] **M8.1.4** UI: `SynthHacksView.vue` + router route + sidebar link + mock fixtures.
 
 ### M8.2 — Inharmonic Multipliers + FM Synthesis
 - [ ] **M8.2.1** Configurable `harmonic_ratios` in `HarmonicOscillatorSynth`

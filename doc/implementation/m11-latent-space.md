@@ -80,27 +80,26 @@ class GRUEncoder(nn.Module):
 
     Returns (μ, log_σ²) for the reparameterisation trick.
     """
-    def __init__(self, input_dim: int = 2, hidden_size: int = 128,
-                 latent_dim: int = 32) -> None:
+
+    def __init__(self, input_dim: int = 2, hidden_size: int = 128, latent_dim: int = 32) -> None:
         super().__init__()
         self.gru = nn.GRU(input_dim, hidden_size, batch_first=True)
-        self.mu_head   = nn.Linear(hidden_size, latent_dim)
+        self.mu_head = nn.Linear(hidden_size, latent_dim)
         self.logvar_head = nn.Linear(hidden_size, latent_dim)
 
-    def forward(self, f0: Tensor, loudness: Tensor
-                ) -> tuple[Tensor, Tensor]:
+    def forward(self, f0: Tensor, loudness: Tensor) -> tuple[Tensor, Tensor]:
         # features: (B, T_frames, 2)
         features = torch.stack([f0, loudness], dim=-1)
-        gru_out, _ = self.gru(features)          # (B, T_frames, hidden)
-        mu     = self.mu_head(gru_out)            # (B, T_frames, latent_dim)
-        logvar = self.logvar_head(gru_out)        # (B, T_frames, latent_dim)
+        gru_out, _ = self.gru(features)  # (B, T_frames, hidden)
+        mu = self.mu_head(gru_out)  # (B, T_frames, latent_dim)
+        logvar = self.logvar_head(gru_out)  # (B, T_frames, latent_dim)
         return mu, logvar
 ```
 
 **Reparameterisation trick** (in `DDSPModel.forward`):
 ```python
 eps = torch.randn_like(mu)
-z = mu + eps * torch.exp(0.5 * logvar)    # (B, T_frames, latent_dim)
+z = mu + eps * torch.exp(0.5 * logvar)  # (B, T_frames, latent_dim)
 ```
 
 At inference time with `sample_z=False`: `z = mu` (deterministic, no noise).
@@ -141,9 +140,9 @@ if self.config.use_latent:
     if self.training:
         z = mu + torch.randn_like(mu) * torch.exp(0.5 * logvar)
     else:
-        z = mu                          # deterministic at inference
+        z = mu  # deterministic at inference
     features = torch.stack([f0, loudness], dim=-1)
-    features = torch.cat([features, z], dim=-1)   # (B, T, 2+latent_dim)
+    features = torch.cat([features, z], dim=-1)  # (B, T, 2+latent_dim)
 else:
     features = torch.stack([f0, loudness], dim=-1)
 
@@ -184,8 +183,8 @@ else:
 
 **File:** `train/config.py` → `TrainingConfig`:
 ```python
-kl_beta: float = 0.0          # 0 = disabled (standard MSS loss)
-kl_warmup_steps: int = 1000   # steps to ramp β from 0 to kl_beta
+kl_beta: float = 0.0  # 0 = disabled (standard MSS loss)
+kl_warmup_steps: int = 1000  # steps to ramp β from 0 to kl_beta
 ```
 
 **Recommended starting value:** `kl_beta=0.0001` with `kl_warmup_steps=2000`.
@@ -198,12 +197,11 @@ kl_warmup_steps: int = 1000   # steps to ramp β from 0 to kl_beta
 ```python
 use_latent = model_config.get("use_latent", False)
 latent_dim = int(model_config.get("latent_dim", 32))
-kl_beta    = float(model_config.get("kl_beta", 0.0001))
-kl_warmup  = int(model_config.get("kl_warmup_steps", 2000))
+kl_beta = float(model_config.get("kl_beta", 0.0001))
+kl_warmup = int(model_config.get("kl_warmup_steps", 2000))
 
 dcfg = DDSPConfig(..., use_latent=use_latent, latent_dim=latent_dim)
-tcfg = TrainingConfig(..., kl_beta=kl_beta if use_latent else 0.0,
-                       kl_warmup_steps=kl_warmup)
+tcfg = TrainingConfig(..., kl_beta=kl_beta if use_latent else 0.0, kl_warmup_steps=kl_warmup)
 ```
 
 Add `"use_latent"`, `"latent_dim"`, `"kl_beta"`, `"kl_warmup_steps"` to

@@ -138,6 +138,7 @@ class VRAMEstimate:
     peak_gb: float
     warning: str | None = None
 
+
 def estimate_model_vram(
     model_tier: str,
     n_voices: int = 1,
@@ -210,11 +211,11 @@ else:
 engine = model_config.get("engine", "harmonic")
 
 # Tier advanced (M11–M13) — all safe defaults
-use_latent           = model_config.get("use_latent", False)
-latent_dim           = model_config.get("latent_dim", 32)
-kl_beta              = model_config.get("kl_beta", 1.0)
-n_voices             = model_config.get("n_voices", 1)
-use_content_encoder  = model_config.get("use_content_encoder", False)
+use_latent = model_config.get("use_latent", False)
+latent_dim = model_config.get("latent_dim", 32)
+kl_beta = model_config.get("kl_beta", 1.0)
+n_voices = model_config.get("n_voices", 1)
+use_content_encoder = model_config.get("use_content_encoder", False)
 content_encoder_name = model_config.get("content_encoder_name", "hubert-soft")
 ```
 

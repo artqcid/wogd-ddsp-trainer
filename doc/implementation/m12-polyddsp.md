@@ -144,37 +144,34 @@ class PolyDDSPModel(nn.Module):
     Shared decoder weights across all voices by default.
     Each voice receives its own f0 track; loudness is shared.
     """
-    def __init__(self, config: DDSPConfig, n_voices: int = 2,
-                 independent: bool = False) -> None:
+
+    def __init__(self, config: DDSPConfig, n_voices: int = 2, independent: bool = False) -> None:
         super().__init__()
         self.n_voices = n_voices
         if independent:
-            self.voices = nn.ModuleList(
-                [DDSPModel(config) for _ in range(n_voices)]
-            )
+            self.voices = nn.ModuleList([DDSPModel(config) for _ in range(n_voices)])
         else:
             self.shared_voice = DDSPModel(config)
             self.voices = None
 
-    def forward(self, f0_voices: Tensor, loudness: Tensor
-                ) -> dict[str, Tensor]:
+    def forward(self, f0_voices: Tensor, loudness: Tensor) -> dict[str, Tensor]:
         # f0_voices: (B, N, T_frames)
         # loudness:  (B, T_frames) — shared across all voices
         audio_sum = None
         for i in range(self.n_voices):
             model = self.voices[i] if self.voices else self.shared_voice
-            f0_i = f0_voices[:, i, :]    # (B, T_frames)
+            f0_i = f0_voices[:, i, :]  # (B, T_frames)
             out_i = model(f0_i, loudness)
             if audio_sum is None:
                 audio_sum = out_i["audio"]
             else:
                 audio_sum = audio_sum + out_i["audio"]
-        return {"audio": audio_sum / self.n_voices}   # normalise
+        return {"audio": audio_sum / self.n_voices}  # normalise
 ```
 
 **`DDSPConfig` field:**
 ```python
-n_voices: int = 1       # 1 = standard monophonic
+n_voices: int = 1  # 1 = standard monophonic
 n_voices_independent: bool = False
 ```
 
