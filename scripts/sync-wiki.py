@@ -5,6 +5,7 @@ Called automatically via post-commit hook, or manually at any time:
 
 Only re-indexes files whose SHA-256 has changed since last index.
 """
+
 import os
 import sys
 

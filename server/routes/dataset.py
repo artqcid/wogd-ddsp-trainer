@@ -181,8 +181,7 @@ async def extract_content(
     from dataset.features import extract_content_embedding
 
     audio_files = sorted(
-        p for p in dataset_path.iterdir()
-        if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
+        p for p in dataset_path.iterdir() if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
     )
 
     if not audio_files:

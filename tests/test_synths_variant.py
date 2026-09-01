@@ -128,9 +128,7 @@ def test_loss_band_mask() -> None:
 
 
 def test_loss_band_mask_zero_band() -> None:
-    loss = MultiScaleSpectralLoss(
-        fft_sizes=[512], band_mask=[(0.0, 8000.0)], sample_rate=16000
-    )
+    loss = MultiScaleSpectralLoss(fft_sizes=[512], band_mask=[(0.0, 8000.0)], sample_rate=16000)
     pred = torch.randn(1, 16000)
     tgt = torch.randn(1, 16000)
     val = loss(pred, tgt)

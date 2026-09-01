@@ -28,6 +28,7 @@ import {
   morphFixture,
   voiceConvertFixture,
   tierFeasibilityFixture,
+  PARAM_MANIFEST_FIXTURES,
 } from './fixtures.js'
 
 /**
@@ -37,6 +38,19 @@ import {
  * offline dev mode and Vitest rendering tests (mock-data seam).
  */
 export class MockApiClient {
+  constructor() {
+    this._paramManifestStore = new Map()
+  }
+
+  _tierForRun(runId) {
+    const tiers = Object.keys(PARAM_MANIFEST_FIXTURES)
+    const idx = runId.length % tiers.length
+    return tiers[idx]
+  }
+
+  _storeKey(runId, checkpoint) {
+    return `${runId}::${checkpoint}`
+  }
   async health() {
     return { ...healthFixture }
   }
@@ -183,5 +197,32 @@ export class MockApiClient {
 
   async voiceConvert() {
     return { ...voiceConvertFixture }
+  }
+
+  async getCheckpointParams(runId, checkpoint) {
+    const key = this._storeKey(runId, checkpoint)
+    if (this._paramManifestStore.has(key)) {
+      return this._paramManifestStore.get(key)
+    }
+    const tier = this._tierForRun(runId)
+    const fixture = PARAM_MANIFEST_FIXTURES[tier]
+    return { ...fixture, params: fixture.params.map(p => ({ ...p })) }
+  }
+
+  async updateCheckpointParams(runId, checkpoint, manifest) {
+    const key = this._storeKey(runId, checkpoint)
+    const copy = { ...manifest, params: manifest.params.map(p => ({ ...p })) }
+    this._paramManifestStore.set(key, copy)
+    return copy
+  }
+
+  async exportNeutone(runId, checkpoint) {
+    const blob = new Blob([JSON.stringify({ runId, checkpoint, format: 'neutone' })], { type: 'application/octet-stream' })
+    return blob
+  }
+
+  async exportCustomVST(runId, checkpoint) {
+    const blob = new Blob([JSON.stringify({ runId, checkpoint, format: 'custom-vst' })], { type: 'application/octet-stream' })
+    return blob
   }
 }

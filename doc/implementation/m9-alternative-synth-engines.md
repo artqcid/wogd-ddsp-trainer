@@ -438,6 +438,7 @@ state = torch.load(path, map_location="cpu", weights_only=True)
 With:
 ```python
 import torch.serialization as _ts
+
 _ts.add_safe_globals([DDSPConfig])
 state = torch.load(path, map_location="cpu", weights_only=True)
 ```
@@ -445,6 +446,7 @@ state = torch.load(path, map_location="cpu", weights_only=True)
 Alternatively (preferred — no global side-effect):
 ```python
 import torch.serialization as _ts
+
 with _ts.safe_globals([DDSPConfig]):
     state = torch.load(path, map_location="cpu", weights_only=True)
 ```
@@ -483,8 +485,11 @@ if noise_magnitudes is None:
     # Provide silent noise (correct shape: B × T × n_noise_bins)
     B, T, _ = amplitudes.shape
     noise_magnitudes = torch.zeros(
-        B, T, self.noise_synth.n_noise_bins,
-        device=amplitudes.device, dtype=amplitudes.dtype,
+        B,
+        T,
+        self.noise_synth.n_noise_bins,
+        device=amplitudes.device,
+        dtype=amplitudes.dtype,
     )
 ```
 
@@ -498,10 +503,14 @@ it is already stored; if not, add it in `__init__`).
 **Verify:**
 ```python
 core = DDSPCore(variant=DDSPVariant(engine="sinusoidal"))
-out_none  = core(amplitudes=amps, sinusoidal_freqs=freqs, noise_magnitudes=None, n_samples=N)
-out_zeros = core(amplitudes=amps, sinusoidal_freqs=freqs,
-                 noise_magnitudes=torch.zeros(B, T, n_noise_bins), n_samples=N)
-assert torch.allclose(out_none, out_zeros)   # semantically equivalent now
+out_none = core(amplitudes=amps, sinusoidal_freqs=freqs, noise_magnitudes=None, n_samples=N)
+out_zeros = core(
+    amplitudes=amps,
+    sinusoidal_freqs=freqs,
+    noise_magnitudes=torch.zeros(B, T, n_noise_bins),
+    n_samples=N,
+)
+assert torch.allclose(out_none, out_zeros)  # semantically equivalent now
 ```
 
 ---
@@ -562,6 +571,7 @@ def _brown_noise(n: int, device, dtype) -> torch.Tensor:
 **Verify:**
 ```python
 from model.ddsp.noise_colored import _pink_noise, _brown_noise
+
 pn = _pink_noise(16000, "cpu", torch.float32)
 bn = _brown_noise(16000, "cpu", torch.float32)
 assert 0.5 < pn.pow(2).mean().sqrt().item() < 2.0, "pink rms not near 1"

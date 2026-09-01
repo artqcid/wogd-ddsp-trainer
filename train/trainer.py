@@ -9,6 +9,7 @@ import os
 import threading
 from dataclasses import asdict, dataclass
 from itertools import cycle
+from typing import Any
 
 import torch
 from torch import nn
@@ -16,6 +17,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from model import DDSPModel, MultiScaleSpectralLoss
+from model.param_manifest import ParamManifest, build_default_manifest
 
 
 def _resolve_device(device_str: str) -> torch.device:
@@ -79,6 +81,9 @@ class Trainer:
         device: str | None = None,
         optimizer: nn.Module | None = None,
         loss_fn: nn.Module | None = None,
+        *,
+        model_tier: str = "standard",
+        variant_flags: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the trainer.
 
@@ -90,11 +95,14 @@ class Trainer:
             optimizer: Pre-built optimizer. When ``None``, an Adam
                 optimizer is built from ``config.learning_rate`` on the
                 model parameters.
+            model_tier: Model tier used for the default parameter manifest.
+                Defaults to ``"standard"``.
+            variant_flags: Optional variant flags forwarded to the manifest
+                builder when *model_tier* depends on them.
         """
         resolved = _resolve_device(device or config.device)
         self.device = resolved
         self.config = config
-
         self.model = model.to(resolved)
 
         # Optimizer: accept a pre-built one or build Adam on model params.
@@ -121,6 +129,11 @@ class Trainer:
         # Step counter and TensorBoard writer.
         self._step = 0
         self.writer = SummaryWriter(log_dir=config.log_dir)
+
+        # Parameter manifest bookkeeping.
+        self._model_tier = model_tier
+        self._variant_flags = variant_flags or {}
+        self._param_manifest: ParamManifest | None = None
 
     # ------------------------------------------------------------------
     # Gradient checkpointing helper
@@ -299,24 +312,31 @@ class Trainer:
     # ------------------------------------------------------------------
 
     def save_checkpoint(self, path: str) -> None:
-        """Save model, optimizer, and step counter to *path*.
+        """Save model, optimizer, step, config, and parameter manifest to *path*.
 
         Args:
-            path: Filesystem path for the checkpoint (typically
-                ``.pt``).
+            path: Filesystem path for the checkpoint (typically ``.pt``).
         """
-        torch.save(
-            {
-                "step": self._step,
-                "model_state_dict": self.model.state_dict(),
-                "optimizer_state_dict": self.optimizer.state_dict(),
-                "config": asdict(self.model.config),
-            },
-            path,
-        )
+        state = {
+            "step": self._step,
+            "model_state_dict": self.model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "config": asdict(self.model.config),
+        }
+
+        if "param_manifest" not in state:
+            state["param_manifest"] = build_default_manifest(
+                self._model_tier,
+                self._variant_flags,
+            ).to_dict()
+
+        state["model_tier"] = self._model_tier
+        state["variant_flags"] = self._variant_flags
+
+        torch.save(state, path)
 
     def load_checkpoint(self, path: str) -> dict:
-        """Load a checkpoint and restore model, optimizer, and step.
+        """Load a checkpoint and restore model, optimizer, step, and manifest.
 
         Args:
             path: Path to a checkpoint created by :meth:`save_checkpoint`.
@@ -331,7 +351,28 @@ class Trainer:
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self._step = int(checkpoint["step"])
 
+        if "param_manifest" in checkpoint:
+            self._param_manifest = ParamManifest.from_dict(checkpoint["param_manifest"])
+        elif "model_tier" in checkpoint:
+            self._param_manifest = build_default_manifest(
+                checkpoint["model_tier"],
+                checkpoint.get("variant_flags", {}),
+            )
+        else:
+            # Backward-compat: old checkpoints without manifest info.
+            self._param_manifest = build_default_manifest("standard", {})
+
         return checkpoint
+
+    @property
+    def param_manifest(self) -> Any:
+        """The parameter manifest associated with this trainer instance.
+
+        When a checkpoint with a manifest (or model_tier/variant_flags) was
+        loaded, this returns the deserialized ``ParamManifest``. Otherwise it
+        returns ``None`` until :meth:`save_checkpoint` has run at least once.
+        """
+        return self._param_manifest
 
     def resume(self, path: str) -> int:
         """Convenience wrapper: load *path* and return the restored step.

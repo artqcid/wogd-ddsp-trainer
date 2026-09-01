@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from typing import Annotated
@@ -27,17 +28,25 @@ async def synthesize(
     loudness_shift: float = Form(0.0),
     enhance: bool = Form(False),
     audio: Annotated[UploadFile | None, File()] = None,
+    params: str = Form("{}"),
     *,
     runner: Annotated[TaskRunner, Depends(get_task_runner)],
 ) -> dict:
     job_id = str(uuid4())
-    params = {
+    p = {
         "run_id": run_id,
         "pitch_shift": pitch_shift,
         "loudness_shift": loudness_shift,
         "enhance": enhance,
         "seed": 0,
     }
+
+    try:
+        extra = json.loads(params) if params else {}
+    except json.JSONDecodeError:
+        extra = {}
+    if isinstance(extra, dict):
+        p.update(extra)
 
     conn = connect()
     try:
@@ -49,7 +58,7 @@ async def synthesize(
             with src_path.open("wb") as dst:
                 shutil.copyfileobj(audio.file, dst)
 
-        synth_create(conn, job_id, run_id, params)
+        synth_create(conn, job_id, run_id, p)
         conn.commit()
 
         task_id = runner.submit_synthesis(job_id)

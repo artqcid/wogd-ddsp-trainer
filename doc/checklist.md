@@ -252,35 +252,35 @@ No breaking changes; all manifest keys default safely on old checkpoints._
 - [ ] **M15.8** `server/routes/inference.py` — extend `POST /api/inference/synthesize`
       with optional `params` JSON dict; backward-compat (old 2-field calls still work).
       Tests: `tests/test_inference_n_params.py`.
-- [ ] **M15.9** Full suite: `ruff check`, `ruff format --check`, `pytest` all green.
+- [x] **M15.9** Full suite: `ruff check`, `ruff format --check`, `pytest` all green.
 
 ## Milestone M16 - Parameter Builder UI
 
 _Full spec: `parameter-handling.md`, `ui-requirements.md` §ModelParameterBuilder.
 **Prerequisite: M15 complete.** All components render with MockApiClient + fixtures._
 
-- [ ] **M16.1** `webui/src/mocks/fixtures.js` + `mockApiClient.js` — add
+- [x] **M16.1** `webui/src/mocks/fixtures.js` + `mockApiClient.js` — add
       `PARAM_MANIFEST_FIXTURES` (standard/component/hacks_fm/engine_newt/advanced_vae),
       `getCheckpointParams()`, `updateCheckpointParams()` (stateful mock).
-- [ ] **M16.2** `webui/src/components/ParamCard.vue` (NEW) — single editable
+- [x] **M16.2** `webui/src/components/ParamCard.vue` (NEW) — single editable
       parameter card: name/description/type/min-max-default/mapping/unit/group fields,
       inline validation (name ≤30 chars, min < max), neutone-slot badge, readonly mode.
       Vitest: `tests/ParamCard.test.js`.
-- [ ] **M16.3** `webui/src/components/ModelParameterBuilder.vue` (NEW) — full builder:
+- [x] **M16.3** `webui/src/components/ModelParameterBuilder.vue` (NEW) — full builder:
       Neutone section (4 slots, readonly for standard), Custom VST section (hidden for
       standard, ≤16 params, + Add button), Save/Reset, Export buttons with validation gate.
       Vitest: `tests/ModelParameterBuilder.test.js` (all 5 tier variants).
-- [ ] **M16.4** `webui/src/components/NeutoneSlotPanel.vue` (NEW) — 4 knob slots with
+- [x] **M16.4** `webui/src/components/NeutoneSlotPanel.vue` (NEW) — 4 knob slots with
       HTML5 drag-and-drop assignment from param pool; empty slot "drag here"; readonly mode.
       Vitest: `tests/NeutoneSlotPanel.test.js` (drag simulation).
-- [ ] **M16.5** `webui/src/views/ModelExportView.vue` — embed `ModelParameterBuilder`;
+- [x] **M16.5** `webui/src/views/ModelExportView.vue` — embed `ModelParameterBuilder`;
       add "Export → Custom VST (.pt)" button; both export buttons show progress +
-      trigger file download on success. Vitest: extend `tests/ModelExportView.test.js`.
-- [ ] **M16.6** `webui/src/views/InferencePlaygroundView.vue` — dynamic N-param sliders
+      trigger file download on success. Vitest: extend `tests/views-batch2.test.js`.
+- [x] **M16.6** `webui/src/views/InferencePlaygroundView.vue` — dynamic N-param sliders
       from manifest (grouped by group tag, collapse if >8); synthesize sends `params` JSON;
       "Reset to defaults" button; 2-slider fallback if no manifest.
-      Vitest: extend `tests/InferencePlaygroundView.test.js`.
-- [ ] **M16.7** Full suite: `vitest run`, `ruff check`, `pytest` all green.
+      Vitest: extend `tests/views-batch2.test.js`.
+- [x] **M16.7** Full suite: `vitest run`, `ruff check`, `pytest` all green.
 - [ ] **M16.8** _(optional)_ VAE Latent Dimension Labelling mini-modal in `ParamCard.vue`:
       "Label this dimension" button → 3-preview modal (min/mid/max synthesis) → name field.
       Only visible for `advanced/use_latent` tier params. Vitest: modal open/confirm/cancel.

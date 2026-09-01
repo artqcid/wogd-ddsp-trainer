@@ -464,17 +464,17 @@ Neuer Endpunkt (zukünftig), der das Parameter-Manifest eines Checkpoints zurüc
 ```python
 @dataclass
 class InferenceParam:
-    slot: int                    # 1-basiert, 1..16
-    name: str                    # max 30 Zeichen
-    description: str             # max 150 Zeichen
-    type: str                    # "continuous" | "categorical"
+    slot: int  # 1-basiert, 1..16
+    name: str  # max 30 Zeichen
+    description: str  # max 150 Zeichen
+    type: str  # "continuous" | "categorical"
     min_value: float
     max_value: float
     default_value: float
-    mapping: str                 # "linear" | "log" | "exp"
-    unit_hint: str               # z.B. "semitones", "dB", ""
-    group: str                   # z.B. "Pitch", "Texture", "Latent"
-    neutone_slot: int | None     # 1..4 oder None (Custom/API only)
+    mapping: str  # "linear" | "log" | "exp"
+    unit_hint: str  # z.B. "semitones", "dB", ""
+    group: str  # z.B. "Pitch", "Texture", "Latent"
+    neutone_slot: int | None  # 1..4 oder None (Custom/API only)
 
 
 @dataclass
@@ -487,8 +487,7 @@ class ParamManifest:
     def neutone_params(self) -> list[InferenceParam]:
         """Gibt die 4 für Neutone bestimmten Parameter zurück, sortiert nach Slot."""
         return sorted(
-            [p for p in self.params if p.neutone_slot is not None],
-            key=lambda p: p.neutone_slot
+            [p for p in self.params if p.neutone_slot is not None], key=lambda p: p.neutone_slot
         )
 
     @property
@@ -506,7 +505,7 @@ state = {
     "model_tier": model_tier,
     "engine": engine,
     # ... weitere Tier-Felder ...
-    "param_manifest": manifest.to_dict(),   # NEU
+    "param_manifest": manifest.to_dict(),  # NEU
 }
 torch.save(state, checkpoint_path)
 ```

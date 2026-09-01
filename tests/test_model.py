@@ -23,7 +23,12 @@ def test_forward_returns_keys_and_shapes() -> None:
     out = model(f0, loudness)
 
     assert set(out.keys()) == {
-        "amplitudes", "harmonic_distribution", "magnitudes", "audio", "mu", "logvar"
+        "amplitudes",
+        "harmonic_distribution",
+        "magnitudes",
+        "audio",
+        "mu",
+        "logvar",
     }
 
     assert out["amplitudes"].shape == (2, 16, 60)

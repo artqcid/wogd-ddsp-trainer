@@ -158,11 +158,12 @@ Windows installer with an uninstaller is planned for a later milestone.
 
 ## 3. Using the software for training
 
-`<TODO M6: packaging not yet implemented.>` (The dataset-prep module, training
-loop and web backend — `dataset/`, `model/`, `train/`, `server/` — and the M5
-browser UI under `webui/` are all in. REST services under `/api`, run lifecycle
-via Celery, preset management, and a Vue 3 dashboard are implemented and
-covered by Vitest.)
+A step-by-step user manual (in German, training operation only) lives in
+[`doc/handbook.md`](doc/handbook.md) — it covers the quick start for a
+standard model, the four more complex model tiers (component / hacks /
+engine / advanced with VAE, polyphony and voice conversion), and a full
+German parameter reference (presets, training config, tier params and
+inference/VST params).
 
 The intended workflow:
 
@@ -174,8 +175,6 @@ The intended workflow:
    checkpoint audio in TensorBoard.
 4. **Inference & export** — timbre transfer (source -> trained timbre), A/B
    comparison, export as Neutone / ONNX / TorchScript.
-
-Detailed usage will be documented here as the milestones land.
 
 ---
 

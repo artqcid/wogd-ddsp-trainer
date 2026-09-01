@@ -57,9 +57,7 @@ class ContentEncoderWrapper(nn.Module):
         if model_name == "hubert_soft":
             from huggingface_hub import hf_hub_download
 
-            path = hf_hub_download(
-                "bshall/hubert-soft", "hubert-soft.pt", cache_dir=cache_dir
-            )
+            path = hf_hub_download("bshall/hubert-soft", "hubert-soft.pt", cache_dir=cache_dir)
             import torch.hub
 
             self._model = torch.hub.load(

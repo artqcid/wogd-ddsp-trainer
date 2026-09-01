@@ -225,8 +225,7 @@ def resume_run(
                     raise HTTPException(
                         status_code=409,
                         detail=(
-                            f"checkpoint_tier_mismatch: run={stored_tier}, "
-                            f"checkpoint={ckpt_tier}"
+                            f"checkpoint_tier_mismatch: run={stored_tier}, checkpoint={ckpt_tier}"
                         ),
                     )
         run_set_stop_requested(conn, run_id, False)

@@ -1,11 +1,12 @@
 <script setup>
-import { inject, ref, onMounted, onUnmounted, watch } from 'vue'
+import { inject, ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import ABComparisonPlayer from '../components/ABComparisonPlayer.vue'
 
 const apiClient = inject('apiClient')
 
 const models = ref([])
 const selectedModelId = ref('')
+const selectedModel = ref(null)
 const audioFile = ref(null)
 const audioFileName = ref('')
 const enhanceOutput = ref(false)
@@ -18,6 +19,50 @@ const pollInterval = ref(null)
 
 const sourceAudioUrl = ref(null)
 
+const paramManifest = ref(null)
+const paramValues = ref({})
+
+const paramGroups = computed(() => {
+  if (!paramManifest.value) return []
+  const groups = {}
+  for (const param of paramManifest.value.params) {
+    const groupName = param.group || ''
+    if (!groups[groupName]) {
+      groups[groupName] = []
+    }
+    groups[groupName].push(param)
+  }
+  const sortedGroups = Object.entries(groups).sort(([a], [b]) => {
+    if (a === '') return -1
+    if (b === '') return 1
+    return a.localeCompare(b)
+  })
+  return sortedGroups.map(([name, params]) => ({ name, params }))
+})
+
+async function loadParamManifest() {
+  if (!apiClient || !selectedModel.value) {
+    paramManifest.value = null
+    paramValues.value = {}
+    return
+  }
+  try {
+    const checkpoint = selectedModel.value.checkpoints[0] || 'step-100.pt'
+    const manifest = await apiClient.getCheckpointParams(selectedModel.value.run_id, checkpoint)
+    paramManifest.value = manifest
+    if (manifest) {
+      paramValues.value = {}
+      for (const param of manifest.params) {
+        paramValues.value[param.slot] = param.default_value
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load param manifest:', err)
+    paramManifest.value = null
+    paramValues.value = {}
+  }
+}
+
 onMounted(async () => {
   if (!apiClient) return
   try {
@@ -25,6 +70,11 @@ onMounted(async () => {
   } catch (err) {
     console.error('Failed to load models:', err)
   }
+})
+
+watch(selectedModelId, async (newId) => {
+  selectedModel.value = models.value.find(m => m.run_id === newId) || null
+  await loadParamManifest()
 })
 
 onUnmounted(() => {
@@ -51,10 +101,16 @@ async function handleSynthesize() {
   artifacts.value = []
 
   try {
+    const paramsJson = {}
+    for (const [slot, value] of Object.entries(paramValues.value)) {
+      paramsJson[slot] = value
+    }
+
     const result = await apiClient.synthesize({
       model_id: selectedModelId.value,
       audio_file: audioFile.value,
-      enhance: enhanceOutput.value
+      enhance: enhanceOutput.value,
+      params: paramsJson
     })
     jobId.value = result.job_id
     jobStatus.value = result.status
@@ -102,6 +158,25 @@ async function loadArtifacts() {
     console.error('Failed to load artifacts:', err)
   }
 }
+
+function onSliderInput(slot, event) {
+  paramValues.value[slot] = parseFloat(event.target.value)
+}
+
+function resetToDefaults() {
+  if (!paramManifest.value) return
+  paramValues.value = {}
+  for (const param of paramManifest.value.params) {
+    paramValues.value[param.slot] = param.default_value
+  }
+}
+
+function formatValue(value, param) {
+  if (param.param_type === 'continuous') {
+    return Number(value).toFixed(2)
+  }
+  return String(value)
+}
 </script>
 
 <template>
@@ -117,7 +192,7 @@ async function loadArtifacts() {
         <select id="model-select" v-model="selectedModelId" data-testid="model-select">
           <option value="">Select a model</option>
           <option v-for="m in models" :key="m.run_id" :value="m.run_id">
-            {{ m.run_id }} — {{ m.checkpoint }}
+            {{ m.run_id }} — {{ m.checkpoints?.join(', ') || m.checkpoint }}
           </option>
         </select>
       </div>
@@ -176,6 +251,82 @@ async function loadArtifacts() {
         <a :href="artifact.url" :download="artifact.name" target="_blank">Download</a>
       </div>
     </div>
+
+    <div v-if="paramManifest" class="param-sliders-section" data-testid="param-sliders-section">
+      <h3>Parameters</h3>
+      <button
+        class="reset-btn"
+        @click="resetToDefaults"
+        data-testid="param-slider-reset"
+      >
+        Reset to defaults
+      </button>
+
+      <div
+        v-for="group in paramGroups"
+        :key="group.name"
+        class="param-slider-group"
+        :data-testid="`param-slider-group-${group.name}`"
+      >
+        <details v-if="group.params.length > 8">
+          <summary>
+            <h5>{{ group.name || 'Other' }} ({{ group.params.length }})</h5>
+          </summary>
+          <div class="param-sliders">
+            <div
+              v-for="param in group.params"
+              :key="param.slot"
+              class="param-slider-item"
+            >
+              <label :for="'param-' + param.slot">
+                {{ param.name }}
+                <span v-if="param.unit_hint" class="param-unit">({{ param.unit_hint }})</span>
+              </label>
+              <input
+                :id="'param-' + param.slot"
+                type="range"
+                :min="param.min_value"
+                :max="param.max_value"
+                :step="param.param_type === 'continuous' ? 0.01 : 1"
+                :value="paramValues[param.slot]"
+                @input="onSliderInput(param.slot, $event)"
+                :data-testid="`param-slider-${param.slot}`"
+                class="param-slider"
+              />
+              <span class="param-value" :data-testid="`param-slider-value-${param.slot}`">
+                {{ formatValue(paramValues[param.slot], param) }}
+              </span>
+            </div>
+          </div>
+        </details>
+        <div v-else class="param-sliders">
+          <div
+            v-for="param in group.params"
+            :key="param.slot"
+            class="param-slider-item"
+          >
+            <label :for="'param-' + param.slot">
+              {{ param.name }}
+              <span v-if="param.unit_hint" class="param-unit">({{ param.unit_hint }})</span>
+            </label>
+            <input
+              :id="'param-' + param.slot"
+              type="range"
+              :min="param.min_value"
+              :max="param.max_value"
+              :step="param.param_type === 'continuous' ? 0.01 : 1"
+              :value="paramValues[param.slot]"
+              @input="onSliderInput(param.slot, $event)"
+              :data-testid="`param-slider-${param.slot}`"
+              class="param-slider"
+            />
+            <span class="param-value" :data-testid="`param-slider-value-${param.slot}`">
+              {{ formatValue(paramValues[param.slot], param) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -215,5 +366,92 @@ async function loadArtifacts() {
   font-size: 0.85em;
   opacity: 0.7;
   margin-left: 1.5rem;
+}
+.param-sliders-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.param-sliders-section h3 {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+.reset-btn {
+  margin-bottom: 1rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.reset-btn:hover {
+  background: var(--border);
+}
+.param-slider-group {
+  margin-bottom: 1rem;
+}
+.param-slider-group details {
+  margin-bottom: 0.5rem;
+}
+.param-slider-group summary {
+  cursor: pointer;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  list-style: none;
+}
+.param-slider-group summary h5 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.param-slider-group summary::-webkit-details-marker {
+  display: none;
+}
+.param-sliders {
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+.param-slider-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+.param-slider-item:last-child {
+  margin-bottom: 0;
+}
+.param-slider-item label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.param-unit {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.param-slider {
+  width: 100%;
+  margin: 0.25rem 0;
+}
+.param-value {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  text-align: right;
 }
 </style>

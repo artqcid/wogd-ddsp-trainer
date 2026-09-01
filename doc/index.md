@@ -43,6 +43,7 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md) - M16 granular steps: ParamCard, ModelParameterBuilder, NeutoneSlotPanel (drag & drop), ModelExportView dual-export, InferencePlaygroundView dynamic N-param sliders
 
 ## Operations & Quality
+- [`handbook.md`](./handbook.md) - User manual (German): training operation only — quick start (standard model), complex models per tier, full parameter reference
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)
 - [`workspace-workflow.md`](./workspace-workflow.md) - Setup/run/workflow: venv, ruff/pytest, uvicorn, Vite hot-reload
 - [`oss-dependencies.md`](./oss-dependencies.md) - OSS dependency/license review (M1.6.2): every dep OSI-approved, neutone_sdk/rmvpe flagged

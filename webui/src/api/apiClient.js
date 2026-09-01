@@ -196,4 +196,41 @@ export class ApiClient {
   async voiceConvert(formData) {
     throw new Error('ApiClient.voiceConvert not implemented')
   }
+
+  /**
+   * @param {string} runId
+   * @param {string} checkpoint
+   * @returns {Promise<{format: string, version: string, params: Array<object>}>}
+   */
+  async getCheckpointParams(runId, checkpoint) {
+    throw new Error('ApiClient.getCheckpointParams not implemented')
+  }
+
+  /**
+   * @param {string} runId
+   * @param {string} checkpoint
+   * @param {object} manifest - complete ParamManifest dict
+   * @returns {Promise<{format: string, version: string, params: Array<object>}>}
+   */
+  async updateCheckpointParams(runId, checkpoint, manifest) {
+    throw new Error('ApiClient.updateCheckpointParams not implemented')
+  }
+
+  /**
+   * @param {string} runId
+   * @param {string} checkpoint
+   * @returns {Promise<Blob>}
+   */
+  async exportNeutone(runId, checkpoint) {
+    throw new Error('ApiClient.exportNeutone not implemented')
+  }
+
+  /**
+   * @param {string} runId
+   * @param {string} checkpoint
+   * @returns {Promise<Blob>}
+   */
+  async exportCustomVST(runId, checkpoint) {
+    throw new Error('ApiClient.exportCustomVST not implemented')
+  }
 }

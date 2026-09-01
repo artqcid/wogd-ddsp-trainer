@@ -187,6 +187,71 @@ export const voiceConvertFixture = {
   task_id: 'task_vc_001',
 }
 
+export const PARAM_MANIFEST_FIXTURES = {
+  standard: {
+    format: 'wogd-vst-params',
+    version: '1.0',
+    params: [
+      { slot: 1, name: 'Pitch Shift', description: 'F0 offset in semitones', param_type: 'continuous', min_value: -24, max_value: 24, default_value: 0, mapping: 'linear', unit_hint: 'st', group: 'Pitch', neutone_slot: 1 },
+      { slot: 2, name: 'Loudness', description: 'Loudness offset in dB', param_type: 'continuous', min_value: -20, max_value: 20, default_value: 0, mapping: 'linear', unit_hint: 'dB', group: 'Pitch', neutone_slot: 2 },
+      { slot: 3, name: 'Noise Level', description: 'FilteredNoise blend amount', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.5, mapping: 'linear', unit_hint: '', group: 'Texture', neutone_slot: 3 },
+      { slot: 4, name: 'Reverb Mix', description: 'Dry/Wet reverb mix', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.3, mapping: 'linear', unit_hint: '', group: 'Effects', neutone_slot: 4 },
+    ],
+  },
+  component: {
+    format: 'wogd-vst-params',
+    version: '1.0',
+    params: [
+      { slot: 1, name: 'Harmonic Blend', description: 'Blend of harmonic oscillator', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.7, mapping: 'linear', unit_hint: '', group: 'Harmonic', neutone_slot: 1 },
+      { slot: 2, name: 'Noise Blend', description: 'Blend of noise generator', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.3, mapping: 'linear', unit_hint: '', group: 'Harmonic', neutone_slot: 2 },
+      { slot: 3, name: 'Reverb Mix', description: 'Dry/Wet reverb mix', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.3, mapping: 'linear', unit_hint: '', group: 'Effects', neutone_slot: null },
+      { slot: 4, name: 'Attack', description: 'Envelope attack time', param_type: 'continuous', min_value: 0.001, max_value: 0.5, default_value: 0.01, mapping: 'log', unit_hint: 's', group: 'Envelope', neutone_slot: null },
+      { slot: 5, name: 'Release', description: 'Envelope release time', param_type: 'continuous', min_value: 0.01, max_value: 2, default_value: 0.1, mapping: 'log', unit_hint: 's', group: 'Envelope', neutone_slot: null },
+      { slot: 6, name: 'Output Gain', description: 'Master output gain', param_type: 'continuous', min_value: -12, max_value: 12, default_value: 0, mapping: 'linear', unit_hint: 'dB', group: 'Output', neutone_slot: null },
+    ],
+  },
+  hacks_fm: {
+    format: 'wogd-vst-params',
+    version: '1.0',
+    params: [
+      { slot: 1, name: 'FM Depth', description: 'FM modulation depth', param_type: 'continuous', min_value: 0, max_value: 10, default_value: 2, mapping: 'linear', unit_hint: '', group: 'FM', neutone_slot: 1 },
+      { slot: 2, name: 'FM Ratio', description: 'FM carrier/modulator ratio', param_type: 'continuous', min_value: 0.25, max_value: 8, default_value: 2, mapping: 'exp', unit_hint: '', group: 'FM', neutone_slot: 2 },
+      { slot: 3, name: 'Mod Waveform', description: 'Modulator waveform type', param_type: 'categorical', min_value: 0, max_value: 0, default_value: 0, mapping: 'linear', unit_hint: '', group: 'FM', neutone_slot: null },
+      { slot: 4, name: 'Feedback', description: 'FM feedback amount', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0, mapping: 'linear', unit_hint: '', group: 'FM', neutone_slot: null },
+      { slot: 5, name: 'Noise Level', description: 'Noise injection level', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.2, mapping: 'linear', unit_hint: '', group: 'Texture', neutone_slot: null },
+      { slot: 6, name: 'Output Gain', description: 'Master output gain', param_type: 'continuous', min_value: -12, max_value: 12, default_value: 0, mapping: 'linear', unit_hint: 'dB', group: 'Output', neutone_slot: null },
+    ],
+  },
+  engine_newt: {
+    format: 'wogd-vst-params',
+    version: '1.0',
+    params: [
+      { slot: 1, name: 'Newt Density', description: 'NEWT filter density', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.5, mapping: 'linear', unit_hint: '', group: 'NEWT', neutone_slot: 1 },
+      { slot: 2, name: 'Newt Brightness', description: 'NEWT spectral brightness', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.6, mapping: 'linear', unit_hint: '', group: 'NEWT', neutone_slot: 2 },
+      { slot: 3, name: 'Noise Color', description: 'Noise color tilt', param_type: 'continuous', min_value: -1, max_value: 1, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Texture', neutone_slot: null },
+      { slot: 4, name: 'Grain Jitter', description: 'Granular jitter amount', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.1, mapping: 'linear', unit_hint: '', group: 'Texture', neutone_slot: null },
+      { slot: 5, name: 'Reverb Mix', description: 'Dry/Wet reverb mix', param_type: 'continuous', min_value: 0, max_value: 1, default_value: 0.2, mapping: 'linear', unit_hint: '', group: 'Effects', neutone_slot: null },
+      { slot: 6, name: 'Output Gain', description: 'Master output gain', param_type: 'continuous', min_value: -12, max_value: 12, default_value: 0, mapping: 'linear', unit_hint: 'dB', group: 'Output', neutone_slot: null },
+    ],
+  },
+  advanced_vae: {
+    format: 'wogd-vst-params',
+    version: '1.0',
+    params: [
+      { slot: 1, name: 'Timbre Z1', description: 'VAE latent dim 1', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: 1 },
+      { slot: 2, name: 'Timbre Z2', description: 'VAE latent dim 2', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: 2 },
+      { slot: 3, name: 'Timbre Z3', description: 'VAE latent dim 3', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: 3 },
+      { slot: 4, name: 'Timbre Z4', description: 'VAE latent dim 4', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: 4 },
+      { slot: 5, name: 'Timbre Z5', description: 'VAE latent dim 5', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: null },
+      { slot: 6, name: 'Timbre Z6', description: 'VAE latent dim 6', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: null },
+      { slot: 7, name: 'Timbre Z7', description: 'VAE latent dim 7', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: null },
+      { slot: 8, name: 'Timbre Z8', description: 'VAE latent dim 8', param_type: 'continuous', min_value: -3, max_value: 3, default_value: 0, mapping: 'linear', unit_hint: '', group: 'Latent', neutone_slot: null },
+      { slot: 9, name: 'Pitch Shift', description: 'F0 offset in semitones', param_type: 'continuous', min_value: -24, max_value: 24, default_value: 0, mapping: 'linear', unit_hint: 'st', group: 'Pitch', neutone_slot: null },
+      { slot: 10, name: 'Loudness', description: 'Loudness offset in dB', param_type: 'continuous', min_value: -20, max_value: 20, default_value: 0, mapping: 'linear', unit_hint: 'dB', group: 'Pitch', neutone_slot: null },
+    ],
+  },
+}
+
 const _SPEED_FACTORS = {
   FAST: { hidden: 0.50, scales: 'min', mp: 'required', ckpt: 'enabled' },
   NORMAL: { hidden: 0.75, scales: 'keep', mp: 'tier', ckpt: 'tier' },

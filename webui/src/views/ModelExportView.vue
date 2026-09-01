@@ -1,11 +1,14 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { inject } from 'vue'
+import ModelParameterBuilder from '../components/ModelParameterBuilder.vue'
 
 const apiClient = inject('apiClient')
 
 const models = ref([])
 const selectedModel = ref(null)
+const manifest = ref(null)
+const modelTier = ref('standard')
 const formatOptions = [
   { id: 'neutone', label: 'Neutone', description: 'Plugin format for Neutone. Max 50ms inference time.' },
   { id: 'onnx', label: 'ONNX', description: 'Cross-platform format. Works with ONNX Runtime.' },
@@ -33,6 +36,23 @@ onBeforeUnmount(() => {
   if (statusPollId.value) {
     clearInterval(statusPollId.value)
   }
+})
+
+const loadManifest = async () => {
+  if (!selectedModel.value || !apiClient) {
+    manifest.value = null
+    return
+  }
+  try {
+    const checkpoint = selectedModel.value.checkpoints[0] || null
+    manifest.value = await apiClient.getCheckpointParams(selectedModel.value.run_id, checkpoint)
+  } catch (e) {
+    manifest.value = null
+  }
+}
+
+watch(selectedModel, () => {
+  loadManifest()
 })
 
 const startExport = async () => {
@@ -79,6 +99,10 @@ const pollStatus = () => {
   }, 3000)
 }
 
+const onManifestUpdate = (updatedManifest) => {
+  manifest.value = updatedManifest
+}
+
 const toggleFormat = (format) => {
   const idx = selectedFormats.value.indexOf(format)
   if (idx >= 0) {
@@ -109,6 +133,15 @@ const toggleFormat = (format) => {
         </option>
       </select>
     </div>
+
+    <ModelParameterBuilder
+      v-if="manifest"
+      :manifest="manifest"
+      :modelTier="modelTier"
+      :readonly="false"
+      data-testid="export-param-builder"
+      @update:manifest="onManifestUpdate"
+    />
 
     <div v-else-if="models.length === 0 && !isExporting" class="empty-state">
       <p>No models available.</p>

@@ -9,9 +9,7 @@ from model.ddsp_model import DDSPConfig, DDSPModel
 
 def test_ddsp_model_with_content_forward() -> None:
     """Content conditioning forward pass produces finite audio."""
-    config = DDSPConfig(
-        hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256
-    )
+    config = DDSPConfig(hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256)
     model = DDSPModel(config)
     torch.manual_seed(0)
     f0 = torch.rand(1, 16) * 400 + 50
@@ -24,9 +22,7 @@ def test_ddsp_model_with_content_forward() -> None:
 
 def test_ddsp_model_with_content_backward() -> None:
     """Content conditioning backward pass produces gradients."""
-    config = DDSPConfig(
-        hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256
-    )
+    config = DDSPConfig(hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256)
     model = DDSPModel(config)
     torch.manual_seed(0)
     f0 = torch.rand(1, 16) * 400 + 50
@@ -45,9 +41,7 @@ def test_ddsp_model_with_content_backward() -> None:
 
 def test_ddsp_model_content_none_fallback() -> None:
     """None content falls back to f0+loudness path."""
-    config = DDSPConfig(
-        hidden_size=64, n_harmonics=30, use_content_encoder=True
-    )
+    config = DDSPConfig(hidden_size=64, n_harmonics=30, use_content_encoder=True)
     model = DDSPModel(config)
     f0 = torch.full((1, 16), 220.0)
     loudness = torch.zeros(1, 16)
@@ -59,9 +53,12 @@ def test_ddsp_model_content_none_fallback() -> None:
 def test_ddsp_model_with_content_and_latent() -> None:
     """Content + latent work together."""
     config = DDSPConfig(
-        hidden_size=64, n_harmonics=30,
-        use_content_encoder=True, content_dim=256,
-        use_latent=True, latent_dim=16,
+        hidden_size=64,
+        n_harmonics=30,
+        use_content_encoder=True,
+        content_dim=256,
+        use_latent=True,
+        latent_dim=16,
     )
     model = DDSPModel(config)
     model.train()
@@ -88,9 +85,7 @@ def test_checkpoint_tag_content_encoder(tmp_path: str) -> None:
 
 def test_ddsp_model_content_proj_trainable() -> None:
     """Content projection layer participates in gradient flow."""
-    config = DDSPConfig(
-        hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256
-    )
+    config = DDSPConfig(hidden_size=64, n_harmonics=30, use_content_encoder=True, content_dim=256)
     model = DDSPModel(config)
     torch.manual_seed(0)
     f0 = torch.rand(1, 16) * 400 + 50

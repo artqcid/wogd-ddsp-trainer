@@ -3,7 +3,47 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
-## 2026-09-01 — M15 + M16 Implementation Plans (Parameter Manifest + Builder UI)
+## 2026-09-02 — User Manual (German training handbook)
+
+**Creation:**
+- `doc/handbook.md` — German user manual for the wogd-ddsp-trainer web app.
+  Scope: **training operation only** (no installation / development details).
+  Structure: quick start (standard model: upload → preprocessing → wizard →
+  start training → TensorBoard monitoring), complex models per tier
+  (component / hacks / engine / advanced with VAE+Poly+VC variants), and a
+  full German parameter reference (presets FAST/NORMAL/QUALITY, training
+  config, component/hacks/engine/advanced params, and inference/VST params
+  per tier). Sources: `architecture.md`, `ui-requirements.md`,
+  `parameter-handling.md`, `server/presets.py`, `train/gpu.py`,
+  `model/ddsp/variant.py`, webui tab components + WizardModal + views.
+
+**Update:**
+- `doc/index.md` — added `handbook.md` to Operations & Quality.
+
+## 2026-09-01 — M16 Parameter Builder UI (full milestone)
+
+**Creation:**
+- `webui/src/components/ModelParameterBuilder.vue` — main builder composing ParamCard + NeutoneSlotPanel
+- `webui/src/components/NeutoneSlotPanel.vue` — 4-slot Neutone FX knob panel with drag-and-drop
+- `webui/src/components/ParamCard.vue` — single editable VST parameter card
+
+**Update:**
+- `webui/src/mocks/fixtures.js` — added `PARAM_MANIFEST_FIXTURES` (5 tier variants)
+- `webui/src/mocks/mockApiClient.js` — added `getCheckpointParams`, `updateCheckpointParams`, `exportNeutone`, `exportCustomVST`
+- `webui/src/api/apiClient.js` — added abstract method stubs for the above
+- `webui/src/tests/mockApiClient.test.js` — smoke tests for new mock methods
+- `webui/src/tests/ParamCard.test.js` — 18 tests (validation, emits, readonly)
+- `webui/src/tests/NeutoneSlotPanel.test.js` — 14 tests (render, drag/drop, readonly)
+- `webui/src/tests/ModelParameterBuilder.test.js` — 8 tests (tier-aware, add, save, validation)
+- `webui/src/tests/views-batch2.test.js` — extended ModelExportView + InferencePlaygroundView tests (14 total)
+- `webui/src/views/ModelExportView.vue` — embeds ModelParameterBuilder, passes manifest
+- `webui/src/views/InferencePlaygroundView.vue` — dynamic N-param sliders from manifest
+
+**Verification:**
+- vitest: 77/77 passing (9 files)
+- pytest: 327/327 passing (1 skip)
+- ruff format --check: clean (only pre-existing E402 in scripts/sync-wiki.py)
+- wiki lint: clean
 
 **Creation:**
 - `doc/implementation/m15-param-manifest.md` — 9-step backend plan:
