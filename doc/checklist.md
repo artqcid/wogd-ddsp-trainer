@@ -238,7 +238,45 @@ default to `'standard'`._
       with each tier; validate that non-standard fields are absent/defaulted
       for `'standard'`; validate tier-mismatch 409 on resume.
 
-### Phase 2 — Frontend (requires Phase 1 complete)
+### Phase 0 — Design System (prerequisite for Phase 2; no backend required)
+
+- [ ] **M14.2.0** Design System upgrade — modern AI-dashboard visual language.
+      Spec: `implementation/m14-dual-mode-ui.md` §"Phase 0". Six sub-steps:
+      - **A** `webui/index.html` — Inter + JetBrains Mono `<link>` tags,
+        update `<title>`.
+      - **B** `webui/src/style.css` (NEW) — full global design token file:
+        `--bg-*`, `--text-*`, `--accent` (Indigo #6366F1) + `--accent-2`
+        (Cyan #06B6D4), semantic colors, borders, shadows (`--shadow-glow`),
+        radii (`--radius-lg: 16px`), spacing scale, font stacks
+        (`'Inter'`/`'JetBrains Mono'`), transition vars, z-index layers,
+        sidebar/topbar size vars. Global reset + base. Utility classes: `.card`,
+        `.card-header`, `.card-icon`, `.btn-primary` (gradient + glow),
+        `.btn-secondary`, `.btn-ghost`, `.btn-cyan`, `.btn-sm`/`.btn-lg`,
+        `.badge` + semantic variants (`badge-success`, `badge-warning`,
+        `badge-error`, `badge-accent`, `badge-cyan`, `badge-muted`,
+        `badge-dot`), `.form-group`, all form element styles (input/select/
+        range/checkbox/radio), `.tab-bar`/`.tab-btn`/`.tab-btn--active`/
+        `.tab-btn--disabled`, `.modal-overlay`/`.modal-box`/`.modal-header`/
+        `.modal-body`/`.modal-footer`, `.gradient-text`, `.glow-accent`,
+        `.glow-cyan`, grid + flex utilities.
+      - **C** `webui/src/main.js` — `import './style.css'` as first import.
+      - **D** `webui/src/App.vue` — remove scoped `:root` block; update shell
+        layout vars to use `--sidebar-width`, `--topbar-height`, `--bg-base`,
+        `--bg-primary`, `--font-sans`.
+      - **E** `webui/src/components/Sidebar.vue` — gradient SVG waveform brand
+        mark, `.gradient-text` app name, group icons (emoji prefix), thin
+        `.sidebar-divider` between groups, `router-link-active` state with
+        `--accent-subtle` bg + `--accent` left border + inward glow shadow,
+        footer Settings link.
+      - **F** `webui/src/components/TopBar.vue` — pill `.badge` status
+        indicators (replaces colored dots), breadcrumb section label (derived
+        from route path), GPU chip badge (name + VRAM) when GPU detected,
+        version in mono font. Script: computed `currentSection` map,
+        `gpuChip` computed from `apiClient.getHostInfo()`.
+      Verify: `vitest` all green after M14.2.0 (CSS-only; no `data-testid`
+      selectors changed).
+
+### Phase 2 — Frontend (requires Phase 0 + Phase 1 complete)
 
 - [ ] **M14.2.1** `webui/src/stores/modelConfig.js` — Pinia store:
       `activeTier`, `wizardCompleted`, `gpuFeasibility`, `selectedPreset`,

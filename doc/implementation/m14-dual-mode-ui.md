@@ -39,6 +39,14 @@ Prerequisite: none (M8–M13 are parallel; M14 is infrastructure)._
 ## File map
 
 ```
+Phase 0 — Design System (prerequisite for all Phase 2 work)
+webui/index.html                   MOD  — Inter + JetBrains Mono font links (M14.2.0)
+webui/src/style.css                NEW  — global design tokens, reset, utilities (M14.2.0)
+webui/src/main.js                  MOD  — import './style.css' (M14.2.0)
+webui/src/App.vue                  MOD  — remove scoped :root, update shell layout (M14.2.0)
+webui/src/components/Sidebar.vue   MOD  — modern nav: gradient brand, icons, active glow (M14.2.0)
+webui/src/components/TopBar.vue    MOD  — pill badges, gradient accent, GPU tier chip (M14.2.0)
+
 Phase 1 — Backend
 train/gpu.py                       MOD  — VRAMEstimate + estimate_model_vram (M14.1.1)
 server/db.py                       MOD  — model_tier column + migration (M14.1.2)
@@ -66,6 +74,1230 @@ webui/src/views/TrainingConfigView.vue       MOD  — tab-wrapper + wizard (M14.
 webui/src/views/PresetManagerView.vue        MOD  — model_tier filter (M14.2.8)
 tests/  (vitest)                   MOD  — M14.2.9 test suite
 ```
+
+---
+
+## Phase 0 — Design System (prerequisite for all Phase 2 work)
+
+> **Goal:** Replace the current GitHub-Dark-Clone visual style with a modern
+> AI-dashboard design language. All design tokens, global utilities, and shell
+> components land in a single step so every subsequent Phase 2 component
+> inherits them automatically. No backend changes. No Vitest breakage
+> (existing selectors are `data-testid`-based and CSS-independent).
+>
+> **Design reference:** Shasanko Das — *AI Content Creation & Analytics SaaS
+> Dashboard – Dark Mode UI/UX* (Dribbble shot 27444658 / Muzli Aug 2026).
+> Key traits to adopt: deep indigo-black backgrounds, Indigo/Violet primary
+> accent, Cyan secondary accent, glass-morphism cards with `border-radius:
+> 16px`, gradient active states with inward glow, Inter variable font,
+> pill-shaped status badges, generous spacing.
+
+### M14.2.0 — Design System: tokens, global CSS, shell upgrade
+
+**This step is a prerequisite for M14.2.1–M14.2.9.** Complete and verify
+(`vitest` green, visual review in browser) before proceeding.
+
+---
+
+#### M14.2.0-A — `webui/index.html`: font imports
+
+Add inside `<head>` before the closing tag:
+
+```html
+<!-- Inter: primary UI font (weights 300–700, variable font) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&display=swap"
+  rel="stylesheet"
+/>
+<!-- JetBrains Mono: code/numeric values (VRAM numbers, step counters) -->
+<link
+  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+```
+
+Also update `<title>`:
+
+```html
+<title>WOGD DDSP Trainer</title>
+```
+
+---
+
+#### M14.2.0-B — `webui/src/style.css` (new global file)
+
+Create `webui/src/style.css`. This is the **single source of truth** for all
+design tokens. Every scoped component style that needs a color, radius, shadow
+or spacing value must reference a CSS custom property defined here — never
+hard-code values in component styles.
+
+Full file content:
+
+```css
+/* ============================================================
+   WOGD DDSP Trainer — Global Design System
+   Design reference: Shasanko Das AI Dashboard (Dribbble 27444658)
+   ============================================================ */
+
+/* ── 1. CSS Custom Properties (Design Tokens) ─────────────── */
+:root {
+  /* --- Backgrounds (deep indigo-black palette) --- */
+  --bg-base:          #07080F;   /* Deepest — page/body base */
+  --bg-primary:       #0C0E1A;   /* Main content area */
+  --bg-secondary:     #111425;   /* Sidebar, card surfaces */
+  --bg-tertiary:      #181C30;   /* Inputs, hover states, active items */
+  --bg-elevated:      #1D2238;   /* Modals, dropdowns, popovers */
+  --bg-glass:         rgba(255, 255, 255, 0.03); /* Glass overlay */
+  --bg-glass-border:  rgba(255, 255, 255, 0.06); /* Glass border */
+
+  /* --- Text --- */
+  --text-primary:     #ECEEFF;   /* Near-white with blue tint */
+  --text-secondary:   #8892BB;   /* Subdued — labels, hints */
+  --text-muted:       #4A527A;   /* Very subdued — placeholders, captions */
+  --text-on-accent:   #FFFFFF;   /* Text on filled accent backgrounds */
+
+  /* --- Primary Accent: Indigo/Violet (AI, model, training) --- */
+  --accent:           #6366F1;   /* Indigo-500 */
+  --accent-light:     #818CF8;   /* Indigo-400 — hover, active text */
+  --accent-dark:      #4F46E5;   /* Indigo-600 — pressed, gradient end */
+  --accent-glow:      rgba(99, 102, 241, 0.35);
+  --accent-subtle:    rgba(99, 102, 241, 0.12);
+  --accent-subtle-hover: rgba(99, 102, 241, 0.20);
+
+  /* --- Secondary Accent: Cyan (audio, waveform, inference) --- */
+  --accent-2:         #06B6D4;   /* Cyan-500 */
+  --accent-2-light:   #22D3EE;   /* Cyan-400 */
+  --accent-2-dark:    #0891B2;   /* Cyan-600 */
+  --accent-2-glow:    rgba(6, 182, 212, 0.30);
+  --accent-2-subtle:  rgba(6, 182, 212, 0.10);
+
+  /* --- Semantic colors --- */
+  --success:          #10B981;   /* Emerald-500 */
+  --success-subtle:   rgba(16, 185, 129, 0.12);
+  --warning:          #F59E0B;   /* Amber-500 */
+  --warning-subtle:   rgba(245, 158, 11, 0.12);
+  --error:            #EF4444;   /* Red-500 */
+  --error-subtle:     rgba(239, 68, 68, 0.12);
+  --info:             #3B82F6;   /* Blue-500 */
+  --info-subtle:      rgba(59, 130, 246, 0.12);
+
+  /* --- Borders --- */
+  --border:           rgba(255, 255, 255, 0.07);
+  --border-strong:    rgba(255, 255, 255, 0.13);
+  --border-accent:    rgba(99, 102, 241, 0.45);
+  --border-accent-2:  rgba(6, 182, 212, 0.40);
+
+  /* --- Shadows --- */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md:   0 4px 20px rgba(0, 0, 0, 0.55);
+  --shadow-lg:   0 8px 40px rgba(0, 0, 0, 0.60);
+  --shadow-glow: 0 0 28px var(--accent-glow);
+  --shadow-glow-2: 0 0 24px var(--accent-2-glow);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* --- Radii --- */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* --- Spacing scale (base 4px) --- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* --- Typography --- */
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  --text-xs:    0.6875rem;  /* 11px */
+  --text-sm:    0.75rem;    /* 12px */
+  --text-base:  0.875rem;   /* 14px */
+  --text-md:    1rem;       /* 16px */
+  --text-lg:    1.125rem;   /* 18px */
+  --text-xl:    1.25rem;    /* 20px */
+  --text-2xl:   1.5rem;     /* 24px */
+
+  --weight-light:   300;
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semi:    600;
+  --weight-bold:    700;
+
+  /* --- Transitions --- */
+  --transition-fast:   100ms ease;
+  --transition-base:   160ms ease;
+  --transition-slow:   260ms ease;
+
+  /* --- Z-index layers --- */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+
+  /* --- Sidebar --- */
+  --sidebar-width:       220px;
+  --sidebar-collapsed:   60px;
+
+  /* --- TopBar --- */
+  --topbar-height:       52px;
+}
+
+/* ── 2. Reset & Base ───────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  line-height: 1.6;
+  overflow: hidden; /* SPA: scroll handled per-view */
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 3. Typography Utilities ───────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-semi);
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+h2 { font-size: var(--text-xl); }
+h3 { font-size: var(--text-md); }
+h4 { font-size: var(--text-base); }
+
+.text-xs      { font-size: var(--text-xs); }
+.text-sm      { font-size: var(--text-sm); }
+.text-base    { font-size: var(--text-base); }
+.text-muted   { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.text-accent  { color: var(--accent-light); }
+.text-mono    { font-family: var(--font-mono); }
+.label        { font-size: var(--text-xs); font-weight: var(--weight-medium);
+                text-transform: uppercase; letter-spacing: 0.06em;
+                color: var(--text-secondary); }
+
+/* ── 4. Card System ────────────────────────────────────────── */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.card-accent {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-card), 0 0 0 1px rgba(99, 102, 241, 0.15);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.card-icon.cyan  { background: var(--accent-2-subtle); color: var(--accent-2); }
+.card-icon.green { background: var(--success-subtle);  color: var(--success); }
+.card-icon.amber { background: var(--warning-subtle);  color: var(--warning); }
+
+/* ── 5. Button System ──────────────────────────────────────── */
+button, .btn {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5625rem var(--space-4);
+  transition: transform var(--transition-fast), box-shadow var(--transition-base),
+              background var(--transition-base), color var(--transition-base),
+              border-color var(--transition-base);
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: var(--text-on-accent);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px var(--accent-glow);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: var(--space-2) var(--space-3);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btn-cyan {
+  background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent-2-dark) 100%);
+  color: var(--text-on-accent);
+  box-shadow: 0 4px 14px var(--accent-2-glow);
+}
+
+.btn-cyan:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px var(--accent-2-glow);
+}
+
+.btn-sm {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+  font-size: var(--text-md);
+  padding: 0.75rem var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+/* ── 6. Badge / Pill System ────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.badge-success { background: var(--success-subtle); color: var(--success); }
+.badge-warning { background: var(--warning-subtle); color: var(--warning); }
+.badge-error   { background: var(--error-subtle);   color: var(--error);   }
+.badge-info    { background: var(--info-subtle);     color: var(--info);    }
+.badge-accent  { background: var(--accent-subtle);   color: var(--accent-light); }
+.badge-cyan    { background: var(--accent-2-subtle); color: var(--accent-2); }
+.badge-muted   { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+
+.badge-dot::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── 7. Form Elements ──────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.form-group label,
+.form-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5625rem var(--space-3);
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base),
+              background var(--transition-base);
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238892BB' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 2rem;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-tertiary);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Radio group */
+.radio-group {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  transition: border-color var(--transition-base), background var(--transition-base),
+              color var(--transition-base);
+}
+
+.radio-option:has(input:checked) {
+  border-color: var(--border-accent);
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+}
+
+.radio-option input[type="radio"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+/* ── 8. Tab System ─────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base),
+              box-shadow var(--transition-base);
+  white-space: nowrap;
+}
+
+.tab-btn:hover:not(.tab-btn--disabled) {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.tab-btn--active {
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+  box-shadow: inset 0 0 0 1px var(--border-accent);
+}
+
+.tab-btn--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tab-content {
+  padding-top: var(--space-6);
+}
+
+/* ── 9. Modal / Overlay System ─────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 8, 15, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-6);
+}
+
+.modal-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(99, 102, 241, 0.12);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-box--wide { max-width: 860px; }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semi);
+  margin: 0;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── 10. Separator / Divider ───────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-4) 0;
+}
+
+/* ── 11. Scrollbar (WebKit) ────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── 12. Focus visible (accessibility) ────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* ── 13. Selection ─────────────────────────────────────────── */
+::selection {
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+}
+
+/* ── 14. Gradient text utility ─────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── 15. Glow utilities ────────────────────────────────────── */
+.glow-accent  { box-shadow: var(--shadow-glow); }
+.glow-cyan    { box-shadow: var(--shadow-glow-2); }
+
+/* ── 16. Section layout utility ────────────────────────────── */
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+}
+
+/* ── 17. Grid utilities ────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+
+/* ── 18. Inline flex utils ─────────────────────────────────── */
+.flex     { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center  { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+```
+
+---
+
+#### M14.2.0-C — `webui/src/main.js`: import global CSS
+
+Add as the **first import** in `main.js`:
+
+```js
+import './style.css'   // ← add this as line 1
+import { createApp } from 'vue'
+// ... rest unchanged
+```
+
+---
+
+#### M14.2.0-D — `webui/src/App.vue`: remove scoped `:root`, update shell layout
+
+Replace the entire `<style scoped>` block. The `:root` variables move to
+`style.css`; the shell layout uses the new token names:
+
+```vue
+<style scoped>
+.app-shell {
+  display: flex;
+  height: 100vh;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  z-index: var(--z-raised);
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-primary);
+}
+
+.app-topbar {
+  height: var(--topbar-height);
+  flex-shrink: 0;
+  z-index: var(--z-raised);
+}
+
+.app-content {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+}
+</style>
+```
+
+---
+
+#### M14.2.0-E — `webui/src/components/Sidebar.vue`: modern navigation
+
+Replace the entire `<template>` and `<style scoped>` (keep the `<script
+setup>` unchanged):
+
+**Template changes:**
+- Add a gradient logo mark (SVG waveform icon + gradient text app name)
+- Add single-character emoji/icon before each nav group label
+- Add a thin gradient line between nav groups
+- Bottom: a version/build badge
+
+```vue
+<template>
+  <nav class="sidebar">
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">
+        <!-- Simple waveform SVG mark -->
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M1 11 Q3 5 5 11 Q7 17 9 11 Q11 5 13 11 Q15 17 17 11 Q19 5 21 11"
+                stroke="url(#wg)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <defs>
+            <linearGradient id="wg" x1="0" y1="0" x2="22" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6366F1"/>
+              <stop offset="100%" stop-color="#06B6D4"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="sidebar-brand-name gradient-text">WOGD</span>
+      <span class="sidebar-brand-sub">DDSP Trainer</span>
+    </div>
+
+    <!-- Nav groups -->
+    <div class="sidebar-scroll">
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">
+          <span class="sidebar-group-icon">🗄</span> Dataset
+        </div>
+        <ul class="sidebar-links">
+          <li><RouterLink to="/datasets"          class="sidebar-link">Upload &amp; Ingestion</RouterLink></li>
+          <li><RouterLink to="/datasets/manager"  class="sidebar-link">Dataset Manager</RouterLink></li>
+          <li><RouterLink to="/datasets/preprocess" class="sidebar-link">Preprocessing</RouterLink></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">
+          <span class="sidebar-group-icon">🧠</span> Model
+        </div>
+        <ul class="sidebar-links">
+          <li><RouterLink to="/model" class="sidebar-link">Training Config</RouterLink></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">
+          <span class="sidebar-group-icon">📊</span> Training
+        </div>
+        <ul class="sidebar-links">
+          <li><RouterLink to="/training" class="sidebar-link">Dashboard</RouterLink></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">
+          <span class="sidebar-group-icon">🎙</span> Inference
+        </div>
+        <ul class="sidebar-links">
+          <li><RouterLink to="/inference" class="sidebar-link">Playground</RouterLink></li>
+          <li><RouterLink to="/export"    class="sidebar-link">Model Export</RouterLink></li>
+          <li><RouterLink to="/presets"   class="sidebar-link">Presets</RouterLink></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">
+          <span class="sidebar-group-icon">🔬</span> Experimental
+        </div>
+        <ul class="sidebar-links">
+          <li><RouterLink to="/experimental/reverb"   class="sidebar-link">Reverb IR</RouterLink></li>
+          <li><RouterLink to="/experimental/f0-editor" class="sidebar-link">F0 Editor</RouterLink></li>
+          <li><RouterLink to="/experimental/mixer"    class="sidebar-link">Component Mixer</RouterLink></li>
+        </ul>
+      </div>
+
+    </div><!-- end sidebar-scroll -->
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <RouterLink to="/settings" class="sidebar-link sidebar-link--settings">
+        ⚙ Settings
+      </RouterLink>
+    </div>
+
+  </nav>
+</template>
+```
+
+**Style block:**
+
+```vue
+<style scoped>
+.sidebar {
+  height: 100vh;
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- Brand --- */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-subtle);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.sidebar-brand-sub {
+  display: none; /* shown only on hover/wide variant; hide for now */
+}
+
+/* --- Scroll area --- */
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) 0;
+}
+
+/* --- Group --- */
+.sidebar-group {
+  padding: var(--space-1) 0;
+}
+
+.sidebar-group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semi);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.sidebar-group-icon {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.sidebar-divider {
+  height: 1px;
+  margin: var(--space-2) var(--space-4);
+  background: var(--border);
+}
+
+/* --- Links --- */
+.sidebar-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem var(--space-4);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  border-left: 2px solid transparent;
+  transition: background var(--transition-base), color var(--transition-base),
+              border-color var(--transition-base), box-shadow var(--transition-base);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-right: var(--space-2);
+}
+
+.sidebar-link:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.sidebar-link.router-link-active {
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+  border-left-color: var(--accent);
+  font-weight: var(--weight-medium);
+  box-shadow: inset 0 0 16px rgba(99, 102, 241, 0.08);
+}
+
+/* --- Footer --- */
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-3) 0;
+  flex-shrink: 0;
+}
+
+.sidebar-link--settings {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.sidebar-link--settings:hover {
+  color: var(--text-secondary);
+}
+</style>
+```
+
+---
+
+#### M14.2.0-F — `webui/src/components/TopBar.vue`: pill badges, GPU chip
+
+Replace the entire component (script, template, style). Keep the same logic,
+upgrade the visual layer:
+
+**Template:**
+
+```vue
+<template>
+  <header class="topbar">
+
+    <div class="topbar-left">
+      <div class="topbar-breadcrumb text-secondary text-sm">
+        {{ currentSection }}
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Backend status -->
+      <span
+        :class="['badge', 'badge-dot', healthBadgeClass]"
+        :title="healthLabel"
+        data-testid="backend-status"
+      >
+        {{ healthLabel }}
+      </span>
+
+      <!-- TensorBoard status -->
+      <span
+        :class="['badge', 'badge-dot', tbBadgeClass]"
+        :title="tbLabel"
+        data-testid="tb-status"
+      >
+        {{ tbLabel }}
+      </span>
+
+      <!-- GPU chip (shown when GPU detected) -->
+      <span
+        v-if="gpuChip"
+        class="badge badge-muted topbar-gpu-chip text-mono"
+        data-testid="gpu-chip"
+        :title="gpuChip.tooltip"
+      >
+        🖥 {{ gpuChip.label }}
+      </span>
+
+      <!-- Version -->
+      <span v-if="version" class="topbar-version text-muted text-xs text-mono">
+        v{{ version }}
+      </span>
+    </div>
+
+  </header>
+</template>
+```
+
+**Script:**
+
+```vue
+<script setup>
+import { ref, computed, onMounted, inject } from 'vue'
+import { useRoute } from 'vue-router'
+
+const apiClient = inject('apiClient')
+const route     = useRoute()
+const version   = ref(null)
+const healthOk  = ref(null)
+const tbRunning = ref(null)
+const gpuInfo   = ref(null)
+
+const SECTION_MAP = {
+  '/datasets':                   'Dataset & Preprocessing',
+  '/datasets/manager':           'Dataset Manager',
+  '/datasets/preprocess':        'Preprocessing',
+  '/model':                      'Training Config',
+  '/training':                   'Training Dashboard',
+  '/inference':                  'Inference Playground',
+  '/export':                     'Model Export',
+  '/presets':                    'Presets',
+  '/experimental/reverb':        'Experimental › Reverb IR',
+  '/experimental/f0-editor':     'Experimental › F0 Editor',
+  '/experimental/mixer':         'Experimental › Component Mixer',
+  '/settings':                   'Settings',
+}
+const currentSection = computed(() => SECTION_MAP[route.path] ?? 'WOGD DDSP Trainer')
+
+const healthBadgeClass = computed(() => {
+  if (healthOk.value === null) return 'badge-muted'
+  return healthOk.value ? 'badge-success' : 'badge-error'
+})
+const healthLabel = computed(() => {
+  if (healthOk.value === null) return 'Backend…'
+  return healthOk.value ? 'Backend: ok' : 'Backend: error'
+})
+
+const tbBadgeClass = computed(() => {
+  if (tbRunning.value === null) return 'badge-muted'
+  return tbRunning.value ? 'badge-success' : 'badge-warning'
+})
+const tbLabel = computed(() => {
+  if (tbRunning.value === null) return 'TensorBoard…'
+  return tbRunning.value ? 'TensorBoard' : 'TensorBoard: off'
+})
+
+const gpuChip = computed(() => {
+  if (!gpuInfo.value?.gpus?.length) return null
+  const g = gpuInfo.value.gpus[0]
+  const vram = g.total_vram_gb ? `${g.total_vram_gb.toFixed(0)} GB` : ''
+  const name = g.name?.replace('NVIDIA GeForce ', '') ?? 'GPU'
+  return {
+    label: vram ? `${name} · ${vram}` : name,
+    tooltip: `${g.name} — ${vram} VRAM · Tier: ${gpuInfo.value.tier ?? 'unknown'}`,
+  }
+})
+
+onMounted(async () => {
+  if (!apiClient) return
+  try {
+    const h = await apiClient.health()
+    version.value = h.version ?? null
+    healthOk.value = h.ok ?? false
+  } catch { healthOk.value = false }
+  try {
+    const tb = await apiClient.getTensorboard()
+    tbRunning.value = !!tb.running
+  } catch { tbRunning.value = false }
+  try {
+    gpuInfo.value = await apiClient.getHostInfo()
+  } catch { /* optional */ }
+})
+</script>
+```
+
+**Style:**
+
+```vue
+<style scoped>
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  height: var(--topbar-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.topbar-breadcrumb {
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.topbar-gpu-chip {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-xs);
+}
+
+.topbar-version {
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--border);
+}
+</style>
+```
+
+---
+
+#### M14.2.0-G — Vitest: verify no breakage
+
+Run `vitest` after completing M14.2.0-A through M14.2.0-F. All existing tests
+must remain green. The design changes are CSS-only and do not touch any
+`data-testid` selectors. If any test fails it is due to a structural template
+change (e.g. removed element) — fix before proceeding to M14.2.1.
+
+Expected result: **all existing Vitest pass; no new tests needed for M14.2.0**.
 
 ---
 

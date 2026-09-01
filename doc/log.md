@@ -3,6 +3,39 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M14.2.0 Design System spec added (ARCHITECT)
+
+**Decision:** Modern AI-dashboard visual language adopted. Design reference:
+Shasanko Das — *AI Content Creation & Analytics SaaS Dashboard – Dark Mode
+UI/UX* (Dribbble 27444658). Key traits: deep indigo-black backgrounds,
+Indigo #6366F1 primary accent, Cyan #06B6D4 secondary accent, 16px-radius
+cards with glow shadow, Inter variable font, pill-shaped badges, generous
+spacing.
+
+**Update:** [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md)
+— Phase 0 "Design System" block inserted before Phase 1 Backend. Six
+sub-steps (M14.2.0-A through M14.2.0-G):
+A: `index.html` Inter + JetBrains Mono font links.
+B: `webui/src/style.css` (NEW) — full global design token file: 70+ custom
+   properties, reset, card/button/badge/form/tab/modal utility classes.
+C: `main.js` — import `'./style.css'`.
+D: `App.vue` — remove scoped `:root`; use token vars in shell layout.
+E: `Sidebar.vue` — gradient SVG brand mark, emoji nav icons, active glow,
+   dividers, footer.
+F: `TopBar.vue` — pill badge status, breadcrumb section label, GPU chip.
+G: vitest green verification gate.
+File map in m14-dual-mode-ui.md updated to include Phase 0 files.
+
+**Update:** [`ui-requirements.md`](./ui-requirements.md) — new section
+"Visual design system (M14.2.0)": design reference, token category table,
+global utility class list, font spec, shell component specs (Sidebar + TopBar).
+
+**Update:** [`checklist.md`](./checklist.md) — M14.2.0 task added as Phase 0
+block (prerequisite for Phase 2); Phase 2 header updated to "requires Phase
+0 + Phase 1 complete". Full sub-step checklist in task description.
+
+Wiki: 152 files, re-index pending.
+
 ## 2026-09-01 — M14 Dual-Mode Training UI + Backend Tier System designed (ARCHITECT)
 
 **Architecture decision:** Dual-Mode Training UI (Wizard + Power-User Tabs)

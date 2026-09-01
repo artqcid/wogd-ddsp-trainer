@@ -156,6 +156,77 @@ UI:
 - **Run lifecycle** (M4.2): start/stop/resume training runs, run list/history,
   current run status.
 
+## Visual design system (M14.2.0)
+
+The app uses a modern AI-dashboard dark-mode design language. The single
+source of truth for all visual tokens is `webui/src/style.css` (global,
+imported in `main.js`). No component may hard-code a color, radius, shadow
+or spacing value — all values must reference a CSS custom property from this
+file.
+
+### Design reference
+
+Shasanko Das — *AI Content Creation & Analytics SaaS Dashboard – Dark Mode
+UI/UX* (Dribbble shot 27444658, published Aug 2026 via Muzli). Adopted
+visual traits:
+
+- Deep indigo-black backgrounds (not neutral grey)
+- Primary accent: Indigo/Violet `#6366F1` — model, training, interactive
+- Secondary accent: Cyan `#06B6D4` — audio, waveform, inference
+- Cards: `border-radius: 16px`, glass-morphism border, subtle shadow + glow
+- Active states: gradient fill + inward glow, not flat highlight
+- Typography: Inter variable font (300–700), JetBrains Mono for numeric values
+- Status indicators: pill-shaped `.badge` with semantic color, not plain dots
+- Spacing: generous (base 4 px scale, `gap: 24px` in card grids)
+
+### Token categories (defined in `webui/src/style.css`)
+
+| Category | Key tokens |
+|---|---|
+| Backgrounds | `--bg-base` `--bg-primary` `--bg-secondary` `--bg-tertiary` `--bg-elevated` `--bg-glass` |
+| Text | `--text-primary` `--text-secondary` `--text-muted` `--text-on-accent` |
+| Primary accent | `--accent` `--accent-light` `--accent-dark` `--accent-glow` `--accent-subtle` |
+| Secondary accent | `--accent-2` `--accent-2-light` `--accent-2-dark` `--accent-2-glow` `--accent-2-subtle` |
+| Semantic | `--success` `--warning` `--error` `--info` (each with `-subtle` variant) |
+| Borders | `--border` `--border-strong` `--border-accent` `--border-accent-2` |
+| Shadows | `--shadow-xs` `--shadow-sm` `--shadow-md` `--shadow-lg` `--shadow-glow` `--shadow-card` |
+| Radii | `--radius-xs(4)` `--radius-sm(8)` `--radius-md(12)` `--radius-lg(16)` `--radius-xl(20)` `--radius-pill` |
+| Spacing | `--space-1` … `--space-12` (4 px scale) |
+| Typography | `--font-sans` (Inter) `--font-mono` (JetBrains Mono) · `--text-xs`…`--text-2xl` · `--weight-light`…`--weight-bold` |
+| Motion | `--transition-fast(100ms)` `--transition-base(160ms)` `--transition-slow(260ms)` |
+| Layout | `--sidebar-width(220px)` `--topbar-height(52px)` `--z-*` |
+
+### Global utility classes
+
+Defined in `style.css`, available in all components without import:
+
+- **Cards:** `.card` `.card-accent` `.card-header` `.card-icon` (`.cyan` `.green` `.amber` variants)
+- **Buttons:** `.btn-primary` `.btn-secondary` `.btn-ghost` `.btn-cyan` + `.btn-sm` `.btn-lg`
+- **Badges:** `.badge` + `.badge-success` `.badge-warning` `.badge-error` `.badge-info` `.badge-accent` `.badge-cyan` `.badge-muted` `.badge-dot`
+- **Forms:** `.form-group` `.form-label` `.checkbox-label` `.radio-group` `.radio-option`
+- **Tabs:** `.tab-bar` `.tab-btn` `.tab-btn--active` `.tab-btn--disabled` `.tab-content`
+- **Modals:** `.modal-overlay` `.modal-box` `.modal-box--wide` `.modal-header` `.modal-body` `.modal-footer`
+- **Utilities:** `.gradient-text` `.glow-accent` `.glow-cyan` `.section` `.section-header` `.section-title` `.divider` `.grid-2/3/4` `.flex` `.flex-col` `.items-center` `.justify-between` `.gap-2/3/4` `.label` `.text-xs/sm/base/muted/secondary/accent/mono`
+
+### Fonts
+
+Inter (variable, 300–700) loaded via Google Fonts CDN in `webui/index.html`.
+JetBrains Mono (400, 500) for numeric/code values. Both declared in
+`--font-sans` / `--font-mono` tokens and applied globally.
+
+### Shell components (M14.2.0)
+
+**Sidebar** (`components/Sidebar.vue`):
+- Brand: SVG waveform icon (Indigo→Cyan gradient stroke) + `.gradient-text` "WOGD" wordmark
+- Nav groups: emoji icon prefix on group label, thin `.sidebar-divider` between groups
+- Active link: `--accent-subtle` background + 2 px `--accent` left border + `box-shadow: inset 0 0 16px rgba(99,102,241,0.08)`
+- Footer: Settings link separate from main scroll area
+
+**TopBar** (`components/TopBar.vue`):
+- Left: breadcrumb section name (derived from `route.path` via static map)
+- Right: pill `.badge` status indicators for Backend + TensorBoard, GPU chip badge (model + VRAM), version in mono font
+- GPU chip visible when `apiClient.getHostInfo()` returns GPU data
+
 ## Dual-Mode Training UI (M14)
 
 The training configuration UI must support two parallel interaction modes that
