@@ -446,6 +446,48 @@ The GPU detection module (`train/gpu.py`) reads available VRAM and suggests:
 | 8–12 GB | 512 | 5 | Disabled | Recommended |
 | ≥ 12 GB | 512–1024 | 5–8 | Disabled | Optional |
 
+## Parameter Export Architecture
+
+Two distinct export paths exist for inference parameters (see `parameter-handling.md`
+for the full analysis):
+
+### Dual-Export Targets
+
+| Target | Format | Max params | SDK constraint |
+|---|---|---|---|
+| **Neutone FX** (realtime DAW plugin) | `.nm` (TorchScript) | **4** | `constants.MAX_N_PARAMS = 4` — SDK assert, hard limit |
+| **Custom VST** (wogd realtime plugin) | `.pt` (TorchScript) | **16** | custom `param_manifest` embedded in checkpoint state |
+| **API / Offline** | `.pt` | unlimited | params passed as JSON in POST body |
+
+### Parameter Manifest (Custom VST + API)
+
+A `param_manifest` dict is stored under `state["param_manifest"]` in every checkpoint.
+It is written by the trainer with tier-specific defaults and can be updated via the
+export UI without touching model weights. Schema: `InferenceParam` dataclass (slot,
+name, description, type, min/max/default, mapping, unit_hint, group, neutone_slot).
+
+```python
+# server/routes/models.py — future endpoint
+GET /api/models/{run_id}/{checkpoint}/params
+→ { "n_params": 8, "neutone_slots": [1,2,3,4], "params": [...] }
+```
+
+### Tier-Default Parameter Counts
+
+| Tier | Neutone FX | Custom VST (recommended) | Custom VST (max) |
+|---|---|---|---|
+| `standard` | 4 | 4 | 4 |
+| `component` | 4 | 4–6 | 8 |
+| `hacks` | 4 | 4–8 | 12 |
+| `engine` | 4 | 4–6 | 8 |
+| `advanced/VAE` | 4 | 6–10 | 16 |
+| `advanced/Poly` | 4 | 4–8 | 12 |
+| `advanced/VC` | 4 | 4–6 | 8 |
+
+The `ModelParameterBuilder.vue` component in `ModelExportView` is the single place
+where users configure inference parameters, assign Neutone slots (drag & drop), and
+customise names/defaults before export.
+
 ## Conventions
 
 - English for all agent-facing docs and code identifiers.

@@ -142,9 +142,49 @@ to what the backend supports** (PyTorch stack):
 - Neutone (DAW plugin, TorchScript)
 - ONNX (cross-platform / web via onnxruntime-web)
 - TorchScript (realtime)
+- **Custom VST** (wogd realtime plugin, TorchScript + `param_manifest`, up to 16 params)
 
 No TensorFlow (`SavedModel`/TFLite) artifacts are produced; the model/training
 stack is PyTorch (see `plan.md`).
+
+#### `ModelParameterBuilder` (mandatory sub-component of `ModelExportView`)
+
+The parameter builder is the single place where users configure **inference
+runtime parameters** (VST knobs) before export. It is entirely separate from the
+training config flow. Requirements:
+
+- **Dual-section layout:**
+  - *Neutone FX section* — always 4 slots (hard limit from Neutone SDK). Names,
+    descriptions, and defaults are editable. Slot assignments shown visually as
+    knob cards.
+  - *Custom VST section* — visible only for `model_tier ≥ component`. Allows
+    4 to 16 parameters total. Shows per-tier auto-suggested parameters as a
+    starting point; user can add, remove, rename, and reorder.
+- **Tier-aware defaults:** on first open, the builder is pre-filled with
+  tier-specific default parameters (names, min/max/default, mapping) via
+  `GET /api/models/{run_id}/{checkpoint}/params`. The user never starts with
+  an empty form.
+- **Neutone slot assignment (drag & drop):** for experimental models with >4
+  parameters, the user drags any 4 from the full list into the 4 Neutone slots.
+  Parameters not assigned to a Neutone slot are labelled "Custom VST / API only".
+- **Parameter customization fields per slot/card:**
+  - Name (max 30 chars, validated)
+  - Description (max 150 chars)
+  - Type: `continuous` (min/max/default) or `categorical` (labels list)
+  - Mapping curve: `linear` | `log` | `exp`
+  - Unit hint (free text, displayed as suffix in VST UI)
+  - Group tag (e.g. "Pitch", "Texture", "Latent")
+- **VAE latent parameter labelling:** for `advanced` tier with `use_latent=true`,
+  latent dimension cards show a "Label" button that opens a synthesis preview:
+  the model renders audio at extreme values of that dimension, helping the user
+  give it a meaningful name (e.g. "Roughness", "Brightness").
+- **Export buttons:** `[Export → Neutone FX (.nm)]` and
+  `[Export → Custom VST (.pt)]` are both visible. Each button triggers a
+  format-specific export using only the appropriate parameter subset.
+- **Mock-data seam:** the builder must render with a fixture `param_manifest`
+  (no backend required) for Vitest and dev preview.
+
+Full parameter handling specification: [`parameter-handling.md`](./parameter-handling.md).
 
 ## Additional required views (project milestones)
 

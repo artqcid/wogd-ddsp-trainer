@@ -12,6 +12,7 @@ _See `log.md` for the chronological append-only changelog._
 ## Architecture & Design
 - [`architecture.md`](./architecture.md) - System architecture: DDSP pipeline, dataset prep, model, training loop, web backend + UI, tech stack, M14 model tier system + backend extensions
 - [`ui-requirements.md`](./ui-requirements.md) - UI/product requirements: applies to ALL agents; app shell, 4 view groups, coupling rules, mock-data seam, TensorBoard doctrine, M14 Dual-Mode Training UI (Wizard + Power-User Tabs)
+- [`parameter-handling.md`](./parameter-handling.md) - Input parameter dynamics: Zwei-Schicht-Modell (Training-Config vs. Inferenz), Neutone hard-limit 4, Custom-VST 16-param, GUI ModelParameterBuilder, tier-spezifische Defaults, ParamManifest-Schema
 - [`coding-standards.md`](./coding-standards.md) - Coding standards: Clean Code Developer (CCD) value system + compliance rule
 
 ## Domain Knowledge
@@ -38,6 +39,8 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m12-polyddsp.md`](./implementation/m12-polyddsp.md) - M12 granular steps (PolyDDSP, multi-pitch tracker, N-voice model)
 - [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md) - M13 granular steps (HuBERT/ContentVec, VC pipeline, VoiceConversionView)
 - [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md) - M14 granular steps: Backend-first (DB, gpu.py, presets, tasks, feasibility endpoint) then Frontend (Wizard, Tabs, Banner, store)
+- [`implementation/m15-param-manifest.md`](./implementation/m15-param-manifest.md) - M15 granular steps: ParamManifest dataclass + tier-default builders, checkpoint embedding, REST GET/PUT params, dynamic Neutone wrapper, CustomVSTWrapper + export endpoint, N-param synthesize
+- [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md) - M16 granular steps: ParamCard, ModelParameterBuilder, NeutoneSlotPanel (drag & drop), ModelExportView dual-export, InferencePlaygroundView dynamic N-param sliders
 
 ## Operations & Quality
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)

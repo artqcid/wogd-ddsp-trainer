@@ -3,6 +3,61 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M15 + M16 Implementation Plans (Parameter Manifest + Builder UI)
+
+**Creation:**
+- `doc/implementation/m15-param-manifest.md` — 9-step backend plan:
+  M15.1 `InferenceParam`+`ParamManifest` dataclasses + `validate_manifest`;
+  M15.2 tier-default builders (`build_default_manifest`, 7 variants);
+  M15.3 checkpoint embedding in `Trainer.save_checkpoint`;
+  M15.4 `GET /api/models/{run}/{ckpt}/params`;
+  M15.5 `PUT /api/models/{run}/{ckpt}/params`;
+  M15.6 dynamic Neutone wrapper reads manifest;
+  M15.7 `CustomVSTWrapper` (TorchScript ≤16 params) + `/export/custom-vst` endpoint;
+  M15.8 `POST /api/inference/synthesize` N-param extension;
+  M15.9 full suite gate.
+  File map: `model/param_manifest.py` (NEW), `train/trainer.py`,
+  `server/routes/models.py`, `inference/export.py`, `inference/export_custom_vst.py` (NEW),
+  `server/routes/inference.py` + 6 new test files.
+
+- `doc/implementation/m16-param-builder-ui.md` — 8-step frontend plan:
+  M16.1 mock fixtures + `getCheckpointParams`/`updateCheckpointParams`;
+  M16.2 `ParamCard.vue` (inline editable, validation, readonly mode);
+  M16.3 `ModelParameterBuilder.vue` (Neutone + Custom VST sections, tier-aware);
+  M16.4 `NeutoneSlotPanel.vue` (HTML5 drag-and-drop, 4 knob slots);
+  M16.5 `ModelExportView.vue` dual-export buttons;
+  M16.6 `InferencePlaygroundView.vue` dynamic N-param sliders + grouping + fallback;
+  M16.7 full suite gate;
+  M16.8 optional VAE Latent Dimension Labelling mini-modal.
+
+**Update:**
+- `doc/plan.md` — M15 + M16 milestone entries added
+- `doc/checklist.md` — M15 (9 tasks) + M16 (8 tasks incl. 1 optional) checklists added
+- `doc/index.md` — M15 + M16 implementation plan entries added
+
+## 2026-09-01 — Parameter Handling Architecture (Custom VST 16-param + Neutone 4-param)
+
+**Creation:**
+- `doc/parameter-handling.md` — vollständige Analyse der Input-Parameter-Dynamik:
+  Zwei-Schicht-Modell (Training-Config vs. Inferenz-Laufzeitparameter), Neutone SDK
+  Hard-Limit-Analyse (MAX_N_PARAMS=4, verifiziert gegen constants.py/core.py v1.5.2),
+  Custom-VST 16-Parameter-Erweiterung, Dual-Export-Pfade, tier-spezifische
+  Parametertabellen pro Engine/Hack/VAE/PolyDDSP/VC, ParamManifest-Schema
+  (InferenceParam + ParamManifest dataclass), GUI-Design ModelParameterBuilder,
+  Neutone-Slot-Zuweisung (Drag & Drop), Export-Decision-Tree,
+  `build_default_manifest()` Serverlogik.
+
+**Update:**
+- `doc/index.md` — neuer Eintrag für `parameter-handling.md` im Abschnitt Architecture & Design
+- `doc/architecture.md` — neue Sektion „Parameter Export Architecture":
+  Dual-Export-Tabelle (Neutone 4 / Custom VST 16 / API unlimited),
+  ParamManifest-Einbettung, Tier-Default-Parameterzahlen-Tabelle,
+  Referenz auf `ModelParameterBuilder.vue`
+- `doc/ui-requirements.md` — Sektion 6 (Model export) erweitert um Custom VST
+  als vierten Export-Pfad und vollständige `ModelParameterBuilder`-Anforderungen
+  (Dual-Section-Layout, Drag & Drop Neutone-Slot-Zuweisung, VAE Latent Labelling,
+  Mock-data seam, tier-aware defaults)
+
 ## 2026-09-01 — M14: Dual-Mode Training UI + Backend Tier System
 
 **Creation:**

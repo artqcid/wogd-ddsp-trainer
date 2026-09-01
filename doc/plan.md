@@ -86,6 +86,31 @@ _Roadmap / open questions / risks. Active tasks live in
   Full spec: [`ui-requirements.md`](./ui-requirements.md#dual-mode-training-ui-m14),
   [`architecture.md`](./architecture.md#model-tier-system--dual-mode-ui-m14).
 
+- **M15 - Parameter Manifest Backend:** introduces `ParamManifest` — the
+  serializable description of a checkpoint's ≤16 inference runtime parameters
+  (VST knobs). `InferenceParam` + `ParamManifest` dataclasses, tier-default
+  builders (`build_default_manifest`), checkpoint embedding under
+  `state["param_manifest"]`, REST endpoints `GET/PUT /api/models/{run}/{ckpt}/params`,
+  dynamic Neutone wrapper (names + defaults from manifest), new
+  `CustomVSTWrapper` TorchScript module + `POST …/export/custom-vst` endpoint,
+  extended `POST /api/inference/synthesize` for N params. No breaking changes;
+  old checkpoints without manifest key generate defaults transparently.
+  Details: [`implementation/m15-param-manifest.md`](./implementation/m15-param-manifest.md).
+  Full spec: [`parameter-handling.md`](./parameter-handling.md).
+
+- **M16 - Parameter Builder UI:** frontend for M15's manifest infrastructure.
+  `ModelParameterBuilder.vue` (Neutone 4-slot panel + Custom VST ≤16 section,
+  tier-aware), `ParamCard.vue` (inline editable parameter card),
+  `NeutoneSlotPanel.vue` (HTML5 drag-and-drop Neutone slot assignment).
+  Updated `ModelExportView.vue` (dual export buttons: Neutone FX + Custom VST),
+  `InferencePlaygroundView.vue` (dynamic N-param sliders from manifest, grouped
+  by tag, fallback to 2-slider for old checkpoints). Optional M16.8: VAE Latent
+  Dimension Labelling mini-modal. Full mock-data seam + Vitest coverage.
+  Prerequisite: M15 complete.
+  Details: [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md).
+  Full spec: [`parameter-handling.md`](./parameter-handling.md),
+  [`ui-requirements.md`](./ui-requirements.md) §ModelParameterBuilder.
+
 - **DDSP implementation:** self-owned PyTorch DDSP core (harmonic + filtered
   noise + reverb synth), specified by the DDSP paper (Engel et al. 2020).
   Reference implementations: `acids-ircam/ddsp_pytorch` (Apache-2.0) and
