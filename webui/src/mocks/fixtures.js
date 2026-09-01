@@ -157,6 +157,8 @@ export const variantFixture = {
   lfo_freq: 0,
   lfo_depth: 0,
   use_angular_cumsum: false,
+  newt_n_hidden: 32,
+  newt_n_layers: 4,
 }
 
 const _SPEED_FACTORS = {

@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.ddsp import DDSPCore, DDSPVariant
+from model.ddsp.newt import NEWTUnit, SawtoothExciter
 
 
 @dataclass
@@ -89,6 +90,9 @@ class DDSPModel(nn.Module):
         elif self.variant.engine == "combsub":
             self.comb_magnitudes_out = nn.Linear(config.hidden_size, n_noise_bins)
             self.voiced_out = nn.Linear(config.hidden_size, 1)
+        elif self.variant.engine == "newt":
+            self.newt_gain_out = nn.Linear(config.hidden_size, 1)
+            self.newt_bias_out = nn.Linear(config.hidden_size, 1)
 
         self.ddsp_core = DDSPCore(
             n_harmonics=config.n_harmonics,
@@ -99,6 +103,16 @@ class DDSPModel(nn.Module):
         )
 
         self.n_noise_bins = n_noise_bins
+
+        self.sawtooth: SawtoothExciter | None = None
+        self.newt: NEWTUnit | None = None
+
+        if self.variant.engine == "newt":
+            self.sawtooth = SawtoothExciter()
+            self.newt = NEWTUnit(
+                n_hidden=self.variant.newt_n_hidden,
+                n_layers=self.variant.newt_n_layers,
+            )
 
     def forward(
         self,
@@ -163,6 +177,36 @@ class DDSPModel(nn.Module):
             return {
                 "magnitudes": magnitudes,
                 "voiced": voiced,
+                "audio": audio,
+            }
+
+        if engine == "newt":
+            gain_frames = torch.sigmoid(self.newt_gain_out(hidden)).squeeze(-1)
+            bias_frames = torch.tanh(self.newt_bias_out(hidden)).squeeze(-1)
+
+            n_samples = (T_frames - 1) * self.config.frame_size + 1
+            gain_audio = F.interpolate(
+                gain_frames.unsqueeze(1), size=n_samples, mode="linear", align_corners=False
+            ).squeeze(1)
+            bias_audio = F.interpolate(
+                bias_frames.unsqueeze(1), size=n_samples, mode="linear", align_corners=False
+            ).squeeze(1)
+
+            excitation = self.sawtooth(f0, self.config.sample_rate, self.config.frame_size)
+            harmonic_audio = self.newt(excitation, gain_audio, bias_audio)
+
+            noise_raw = self.noise_magnitudes_out(hidden)
+            magnitudes = torch.sigmoid(noise_raw)
+
+            audio = self.ddsp_core(
+                amplitudes=harmonic_audio.unsqueeze(-1),
+                noise_magnitudes=magnitudes,
+                n_samples=n_samples,
+            )
+            return {
+                "gain_frames": gain_frames,
+                "bias_frames": bias_frames,
+                "magnitudes": magnitudes,
                 "audio": audio,
             }
 

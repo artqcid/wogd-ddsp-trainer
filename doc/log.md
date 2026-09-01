@@ -3,6 +3,54 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M10: Neural Waveshaping Unit (NEWT) implemented
+
+**Creation:** NEWT milestone complete. New files:
+- `model/ddsp/newt.py` — `SawtoothExciter` + `NEWTUnit`
+- `tests/test_newt.py` — 10 pytest
+
+**Update:**
+- `model/ddsp/__init__.py` — exports NEWTUnit, SawtoothExciter
+- `model/ddsp/variant.py` — engine `"newt"` + `newt_n_hidden`/`newt_n_layers`
+- `model/ddsp_model.py` — NEWT decoder heads + forward dispatch
+- `model/ddsp/synths.py` — DDSPCore "newt" forward branch
+- `webui/src/views/SynthHacksView.vue` — NEWT engine option + controls
+- `webui/src/mocks/fixtures.js` — newt fields in variantFixture
+- `doc/experimental-sdk-hacking.md` — NEWT section
+
+Checks: 223/223 pytest, 23/23 vitest, ruff clean (pre-existing sync-wiki.py only)
+
+## 2026-09-01 — Global MCPs added: sequential-thinking, playwright, filesystem
+
+**Creation:** Three general-purpose MCP servers registered in
+`~/.config/opencode/opencode.json`:
+- `sequential-thinking` — `@modelcontextprotocol/server-sequential-thinking`
+- `playwright` — `@playwright/mcp@latest` (browser automation)
+- `filesystem` — `@modelcontextprotocol/server-filesystem` (scoped to GitHub dir)
+
+**Update:** Global `opencode.json` — subagent permissions added for
+general + explore agents to use the new tools.
+
+**Update:** `AGENTS.md` — "Quick facts" section now lists global MCPs.
+
+## 2026-09-01 — Post-commit hook: auto-sync wiki after every commit
+
+**Creation:** `.githooks/post-commit` — git hook that runs
+`python scripts/sync-wiki.py` automatically after every commit.
+
+**Creation:** `scripts/sync-wiki.py` — standalone CLI entry point for
+`ProjectRAG.index_directory()` + `ragwiki.generate_wiki()`, callable
+independently of the MCP server.
+
+**Update:** `AGENTS.md` — "Deterministic Sync Workflow" now includes the
+post-commit hook as a safety net; "Quick facts" lists `.githooks/` activation.
+
+**Decision:** The post-commit hook solves the "forgot to run index_project_code
+after committing" problem (root cause of checklist/bugs.md staleness after
+commit 4df2477). Activate via `git config core.hooksPath .githooks`.
+Manual `index_project_code` during tasks is still the primary sync path;
+the hook is the belt-and-suspenders guarantee.
+
 ## 2026-09-01 — M9.10–M9.14 fixes + M8.1.3–M8.5.1 implementation (DEV)
 
 **User approval:** `"umsetzen. subagents rules beachten... agent rules beachten. llmwiki/rag first beachten"`

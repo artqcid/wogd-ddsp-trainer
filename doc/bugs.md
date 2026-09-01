@@ -223,8 +223,8 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 ## Open bugs
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
-- status: open
-- milestone: M9 (Alternative synth engines, M9.6)
+- status: fixed
+- milestone: M9 (Alternative synth engines, M9.10)
 - affected: M8 (M8.1.3 server wiring), M10, M11, M12 (any milestone that calls load_checkpoint)
 - found-in: post-M9 correctness review 2026-09-01 (ARCHITECT)
 - severity: major
@@ -238,18 +238,17 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   before the `torch.load` call — the production code path does not.
 - reproduction: save a checkpoint via `model.save_checkpoint(path)`, then call
   `DDSPModel.load_checkpoint(path)` → `WeightsUnpickler error`.
-- resolution: (open) Fix tracked in `implementation/m9-alternative-synth-engines.md` M9.10.
-  `DDSPModel.load_checkpoint` must call
-  `torch.serialization.add_safe_globals([DDSPConfig])` before the `torch.load` call
-  (or use the `torch.serialization.safe_globals([DDSPConfig])` context manager).
-  After fixing, remove the manual `add_safe_globals` call from the two tests in
-  `tests/test_synths_engines.py` so no hidden global state is leaked between tests.
+- resolution: Fixed in commit 4df2477. `DDSPModel.load_checkpoint` now wraps the
+  `torch.load` call in `torch.serialization.safe_globals([DDSPConfig])` context manager.
+  Manual `add_safe_globals` calls removed from the two tests in
+  `tests/test_synths_engines.py`.
 - history:
   - 2026-09-01 — filed by ARCHITECT during post-M9 correctness review.
+  - 2026-09-01 — fixed in commit 4df2477 (DEV).
 
 ## BUG-8 - `DDSPCore.forward` sinusoidal path silently passes wrong tensor to `FilteredNoiseSynth` when `noise_magnitudes=None`
-- status: open
-- milestone: M9 (Alternative synth engines, M9.6)
+- status: fixed
+- milestone: M9 (Alternative synth engines, M9.11)
 - affected: M9 (any caller of DDSPCore with engine="sinusoidal")
 - found-in: post-M9 correctness review 2026-09-01 (ARCHITECT)
 - severity: minor
@@ -266,8 +265,8 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: `DDSPCore(variant=DDSPVariant(engine="sinusoidal"))(amplitudes=amps,
   sinusoidal_freqs=freqs, noise_magnitudes=None, n_samples=N)` → output is valid but
   noise branch uses harmonic amplitudes instead of silence/zeros.
-- resolution: (open) Fix tracked in `implementation/m9-alternative-synth-engines.md`
-  M9.11. The sinusoidal path should default `noise_magnitudes` to zeros of the correct
-  shape `(B, T, self.n_noise_bins)` when `None` is passed, not to `amplitudes`.
+- resolution: Fixed in commit 4df2477. Sinusoidal path now defaults `noise_magnitudes`
+  to a zero-tensor of shape `(B, T, n_noise_bins)` when `None` is passed.
 - history:
   - 2026-09-01 — filed by ARCHITECT during post-M9 correctness review.
+  - 2026-09-01 — fixed in commit 4df2477 (DEV).

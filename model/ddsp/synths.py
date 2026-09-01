@@ -358,7 +358,7 @@ class DDSPCore(nn.Module):
             )
             self.noise_synth = FilteredNoiseSynth(hop_length=hop_length, variant=self.variant)
 
-        if use_reverb and self.variant.engine in {"harmonic", "sinusoidal"}:
+        if use_reverb and self.variant.engine in {"harmonic", "sinusoidal", "newt"}:
             self.reverb = SimpleReverb(
                 delay_seconds=reverb_delay,
                 decay=reverb_decay,
@@ -398,6 +398,16 @@ class DDSPCore(nn.Module):
                 if noise_magnitudes is None
                 else noise_magnitudes
             )
+            noise_audio = self.noise_synth(
+                noise_magnitudes,
+                n_samples=n_samples,
+                sample_rate=self.sample_rate,
+            )
+            if self.use_reverb and self.reverb is not None:
+                noise_audio = self.reverb(noise_audio)
+            audio = harmonic_audio + noise_audio
+        elif engine == "newt":
+            harmonic_audio = amplitudes.squeeze(-1)
             noise_audio = self.noise_synth(
                 noise_magnitudes,
                 n_samples=n_samples,

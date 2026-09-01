@@ -39,7 +39,11 @@ class DDSPVariant:
     use_angular_cumsum: bool = False
 
     # --- M9.1 Engine selector ---
-    engine: Literal["harmonic", "sinusoidal", "combsub"] = "harmonic"
+    engine: Literal["harmonic", "sinusoidal", "combsub", "newt"] = "harmonic"
+
+    # --- M10.3 NEWT tuning params ---
+    newt_n_hidden: int = 32
+    newt_n_layers: int = 4
 
     # --- M9.4 Colored noise source ---
     noise_color: Literal["white", "pink", "brown"] = "white"

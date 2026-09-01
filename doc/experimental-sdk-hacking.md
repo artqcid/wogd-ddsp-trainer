@@ -94,6 +94,27 @@ logical deductions unless marked otherwise.
   keep M7 and M8 changes isolated (separate variants) so the base pipeline
   remains reproducible. `[Logische Erweiterung]`.
 
+## 5. Neural Waveshaping Unit (NEWT)
+
+- **Architecture:** NEWT replaces the additive harmonic synthesizer with a
+  lightweight MLP that maps a deterministic sawtooth excitation through a
+  learned nonlinear transfer function. `[Architektur-Fakt]` — Hayes et al.
+  "Neural Waveshaping Synthesis", ISMIR 2021 (arXiv:2107.05050).
+- **Structure:** 4 hidden layers × 32 units with `sin` activations, output
+  `tanh`, per-frame conditioning via affine transform (gain + bias from the
+  GRU decoder).
+- **Weight init:** first layer `U(-π, π)` (scale 30 × 1/fan_in), subsequent
+  layers `U(-1/√fan_in, 1/√fan_in)`. Without correct init → local minima.
+  `[Architektur-Fakt]` from the paper.
+- **Result:** the NEWT can produce timbres no harmonic bank can express
+  (strongly inharmonic, clipped, distorted, formant-rich) while being
+  real-time capable on CPU (~260k params). `[Logische Erweiterung]`.
+- **Engine tag:** `engine="newt"` extends the M9 engine dispatch. Checkpoints
+  are tagged with `state["engine"] = "newt"` and are incompatible with
+  `"harmonic"`/`"combsub"` checkpoints.
+- **Loss:** trains with the same multi-scale spectral loss; no architecture
+  changes needed.
+
 ## References
 
 - `checklist.md` - M8 open tasks.

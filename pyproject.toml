@@ -72,7 +72,7 @@ src = ["."]
 # The RAG/MCP tooling server + its `mcp_rag` package are a standalone
 # toolchain (not part of the app package) with their own long-line/#noqa
 # style; exclude them from lint + format.
-exclude = ["wogd_ddsp_mcp_server.py", "mcp_rag"]
+exclude = ["wogd_ddsp_mcp_server.py", "mcp_rag", ".agents"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

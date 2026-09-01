@@ -138,37 +138,37 @@ See [`log.md`](./log.md) for the chronological changelog._
 
 ### M9 post-release correctness fixes (required before M9 is closed)
 
-- [ ] **M9.10** FIX BUG-7: `DDSPModel.load_checkpoint` — add
+- [x] **M9.10** FIX BUG-7: `DDSPModel.load_checkpoint` — add
        `torch.serialization.safe_globals([DDSPConfig])` context manager;
        remove manual `add_safe_globals` workaround from two tests in
        `test_synths_engines.py`. (`model/ddsp_model.py`,
        `tests/test_synths_engines.py`)
-- [ ] **M9.11** FIX BUG-8: `DDSPCore.forward` sinusoidal path — replace
+- [x] **M9.11** FIX BUG-8: `DDSPCore.forward` sinusoidal path — replace
        `amplitudes`-as-fallback with a proper zero-tensor of shape
        `(B, T, n_noise_bins)` when `noise_magnitudes=None`.
        (`model/ddsp/synths.py`)
-- [ ] **M9.12** IMP-A: remove redundant `DDSPVariant` `TYPE_CHECKING` import
+- [x] **M9.12** IMP-A: remove redundant `DDSPVariant` `TYPE_CHECKING` import
        in `model/ddsp_model.py` (imported twice: runtime + TYPE_CHECKING).
-- [ ] **M9.13** IMP-C: normalize `_pink_noise` / `_brown_noise` output to
+- [x] **M9.13** IMP-C: normalize `_pink_noise` / `_brown_noise` output to
        unit RMS (add `signal / rms.clamp(min=1e-8)` at end of each helper).
        (`model/ddsp/noise_colored.py`)
-- [ ] **M9.14** IMP-D: guard `DDSPCore` reverb instantiation — only create
+- [x] **M9.14** IMP-D: guard `DDSPCore` reverb instantiation — only create
        `self.reverb` for engines that actually use it (`"harmonic"`,
        `"sinusoidal"`); `"combsub"` gets `self.reverb = None`.
        (`model/ddsp/synths.py`)
 
 ## Milestone M10 - Neural Waveshaping Unit (NEWT)
 
-- [ ] **M10.1** `SawtoothExciter` — deterministic, no parameters
-      (`model/ddsp/newt.py`).
-- [ ] **M10.2** `NEWTUnit` — MLP with sin activations + NEWT weight init
-      (`model/ddsp/newt.py`).
-- [ ] **M10.3** Extend `DDSPVariant.engine` with `"newt"` + tuning params.
-- [ ] **M10.4** Engine dispatch for NEWT in `DDSPModel` + gain/bias heads +
-      checkpoint tag.
-- [ ] **M10.5** UI: NEWT option in engine dropdown + hidden/layer controls.
-- [ ] **M10.6** `tests/test_newt.py` — 10 pytest + 1 vitest.
-- [ ] **M10.7** Docs: `experimental-sdk-hacking.md` NEWT section.
+- [x] **M10.1** `SawtoothExciter` — deterministic, no parameters
+       (`model/ddsp/newt.py`).
+- [x] **M10.2** `NEWTUnit` — MLP with sin activations + NEWT weight init
+       (`model/ddsp/newt.py`).
+- [x] **M10.3** Extend `DDSPVariant.engine` with `"newt"` + tuning params.
+- [x] **M10.4** Engine dispatch for NEWT in `DDSPModel` + gain/bias heads +
+       checkpoint tag.
+- [x] **M10.5** UI: NEWT option in engine dropdown + hidden/layer controls.
+- [x] **M10.6** `tests/test_newt.py` — 10 pytest + 1 vitest.
+- [x] **M10.7** Docs: `experimental-sdk-hacking.md` NEWT section.
 
 ## Milestone M11 - Latent Space & Morphing
 
@@ -343,32 +343,32 @@ default to `'standard'`._
       All with `MockApiClient` + fixtures; no backend required.
 - [x] **M8.1.1** `DDSPVariant` dataclass (`model/ddsp/variant.py` — new).
 - [x] **M8.1.2** Thread `DDSPVariant` into `DDSPModel` + `DDSPCore` + `FilteredNoiseSynth`.
-- [ ] **M8.1.3** Server-layer variant parsing (`server/tasks.py`, `server/presets.py`,
+- [x] **M8.1.3** Server-layer variant parsing (`server/tasks.py`, `server/presets.py`,
        `model/ddsp_model.py` `DDSPConfig` field).
 - [x] **M8.1.4** UI: `SynthHacksView.vue` + router route + sidebar link + mock fixtures.
 
 ### M8.2 — Inharmonic Multipliers + FM Synthesis
-- [ ] **M8.2.1** Configurable `harmonic_ratios` in `HarmonicOscillatorSynth`
+- [x] **M8.2.1** Configurable `harmonic_ratios` in `HarmonicOscillatorSynth`
       (`synths.py:65`). Bell / gong / gamelan textures.
-- [ ] **M8.2b** FM synthesis: `harmonic_freqs += fm_depth * sin(fm_ratio * f0 * t)`
+- [x] **M8.2b** FM synthesis: `harmonic_freqs += fm_depth * sin(fm_ratio * f0 * t)`
       (`synths.py:66–72`).
 
 ### M8.3 — Waveform / Wavetable Exchange
-- [ ] **M8.3.1** `_apply_waveform()` helper + dispatch `sin / square / saw`
+- [x] **M8.3.1** `_apply_waveform()` helper + dispatch `sin / square / saw`
       (`synths.py:99`). Includes M8.3b phase distortion (`pd_k`).
-- [ ] **M8.3c** Trainable wavetable: `nn.Parameter(256)` initialized to sine;
+- [x] **M8.3c** Trainable wavetable: `nn.Parameter(256)` initialized to sine;
       checkpoint tag `variant_flags`.
 
 ### M8.4 — Loss & Decoder Hacks
-- [ ] **M8.4.1** Frequency-band mask on `MultiScaleSpectralLoss`
+- [x] **M8.4.1** Frequency-band mask on `MultiScaleSpectralLoss`
       (`losses.py` + `tasks.py`).
-- [ ] **M8.4.2** LFO injection into noise magnitudes (`ddsp_model.py:forward`).
+- [x] **M8.4.2** LFO injection into noise magnitudes (`ddsp_model.py:forward`).
 
 ### M8.6 — Quality: Angular Cumulative Sum
-- [ ] **M8.6** `_angular_cumsum()` + `use_angular_cumsum` flag (`synths.py:77`).
+- [x] **M8.6** `_angular_cumsum()` + `use_angular_cumsum` flag (`synths.py:77`).
       Fixes phase drift for synthesis > 6 s.
 
 ### M8.5 — Tests + Docs
-- [ ] **M8.5.1** `tests/test_synths_variant.py` — 15 pytest + 1 vitest smoke tests.
-- [ ] **M8.5.2** Finalize `doc/experimental-sdk-hacking.md` (result table,
+- [x] **M8.5.1** `tests/test_synths_variant.py` — 15 pytest + 1 vitest smoke tests.
+- [x] **M8.5.2** Finalize `doc/experimental-sdk-hacking.md` (result table,
       checkpoint compat matrix, gradient behaviour note).

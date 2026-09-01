@@ -17,6 +17,8 @@ const variant = reactive({
   lfo_freq: 0,
   lfo_depth: 0,
   use_angular_cumsum: false,
+  newt_n_hidden: 32,
+  newt_n_layers: 4,
 })
 
 const bandMaskRows = ref([])
@@ -91,7 +93,23 @@ initBandMaskFromVariant()
           <option value="harmonic">Harmonic (standard)</option>
           <option value="sinusoidal">Sinusoidal — free partials</option>
           <option value="combsub">CombSub — vocal formants</option>
+          <option value="newt">NEWT — neural waveshaping</option>
         </select>
+      </div>
+      <div class="row" v-if="variant.engine === 'newt'">
+        <label class="label">
+          NEWT hidden units
+          <span class="value-tag">{{ variant.newt_n_hidden }}</span>
+        </label>
+        <input type="range" min="8" max="128" step="1" v-model.number="variant.newt_n_hidden" class="slider" />
+      </div>
+      <div class="row" v-if="variant.engine === 'newt'">
+        <label class="label">
+          NEWT MLP depth
+          <span class="value-tag">{{ variant.newt_n_layers }}</span>
+        </label>
+        <input type="range" min="2" max="8" step="1" v-model.number="variant.newt_n_layers" class="slider" />
+      </div>
       </div>
       <div class="row">
         <label class="label">Noise colour</label>
@@ -117,6 +135,9 @@ initBandMaskFromVariant()
       </div>
       <p v-if="variant.engine !== 'harmonic'" class="warning">
         ⚠ Engine-specific checkpoint — not compatible with standard runs.
+      </p>
+      <p v-if="variant.engine === 'newt'" class="warning">
+        ⚠ NEWT checkpoints are not compatible with harmonic/combsub runs.
       </p>
     </div>
 

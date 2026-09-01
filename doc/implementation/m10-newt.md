@@ -319,4 +319,9 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 
 _Append-only, newest first._
 
+- **2026-09-01** — M10 implemented by DEV agent. All 7 steps complete.
+  Subagents: `ses_fa494fe29ffeJeFqhThMTuNO6E` (M10.1+M10.2 newt.py),
+  `ses_fa4908266ffe8KRJhKCQeHCXiN` (M10.4 ddsp_model.py),
+  `ses_fa48db351ffe5DSqFMztKvdXT4` (M10.6 test_newt.py).
+  223 pytest + 1 skipped, ruff clean (only pre-existing sync-wiki.py issues).
 - **2026-09-01** — Initial granular step breakdown written by ARCHITECT agent.

@@ -1,6 +1,7 @@
 """DDSP differentiable synthesizer modules (self-owned, not the external ddsp lib)."""
 
 from .combsub import CombSubSynth
+from .newt import NEWTUnit, SawtoothExciter
 from .sinusoidal import SinusoidalSynth
 from .synths import (
     DDSPCore,
@@ -16,6 +17,8 @@ __all__ = [
     "DDSPVariant",
     "FilteredNoiseSynth",
     "HarmonicOscillatorSynth",
+    "NEWTUnit",
+    "SawtoothExciter",
     "SimpleReverb",
     "SinusoidalSynth",
 ]

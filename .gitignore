@@ -28,3 +28,8 @@ runs/
 # App runtime data (SQLite + uploads)
 wogd-trainer.db
 datasets/
+
+# External agent skills (installed via npx skills add)
+.agents/
+.claude/
+skills-lock.json

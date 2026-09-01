@@ -16,35 +16,16 @@ prompts or settings.
 
 ### Navigation & Knowledge First (MANDATORY — always start here)
 
-Before every task (read/edit/build):
+Load the **`knowledge-first`** skill (`.opencode/skills/knowledge-first/SKILL.md`) at the start of every task. It defines the 5-step lookup chain: `doc/index.md` → concept files → `query_code_wiki` → `query_code_rag` → special files.
 
-1. **`doc/index.md` — always load first.** The LLM-Wiki catalog links to every
-   concept file. Navigate from here to find what you need (architecture, plan,
-   checklist, implementation plan, etc.).
-2. If the index points to a concept file, read or query it directly.
-3. **`query_code_wiki("<symbol>")`** via MCP for code-level symbol lookup.
-4. Only if both fail: `query_code_rag(..., format="compact")` + `get_rag_chunk("<id>")`.
-5. **`doc/code_wiki.md` must NEVER be loaded via `read()` — MCP query only.**
-6. **`doc/ui-requirements.md` — always loaded for UI-/product-relevant tasks.**
-   It is the single source of truth for the product/UI requirements and binds
-   ALL roles (architecture, implementation, review, tests).
-
-The **MCP-First workflow** section below provides the full RAG tooling reference.
+Quick reference: `doc/index.md` is the LLM-Wiki catalog — always load first.
 
 ### Planning tiers (mandatory for milestone work)
 
-Three files drive milestone execution; keep them in sync:
-
-1. **`doc/plan.md`** — meta plan (milestones, decisions, risks). High-level only.
-2. **`doc/checklist.md`** — status: which milestone tasks are open/done.
-3. **`doc/implementation/mN-*.md`** — granular, ordered steps per milestone
-   (one step = one small, self-contained task, roughly one subagent task) plus
-   an append-only `## History` (what was done + how) and a `## BUGS` reference
-   section.
-
-When working on a milestone, open the matching `doc/implementation/mN-*.md`
-first; it is the working document for that phase. Mark steps `[x]` and append
-to `## History` as work proceeds.
+Load the **`knowledge-first`** skill for the full planning tier workflow. In short:
+- `doc/plan.md` — meta plan.
+- `doc/checklist.md` — open/closed tasks.
+- `doc/implementation/mN-*.md` — granular steps + history + BUGS references.
 
 ### Bug tracking (single source of truth, no redundancy)
 
@@ -82,6 +63,8 @@ The workspace provides a local RAG + Code-Wiki MCP server (`wogd_ddsp`, see
 - Every agent with MCP access MUST use `query_code_wiki` / `query_code_rag` / `get_rag_chunk`.
 - Project and SDK files should be read only with `offset`/`limit` — never whole files.
 - Anything found once via MCP is never searched again.
+
+Full detail: load the **`knowledge-first`** skill.
 
 ### Subagent rules
 
@@ -152,6 +135,8 @@ may start editing out-of-scope files. Enforce with these three rules:
   markers / out-of-scope edits slipped in — BEFORE testing or delegating the
   next step. This is the safety net that catches abort-induced scope-bleed.
 
+Full detail: load the **`subagent-safety`** skill.
+
 **Build & test ownership:**
 - **Subagents must NEVER build or run tests.** This is always the job of the
   primary agent.
@@ -190,11 +175,15 @@ A task is complete only when ALL of the following hold:
 4. `pwsh doc/lint.ps1` ran without new issues.
 5. `doc/log.md` appended with a changelog entry (newest first).
 
+Full detail: load the **`definition-of-done`** skill.
+
 **Post-Task Sync (after each completed task):**
 - Run `index_project_code` so the wiki stays current.
 - Run `pwsh doc/lint.ps1` to check for orphan pages, stale claims,
   duplicate entries and contradictions.
 - If not possible (no MCP access): explicitly report that sync is pending.
+
+Full detail: load the **`post-task-sync`** skill.
 
 ## Project Overview
 
@@ -226,35 +215,21 @@ RAG access (see `opencode.json`).
 ## Wiki Lint Workflow (runs on every Post-Task Sync)
 
 The lint script `pwsh doc/lint.ps1` runs automatically as part of every
-Post-Task Sync. It can also be run manually at any time. It checks:
-
-1. **Orphan pages**: every file in `doc/` (excluding `archive/`) should be
-   listed in `doc/index.md`.
-2. **Duplicate index entries**: grep `index.md` for duplicate links.
-3. **Stale claims**: for each file with `stale_after:` in frontmatter, check if
-   `today >= stale_after`. If stale, add a `! STALE` warning to the entry in
-   `index.md` and flag for human review.
-4. **Contradictions**: identify claims about the SAME feature that differ across
-   files. When found, determine the actual truth from the code and update the
-   outdated file.
-5. **Cross-reference health**: files marked `status: deprecated` should have a
-   redirect note or be moved to `archive/`.
-6. **Gleanings**: after any significant analysis or debugging session, file the
-   findings back into the wiki (new concept file or update to an existing one).
+Post-Task Sync. It can also be run manually at any time. Full detail:
+load the **`post-task-sync`** skill.
 
 ## Knowledge-Sync (Docs <-> RAG/Wiki MCP)
 
-All project knowledge is ALWAYS kept in sync across stores with clear roles:
-
-1. **Docs (`doc/`)** — LLM-Wiki (primary storage). `doc/index.md` (catalog),
-   `doc/log.md` (changelog), individual concept files with YAML frontmatter.
-   This is the **compiled knowledge artifact** — agents navigate here first.
-2. **RAG/Wiki MCP (`wogd_ddsp`)** — Search/symbol layer over `doc/` + source code.
-   Run `index_project_code` after every change so the wiki stays current.
+All project knowledge is ALWAYS kept in sync across stores with clear roles.
+Full detail: load the **`post-task-sync`** skill.
 
 **Deterministic Sync Workflow:**
 - After every completed task: update `doc/log.md` + `doc/index.md` + run
   `index_project_code`.
+- **Post-commit safety net:** a git post-commit hook (`.githooks/post-commit`)
+  auto-runs `python scripts/sync-wiki.py` after every commit, so the RAG index
+  and `doc/code_wiki.md` are never stale — even if the manual DoD sync was
+  skipped. Activate via `git config core.hooksPath .githooks`.
 - Keep the repo-root `README.md` in sync: whenever a knowledge update lands in
   `doc/` (milestones, workflow, install/training usage), reflect it in
   `README.md` too (it is the GitHub-facing summary).
@@ -265,6 +240,9 @@ All project knowledge is ALWAYS kept in sync across stores with clear roles:
 
 - RAG MCP server: `wogd_ddsp_mcp_server.py`; registered in `opencode.json` under
   `mcp.wogd_ddsp` (venv python: `.venv\Scripts\python.exe`).
+- **Global MCPs (project-agnostic, in `~/.config/opencode/opencode.json`):**
+  `sequential-thinking` (stepwise reasoning), `playwright` (browser automation),
+  `filesystem` (file ops outside workspace), `github` (GitHub API).
 - **Primary navigation:** `doc/index.md` (LLM-Wiki catalog, first place to look).
 - Checklist: `doc/checklist.md` (open tasks, short descriptions).
 - Implementation plans: `doc/implementation/mN-*.md` (granular steps per milestone + history).
@@ -278,8 +256,29 @@ All project knowledge is ALWAYS kept in sync across stores with clear roles:
 - Workflow (venv/run/hot-reload): `doc/workspace-workflow.md`.
 - Auto-generated knowledge: `doc/code_wiki.md` (ONLY via MCP, never read directly).
 - `wogd_ddsp.db` is runtime-only (`.gitignore`).
+- **Post-commit hook:** `.githooks/post-commit` → `python scripts/sync-wiki.py`
+  (activate via `git config core.hooksPath .githooks`).
 
 ## Global rules
 
 - `~/.config/opencode/rules/no-auto-commit.md`: no git commits/pushes/PRs
   without explicit user request.
+
+## Available skills
+
+| Skill | Location | Load when |
+|-------|----------|-----------|
+| `knowledge-first` | `.opencode/skills/knowledge-first/SKILL.md` | Start of every task |
+| `toon-delegation` | `.opencode/skills/toon-delegation/SKILL.md` | Before writing any subagent delegation prompt |
+| `subagent-safety` | `.opencode/skills/subagent-safety/SKILL.md` | Before delegating to subagents (B/C/D rules) |
+| `definition-of-done` | `.opencode/skills/definition-of-done/SKILL.md` | Before marking a task complete |
+| `post-task-sync` | `.opencode/skills/post-task-sync/SKILL.md` | After every completed task (wiki sync) |
+
+External skills (installed via `npx skills add`):
+| Skill | Source | Purpose |
+|-------|--------|---------|
+| `frontend-design` | anthropics/skills | Vue UI design patterns, theming, composition |
+| `webapp-testing` | anthropics/skills | FastAPI + Vue full-stack testing |
+| `test-driven-development` | obra/superpowers | Red-green-refactor workflow |
+| `systematic-debugging` | obra/superpowers | 4-phase ML/debugging methodology |
+| `verification-before-completion` | obra/superpowers | Enforce quality gates at task end |
