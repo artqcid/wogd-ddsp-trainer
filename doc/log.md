@@ -3,6 +3,50 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M9–M13 implementation plans created (ARCHITECT)
+
+**Creation:** five new implementation-plan files for milestones M9–M13:
+
+- [`implementation/m9-alternative-synth-engines.md`](./implementation/m9-alternative-synth-engines.md)
+  — SinusoidalSynth, CombSubSynth, colored noise, granular noise; 9 subagent steps.
+- [`implementation/m10-newt.md`](./implementation/m10-newt.md)
+  — SawtoothExciter + NEWTUnit (ISMIR 2021); 7 subagent steps.
+- [`implementation/m11-latent-space.md`](./implementation/m11-latent-space.md)
+  — GRUEncoder, β-VAE, checkpoint morphing, latent steering; 9 subagent steps.
+- [`implementation/m12-polyddsp.md`](./implementation/m12-polyddsp.md)
+  — multi-pitch tracker, PolyDDSPModel N shared-weight voices; 7 subagent steps.
+- [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md)
+  — ContentEncoderWrapper (HuBERT-Soft/ContentVec), VC pipeline, VoiceConversionView; 9 subagent steps.
+
+**Update:** `doc/plan.md` — M9–M13 milestone entries added.
+**Update:** `doc/checklist.md` — M9–M13 open task sections added (44 new checkboxes).
+**Update:** `doc/index.md` — M9–M13 implementation-plan links added.
+Wiki: 151 files indexed, 1005 symbols.
+
+## 2026-09-01 — M8 detailed implementation plan + M9–M13 phase analysis (ARCHITECT)
+
+**Update:** `doc/implementation/m8-experimental-sdk-hacking.md` — full
+granular step breakdown (14 subagent steps). Previous 5-step stub replaced
+with per-line code specifications for all hacks:
+
+- M8.1.1–4: `DDSPVariant` dataclass, server threading, `SynthHacksView.vue`
+- M8.2.1: inharmonic ratios (`synths.py:65`)
+- M8.2b: FM synthesis (`synths.py:66–72`)
+- M8.3.1: `_apply_waveform()` dispatcher — `sin/square/saw` + phase distortion
+- M8.3c: trainable wavetable `nn.Parameter(256)` + checkpoint tagging
+- M8.4.1: spectral-loss band mask (`losses.py`)
+- M8.4.2: LFO injection into noise magnitudes (`ddsp_model.py`)
+- M8.6: angular cumulative sum (phase-drift fix)
+- M8.5.1–2: 15 pytest + 1 vitest smoke tests, docs finalization
+
+**Update:** `doc/checklist.md` — M8 section expanded from 5 to 13 granular
+checkboxes (M8.1.1–M8.1.4, M8.2.1, M8.2b, M8.3.1, M8.3c, M8.4.1, M8.4.2,
+M8.6, M8.5.1, M8.5.2).
+
+**Analysis (doc only):** M9–M13 phase analysis produced (Sinusoidal/CombSub
+engines, NEWT, Latent Space/VAE, PolyDDSP, Voice Conversion). No doc files
+written yet — analysis only in conversation; awaiting user decision on scope.
+
 ## 2026-08-31 — M7.1 + M7.2 + M7.4 (F0 override, Component Mixer, Tests) — Milestone M7 complete
 
 **Creation:** M7.1 (F0 override editor + transforms), M7.2 (Component Mixer), M7.4 (tests + docs).

@@ -32,6 +32,11 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m6-polish.md`](./implementation/m6-polish.md) - M6 granular steps + history
 - [`implementation/m7-experimental.md`](./implementation/m7-experimental.md) - M7 granular steps + history
 - [`implementation/m8-experimental-sdk-hacking.md`](./implementation/m8-experimental-sdk-hacking.md) - M8 granular steps + history
+- [`implementation/m9-alternative-synth-engines.md`](./implementation/m9-alternative-synth-engines.md) - M9 granular steps (Sinusoidal, CombSub, colored noise, granular noise)
+- [`implementation/m10-newt.md`](./implementation/m10-newt.md) - M10 granular steps (Neural Waveshaping Unit, SawtoothExciter)
+- [`implementation/m11-latent-space.md`](./implementation/m11-latent-space.md) - M11 granular steps (VAE encoder, β-VAE loss, morphing, latent steering)
+- [`implementation/m12-polyddsp.md`](./implementation/m12-polyddsp.md) - M12 granular steps (PolyDDSP, multi-pitch tracker, N-voice model)
+- [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md) - M13 granular steps (HuBERT/ContentVec, VC pipeline, VoiceConversionView)
 
 ## Operations & Quality
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)

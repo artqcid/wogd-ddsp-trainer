@@ -119,11 +119,115 @@ See [`log.md`](./log.md) for the chronological changelog._
       acoustic compensation) + IR extractor (export learned IR as `.wav`).
 - [x] **M7.4** Experimental sound-design tests + docs.
 
-## Milestone M8 - Experimental synthesis hacks
+## Milestone M9 - Alternative synthesizer engines
 
-- [ ] **M8.1** Hack infrastructure: variant/feature flags on our own DDSP core.
-- [ ] **M8.2** Inharmonic multipliers (bell hack) in the harmonic synthesizer.
-- [ ] **M8.3** Wavetable exchange (replace `sin` with square/saw/wavetable).
-- [ ] **M8.4** Frequency-band blindness (spectral-loss masking) + LFO injection
-      (decoder bypass).
-- [ ] **M8.5** Synthesis-hack docs + tests.
+- [ ] **M9.1** Extend `DDSPVariant`: `engine`, `noise_color`, `noise_grain_jitter` fields.
+- [ ] **M9.2** `SinusoidalSynth` — freely learned partial frequencies
+      (`model/ddsp/sinusoidal.py`).
+- [ ] **M9.3** `CombSubSynth` — comb-filter subtractive synth, vocal formants
+      (`model/ddsp/combsub.py`).
+- [ ] **M9.4** Colored noise source — pink/brown noise via FFT shaping
+      (`model/ddsp/noise_colored.py`).
+- [ ] **M9.5** Granular noise — per-frame grain jitter on noise buffer
+      (`model/ddsp/synths.py`).
+- [ ] **M9.6** Engine dispatch in `DDSPModel` + checkpoint tag + decoder head
+      variants.
+- [ ] **M9.7** UI: engine selector dropdown + noise controls in `SynthHacksView.vue`.
+- [ ] **M9.8** `tests/test_synths_engines.py` — 12 pytest + 1 vitest.
+- [ ] **M9.9** Docs: `experimental-sdk-hacking.md` engine section.
+
+## Milestone M10 - Neural Waveshaping Unit (NEWT)
+
+- [ ] **M10.1** `SawtoothExciter` — deterministic, no parameters
+      (`model/ddsp/newt.py`).
+- [ ] **M10.2** `NEWTUnit` — MLP with sin activations + NEWT weight init
+      (`model/ddsp/newt.py`).
+- [ ] **M10.3** Extend `DDSPVariant.engine` with `"newt"` + tuning params.
+- [ ] **M10.4** Engine dispatch for NEWT in `DDSPModel` + gain/bias heads +
+      checkpoint tag.
+- [ ] **M10.5** UI: NEWT option in engine dropdown + hidden/layer controls.
+- [ ] **M10.6** `tests/test_newt.py` — 10 pytest + 1 vitest.
+- [ ] **M10.7** Docs: `experimental-sdk-hacking.md` NEWT section.
+
+## Milestone M11 - Latent Space & Morphing
+
+- [ ] **M11.1** `GRUEncoder` → (μ, σ) latent distribution
+      (`model/encoder.py`).
+- [ ] **M11.2** VAE mode in `DDSPModel`: reparameterisation, z concat,
+      `DDSPConfig.use_latent`, checkpoint tag.
+- [ ] **M11.3** β-VAE loss term + KL warmup schedule in `Trainer` +
+      `TrainingConfig.kl_beta`.
+- [ ] **M11.4** Server wiring: `use_latent`, `latent_dim`, `kl_beta` in run
+      config + `PARAM_KEYS`.
+- [ ] **M11.5** Morphing endpoint `POST /api/inference/morph`.
+- [ ] **M11.6** `MorphingView.vue` — model A/B selector, alpha slider, render.
+- [ ] **M11.7** `LatentExploreView.vue` — per-dimension sliders + scatter
+      (optional PCA scatter).
+- [ ] **M11.8** `tests/test_latent.py` — 10 pytest + 1 vitest.
+- [ ] **M11.9** Docs: `experimental-ddsp.md` latent space section.
+
+## Milestone M12 - PolyDDSP (Polyphony)
+
+- [ ] **M12.1** Multi-pitch tracker wrapper + dependency check
+      (`dataset/multi_pitch.py`).
+- [ ] **M12.2** Dataset pipeline: `f0_hz_voices.npy` + `DDSPDataset` yields
+      N f0 tracks.
+- [ ] **M12.3** `PolyDDSPModel` — N shared-weight voices, sum output
+      (`model/polyddsp_model.py`).
+- [ ] **M12.4** Server wiring: `n_voices` in config + VRAM clamp (max 4) +
+      `PARAM_KEYS`.
+- [ ] **M12.5** UI: `n_voices` input in `TrainingConfigView.vue` + multi-F0
+      display in `PreprocessingView.vue`.
+- [ ] **M12.6** `tests/test_polyddsp.py` — 9 pytest.
+- [ ] **M12.7** Docs: `ddsp-concepts.md` polyphony section.
+
+## Milestone M13 - Voice Conversion (HuBERT/ContentVec)
+
+- [ ] **M13.1** `ContentEncoderWrapper` — frozen HuBERT-Soft / ContentVec
+      (`model/content_encoder.py`).
+- [ ] **M13.2** Offline content extraction: `extract_content_embedding()` in
+      `dataset/features.py`; `DDSPDataset` loads `content_embedding.npy`.
+- [ ] **M13.3** Content conditioning in `DDSPModel`: `content_proj` linear +
+      concat to GRU input; `DDSPConfig.use_content_encoder`.
+- [ ] **M13.4** Server wiring: `use_content_encoder`, `content_encoder_name`
+      in run config + `PARAM_KEYS`.
+- [ ] **M13.5** VC inference endpoint `POST /api/inference/voice-convert` +
+      dataset content-extraction trigger.
+- [ ] **M13.6** `VoiceConversionView.vue` — source upload, pitch/loudness
+      shift, A/B player.
+- [ ] **M13.7** `tests/test_content_encoder.py` + `tests/test_vc_pipeline.py`
+      — 10 pytest + 1 vitest.
+- [ ] **M13.8** Docs: `related-work.md` M13 section.
+
+### M8.1 — Variant-Config Infrastructure
+- [ ] **M8.1.1** `DDSPVariant` dataclass (`model/ddsp/variant.py` — new).
+- [ ] **M8.1.2** Thread `DDSPVariant` into `DDSPModel` + `DDSPCore` + `HarmonicOscillatorSynth`.
+- [ ] **M8.1.3** Server-layer variant parsing (`server/tasks.py`, `server/presets.py`,
+      `model/ddsp_model.py` `DDSPConfig` field).
+- [ ] **M8.1.4** UI: `SynthHacksView.vue` + router route + sidebar link + mock fixtures.
+
+### M8.2 — Inharmonic Multipliers + FM Synthesis
+- [ ] **M8.2.1** Configurable `harmonic_ratios` in `HarmonicOscillatorSynth`
+      (`synths.py:65`). Bell / gong / gamelan textures.
+- [ ] **M8.2b** FM synthesis: `harmonic_freqs += fm_depth * sin(fm_ratio * f0 * t)`
+      (`synths.py:66–72`).
+
+### M8.3 — Waveform / Wavetable Exchange
+- [ ] **M8.3.1** `_apply_waveform()` helper + dispatch `sin / square / saw`
+      (`synths.py:99`). Includes M8.3b phase distortion (`pd_k`).
+- [ ] **M8.3c** Trainable wavetable: `nn.Parameter(256)` initialized to sine;
+      checkpoint tag `variant_flags`.
+
+### M8.4 — Loss & Decoder Hacks
+- [ ] **M8.4.1** Frequency-band mask on `MultiScaleSpectralLoss`
+      (`losses.py` + `tasks.py`).
+- [ ] **M8.4.2** LFO injection into noise magnitudes (`ddsp_model.py:forward`).
+
+### M8.6 — Quality: Angular Cumulative Sum
+- [ ] **M8.6** `_angular_cumsum()` + `use_angular_cumsum` flag (`synths.py:77`).
+      Fixes phase drift for synthesis > 6 s.
+
+### M8.5 — Tests + Docs
+- [ ] **M8.5.1** `tests/test_synths_variant.py` — 15 pytest + 1 vitest smoke tests.
+- [ ] **M8.5.2** Finalize `doc/experimental-sdk-hacking.md` (result table,
+      checkpoint compat matrix, gradient behaviour note).

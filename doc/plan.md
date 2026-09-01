@@ -40,8 +40,33 @@ _Roadmap / open questions / risks. Active tasks live in
   [`experimental-ddsp.md`](./experimental-ddsp.md).
 - **M8 - Experimental synthesis hacks:** first-class hacks on our own DDSP core
   (inharmonic multipliers, wavetable exchange, frequency-band blindness, LFO
-  injection). Experimental; rationale in
+  injection, FM synthesis, phase distortion, trainable wavetable, angular
+  cumsum). Experimental; rationale in
   [`experimental-sdk-hacking.md`](./experimental-sdk-hacking.md).
+- **M9 - Alternative synthesizer engines:** `SinusoidalSynth` (freely learned
+  partial frequencies, inharmonic instruments), `CombSubSynth` (comb-filter
+  subtractive, vocal formants, DDSP-SVC style), colored noise (pink/brown),
+  granular noise. Engine selected via `DDSPVariant.engine` feature flag.
+  Details: [`implementation/m9-alternative-synth-engines.md`](./implementation/m9-alternative-synth-engines.md).
+- **M10 - Neural Waveshaping Unit (NEWT):** replace harmonic branch with a
+  lightweight MLP (periodic sin activations) that learns a nonlinear transfer
+  function in the waveform domain. ~260k params, real-time on CPU. Based on
+  Hayes et al. ISMIR 2021.
+  Details: [`implementation/m10-newt.md`](./implementation/m10-newt.md).
+- **M11 - Latent Space & Morphing:** VAE encoder → explicit latent `z`;
+  checkpoint morphing (interpolate two trained models), random sampling,
+  per-dimension latent steering UI. β-VAE training with KL warmup.
+  Details: [`implementation/m11-latent-space.md`](./implementation/m11-latent-space.md).
+- **M12 - PolyDDSP (Polyphony):** N parallel DDSP voices driven by a
+  multi-pitch tracker (basic-pitch / torchcrepe top-K). Shared decoder
+  weights by default; N=2–3 on RTX 3060 6 GB.
+  Details: [`implementation/m12-polyddsp.md`](./implementation/m12-polyddsp.md).
+- **M13 - Voice Conversion (HuBERT/ContentVec):** replace f0+loudness
+  autoencoder conditioning with a frozen pretrained semantic content encoder
+  (HuBERT-Soft MIT / ContentVec MIT). Enables source-to-target voice
+  conversion (DDSP-SVC style, our own PyTorch core). Offline content
+  extraction cached as `.npy`.
+  Details: [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md).
 
 ## Resolved questions
 
