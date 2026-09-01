@@ -105,14 +105,29 @@ def build_training(
     max_steps = int(model_config.get("max_steps", 1000))
     device = model_config.get("device", "auto")
 
-    variant_dict = model_config.get("variant", {}) or {}
-    variant = DDSPVariant.from_dict(variant_dict)
-    use_latent = model_config.get("use_latent", False)
-    latent_dim = int(model_config.get("latent_dim", 32))
-    kl_beta = float(model_config.get("kl_beta", 0.0001))
-    kl_warmup = int(model_config.get("kl_warmup_steps", 2000))
-    use_content_encoder = model_config.get("use_content_encoder", False)
-    content_encoder_name = model_config.get("content_encoder_name", "hubert_soft")
+    model_tier = model_config.get("model_tier", "standard")
+
+    variant = DDSPVariant()
+    if model_tier in ("hacks", "engine", "advanced"):
+        variant_dict = model_config.get("variant", {}) or {}
+        variant = DDSPVariant.from_dict(variant_dict)
+
+    use_latent = False
+    latent_dim = 32
+    kl_beta = 0.0
+    kl_warmup = 2000
+    n_voices = 1
+    use_content_encoder = False
+    content_encoder_name = "hubert_soft"
+    if model_tier == "advanced":
+        use_latent = bool(model_config.get("use_latent", False))
+        latent_dim = int(model_config.get("latent_dim", 32))
+        kl_beta = float(model_config.get("kl_beta", 0.0001))
+        kl_warmup = int(model_config.get("kl_warmup_steps", 2000))
+        n_voices = int(model_config.get("n_voices", 1))
+        use_content_encoder = bool(model_config.get("use_content_encoder", False))
+        content_encoder_name = model_config.get("content_encoder_name", "hubert_soft")
+
     dcfg = DDSPConfig(
         hidden_size=hidden_size,
         stft_scales=fft_sizes_for_scales(stft_scales),
@@ -122,9 +137,7 @@ def build_training(
         use_content_encoder=use_content_encoder,
         content_encoder_name=content_encoder_name,
     )
-
-    n_voices = int(model_config.get("n_voices", 1))
-    dcfg.n_voices = n_voices  # propagate to config
+    dcfg.n_voices = n_voices
 
     band_mask = None
     if variant.loss_band_mask:

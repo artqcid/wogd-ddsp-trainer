@@ -17,7 +17,7 @@ from server.presets import (
     reclamp_all_custom,
     seed_builtin_presets,
 )
-from server.routes import dataset, host, inference, model, presets, reverb, settings, training
+from server.routes import dataset, gpu, host, inference, model, presets, reverb, settings, training
 from server.tensorboard import get_manager
 
 logger = logging.getLogger(__name__)
@@ -57,8 +57,11 @@ async def lifespan(app: FastAPI):
     conn.commit()
 
     bounds = get_bounds()
-    seeded = seed_builtin_presets(conn, bounds)
-    logger.info("seeded %s built-in presets", seeded)
+    ALL_TIERS = ("standard", "component", "hacks", "engine", "advanced")
+    for tier in ALL_TIERS:
+        seeded = seed_builtin_presets(conn, bounds, tier=tier)
+        if seeded:
+            logger.info("seeded %s built-in %s presets", seeded, tier)
 
     changed, fp = check_hardware_change(conn)
     if changed:
@@ -89,6 +92,7 @@ app.include_router(training.router, prefix="/api")
 app.include_router(inference.router, prefix="/api")
 app.include_router(presets.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
+app.include_router(gpu.router, prefix="/api")
 app.include_router(host.router, prefix="/api")
 app.include_router(reverb.router, prefix="/api")
 

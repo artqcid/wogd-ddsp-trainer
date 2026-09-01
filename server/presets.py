@@ -14,7 +14,7 @@ from server.db import (
     meta_get,
     meta_set,
     preset_all,
-    preset_by_name,
+    preset_by_name_and_tier,
     preset_create,
     preset_update,
 )
@@ -39,6 +39,37 @@ PARAM_KEYS: tuple = (
     "latent_dim",
     "kl_beta",
     "kl_warmup_steps",
+    "n_voices",
+    "use_content_encoder",
+    "content_encoder_name",
+)
+
+# Tier-specific param keys (not VRAM-bounded; validated, not clamped)
+VARIANT_KEYS: tuple = (  # M8 DDSPVariant fields
+    "waveform",
+    "harmonic_ratios",
+    "fm_depth",
+    "fm_ratio",
+    "pd_k",
+    "use_lfo",
+    "lfo_freq",
+    "lfo_depth",
+    "use_trainable_wavetable",
+    "use_angular_cumsum",
+    "band_mask_low_hz",
+    "band_mask_high_hz",
+)
+ENGINE_KEYS: tuple = (  # M9/M10 engine fields
+    "engine",
+    "noise_color",
+    "noise_grain_jitter",
+    "newt_hidden_size",
+    "newt_n_layers",
+)
+ADVANCED_KEYS: tuple = (  # M11-M13 advanced fields
+    "use_latent",
+    "latent_dim",
+    "kl_beta",
     "n_voices",
     "use_content_encoder",
     "content_encoder_name",
@@ -207,40 +238,45 @@ def clamp_params(params: dict, bounds: ParameterBounds) -> tuple[dict, list[str]
     return clamped, flags
 
 
-def build_builtin_presets(bounds: ParameterBounds) -> list[dict]:
-    """Produce built-in FAST/NORMAL/QUALITY preset dicts from *bounds*."""
+def build_builtin_presets(bounds: ParameterBounds, tier: str = "standard") -> list[dict]:
+    """Produce built-in FAST/NORMAL/QUALITY preset dicts from *bounds* with *model_tier*."""
     preset_params = propose_presets(bounds)
     lr = DEFAULT_LEARNING_RATE
+    suffix = "" if tier == "standard" else f"-{tier}"
     return [
         {
-            "id": "builtin-fast",
+            "id": f"builtin-fast{suffix}",
             "name": "FAST",
             "is_builtin": True,
             "params": {**preset_params["FAST"], "learning_rate": lr},
             "created_from_run_id": None,
+            "model_tier": tier,
         },
         {
-            "id": "builtin-normal",
+            "id": f"builtin-normal{suffix}",
             "name": "NORMAL",
             "is_builtin": True,
             "params": {**preset_params["NORMAL"], "learning_rate": lr},
             "created_from_run_id": None,
+            "model_tier": tier,
         },
         {
-            "id": "builtin-quality",
+            "id": f"builtin-quality{suffix}",
             "name": "QUALITY",
             "is_builtin": True,
             "params": {**preset_params["QUALITY"], "learning_rate": lr},
             "created_from_run_id": None,
+            "model_tier": tier,
         },
     ]
 
 
-def seed_builtin_presets(conn, bounds: ParameterBounds) -> int:
-    """Insert missing built-in presets; commit after all; return inserted count."""
+def seed_builtin_presets(conn, bounds: ParameterBounds, tier: str = "standard") -> int:
+    """Insert missing built-in presets for *tier*; commit; return inserted count."""
     inserted = 0
-    for preset in build_builtin_presets(bounds):
-        if preset_by_name(conn, preset["name"]) is None:
+    for preset in build_builtin_presets(bounds, tier=tier):
+        existing = preset_by_name_and_tier(conn, preset["name"], tier)
+        if existing is None:
             preset_create(
                 conn,
                 id=preset["id"],
@@ -248,6 +284,7 @@ def seed_builtin_presets(conn, bounds: ParameterBounds) -> int:
                 is_builtin=preset["is_builtin"],
                 params=preset["params"],
                 created_from_run_id=preset["created_from_run_id"],
+                model_tier=tier,
             )
             inserted += 1
     conn.commit()

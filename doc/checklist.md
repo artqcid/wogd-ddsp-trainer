@@ -228,40 +228,40 @@ default to `'standard'`._
 
 ### Phase 1 — Backend (must be complete before any Phase 2 frontend work)
 
-- [ ] **M14.1.1** `train/gpu.py` — add `VRAMEstimate` dataclass +
+- [x] **M14.1.1** `train/gpu.py` — add `VRAMEstimate` dataclass +
       `estimate_model_vram(model_tier, n_voices, use_latent, use_content_encoder)`
       function using baseline figures from `architecture.md` VRAM budget table.
-- [ ] **M14.1.2** `server/db.py` — `init_db()`: add `model_tier TEXT NOT NULL
+- [x] **M14.1.2** `server/db.py` — `init_db()`: add `model_tier TEXT NOT NULL
       DEFAULT 'standard'` column to `presets` and `runs` `CREATE TABLE`
       statements. Add migration path via `meta` table `schema_version` key:
       run `ALTER TABLE … ADD COLUMN` if column absent on existing DBs.
-- [ ] **M14.1.3** `server/presets.py` — add `VARIANT_KEYS`, `ENGINE_KEYS`,
+- [x] **M14.1.3** `server/presets.py` — add `VARIANT_KEYS`, `ENGINE_KEYS`,
       `ADVANCED_KEYS` constant tuples (not VRAM-bounded; validated not clamped).
       Extend `build_builtin_presets(bounds, tier='standard')` with tier param.
       Change `seed_builtin_presets()` lookup to `(name, model_tier)` composite.
-- [ ] **M14.1.4** `server/routes/training.py` — add `model_tier: str = 'standard'`
+- [x] **M14.1.4** `server/routes/training.py` — add `model_tier: str = 'standard'`
       to `RunCreateRequest` + `ValidateRequest`. Extend `/validate` response
       with `model_tier_mismatch: bool`. Add checkpoint-tier guard in
       `POST /api/runs/{id}/resume` (409 on mismatch).
-- [ ] **M14.1.5** `server/tasks.py` — make `build_training()` tier-aware:
+- [x] **M14.1.5** `server/tasks.py` — make `build_training()` tier-aware:
       read `model_tier` from `model_config`; gate DDSPVariant, engine, and
       advanced fields behind their tier; all new fields use safe defaults.
-- [ ] **M14.1.6** `server/routes/host.py` (or new `server/routes/gpu.py`) —
+- [x] **M14.1.6** `server/routes/host.py` (or new `server/routes/gpu.py`) —
       implement `GET /api/gpu/feasibility` endpoint with `tier_feasibility`
       dict in response (all five tiers with fits/estimated_gb/warning).
-- [ ] **M14.1.7** `tests/test_gpu_feasibility.py` — pytest: `estimate_model_vram`
+- [x] **M14.1.7** `tests/test_gpu_feasibility.py` — pytest: `estimate_model_vram`
       unit tests (all tier × n_voices × flag combos); endpoint integration test
       (mock GPU, verify tier_feasibility structure + fits logic).
-- [ ] **M14.1.8** `tests/test_presets_tier.py` — pytest: `build_builtin_presets`
+- [x] **M14.1.8** `tests/test_presets_tier.py` — pytest: `build_builtin_presets`
       with tier param; `seed_builtin_presets` composite-key collision; `clamp_params`
       still works for all tiers.
-- [ ] **M14.1.9** `tests/test_training_tier.py` — pytest: `build_training`
+- [x] **M14.1.9** `tests/test_training_tier.py` — pytest: `build_training`
       with each tier; validate that non-standard fields are absent/defaulted
       for `'standard'`; validate tier-mismatch 409 on resume.
 
 ### Phase 0 — Design System (prerequisite for Phase 2; no backend required)
 
-- [ ] **M14.2.0** Design System upgrade — modern AI-dashboard visual language
+- [x] **M14.2.0** Design System upgrade — modern AI-dashboard visual language
       with **per-tier signal colors** so the active model complexity is
       always visible across the entire UI.
       Spec: `implementation/m14-dual-mode-ui.md` §"Phase 0". Eight sub-steps:
@@ -290,53 +290,48 @@ default to `'standard'`._
         indicators, breadcrumb section label, GPU chip badge, mono version.
         Imports `tierColor`/`tierLabel`/`tierIcon` from `tierColors.js`
         (step H) and `useModelConfigStore` from Pinia (step M14.2.1).
-        **Note:** TopBar import of `useModelConfigStore` means M14.2.0-F must
-        be committed BUT the store import can be wrapped in a `try/catch` or
-        the store created as a stub so Vitest does not fail before M14.2.1.
       - **G** Vitest verify: `vitest` all green after A–F.
       - **H** `webui/src/utils/tierColors.js` (NEW) — `TIER_META`, `TIER_ORDER`,
-        `tierColor()`, `tierLabel()`, `tierIcon()`, `tierAtLeast()`. Includes
-        own Vitest (`tests/tierColors.test.js`, 7 tests for label/icon/order/
-        tierAtLeast logic).
+        `tierColor()`, `tierLabel()`, `tierIcon()`, `tierAtLeast()`.
 
 ### Phase 2 — Frontend (requires Phase 0 + Phase 1 complete)
 
-- [ ] **M14.2.1** `webui/src/stores/modelConfig.js` — Pinia store:
+- [x] **M14.2.1** `webui/src/stores/modelConfig.js` — Pinia store:
       `activeTier`, `wizardCompleted`, `gpuFeasibility`, `selectedPreset`,
       `targetMode`, `coreParams`, `componentParams`, `hacksVariant`,
       `engineParams`, `advancedParams`. Actions: `setTierFromWizard`,
       `checkFeasibility` (calls `/api/gpu/feasibility`), `resetToWizard`.
-- [ ] **M14.2.2** `webui/src/mocks/fixtures.js` + `mockApiClient.js` — add
+- [x] **M14.2.2** `webui/src/mocks/fixtures.js` + `mockApiClient.js` — add
       `tier_feasibility` fixture with all five tiers; add `model_tier` field
       to preset fixtures (default `'standard'`). Mock `getGpuFeasibility()`.
-- [ ] **M14.2.3** `webui/src/components/ModelTierCard.vue` — single tier card:
+- [x] **M14.2.3** `webui/src/components/ModelTierCard.vue` — single tier card:
       icon, name, short description, GPU feasibility badge (✓/⚠), tooltip.
       Renders from fixture data; no backend required.
-- [ ] **M14.2.4** `webui/src/components/GpuFeasibilityBanner.vue` — persistent
+- [x] **M14.2.4** `webui/src/components/GpuFeasibilityBanner.vue` — persistent
       banner: GPU name/VRAM/tier, current-config estimate, reactive on store
       changes. Three render states: fits / warning / no-GPU (all covered by
       Vitest).
-- [ ] **M14.2.5** `webui/src/components/WizardModal.vue` — 3-step modal:
+- [x] **M14.2.5** `webui/src/components/WizardModal.vue` — 3-step modal:
       Step 1 = tier card grid (uses `ModelTierCard`); Step 2 = quality/preset
       cards (FAST/NORMAL/QUALITY + custom); Step 3 = target mode selector.
       "Skip" link always visible. On complete: calls `setTierFromWizard`.
       Opens when `!wizardCompleted`; reopenable via "⚙ Reconfigure Model" button.
-- [ ] **M14.2.6** Tab components — five new files:
+- [x] **M14.2.6** Tab components — five new files:
       `TabCore.vue` (preset, ML params, target mode, decoder, reverb),
       `TabComponent.vue` (n_harmonics, n_filter_banks, link to ComponentMixerView),
       `TabHacks.vue` (DDSPVariant flags, link to SynthHacksView),
       `TabEngine.vue` (engine dropdown + engine-specific params),
       `TabAdvanced.vue` (use_latent, latent_dim, kl_beta, n_voices,
       use_content_encoder, content_encoder_name).
-- [ ] **M14.2.7** `webui/src/views/TrainingConfigView.vue` — refactor into
+- [x] **M14.2.7** `webui/src/views/TrainingConfigView.vue` — refactor into
       tab-wrapper: import `GpuFeasibilityBanner`, tab bar (5 tabs, disabled
       when tier < required), `WizardModal` (shown when `!wizardCompleted`),
       delegate param sections to Tab components. "⚙ Reconfigure Model" button
       in header calls `resetToWizard()`.
-- [ ] **M14.2.8** `webui/src/views/PresetManagerView.vue` — add `model_tier`
+- [x] **M14.2.8** `webui/src/views/PresetManagerView.vue` — add `model_tier`
       filter (dropdown above preset list); filter calls
       `GET /api/presets?model_tier=…`.
-- [ ] **M14.2.9** Vitest: `WizardModal` (all 3 steps complete + skip path),
+- [x] **M14.2.9** Vitest: `WizardModal` (all 3 steps complete + skip path),
       `GpuFeasibilityBanner` (3 states), `ModelTierCard` (fits/warn/no-gpu),
       all 5 Tab components (render with mock data), `TrainingConfigView`
       tab-switching + disabled-tab tooltip, `PresetManagerView` tier filter.

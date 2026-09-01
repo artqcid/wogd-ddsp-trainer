@@ -37,10 +37,11 @@ def init_db(conn: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS presets (
             id TEXT PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
             is_builtin INTEGER NOT NULL DEFAULT 0,
             params TEXT NOT NULL,
             created_from_run_id TEXT,
+            model_tier TEXT NOT NULL DEFAULT 'standard',
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
@@ -56,6 +57,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             config_json TEXT NOT NULL DEFAULT '{}',
             created_from_preset TEXT,
             dataset_id TEXT,
+            model_tier TEXT NOT NULL DEFAULT 'standard',
             error TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
@@ -97,6 +99,18 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
     ]:
         with suppress(sqlite3.OperationalError):
             cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+    _migrate_add_model_tier(cur)
+
+
+def _migrate_add_model_tier(cur: sqlite3.Cursor) -> None:
+    """Add model_tier column to presets and runs if not already present."""
+    for table in ("presets", "runs"):
+        cur.execute(f"PRAGMA table_info({table})")
+        cols = {row[1] for row in cur.fetchall()}
+        if "model_tier" not in cols:
+            cur.execute(
+                f"ALTER TABLE {table} ADD COLUMN model_tier TEXT NOT NULL DEFAULT 'standard'"
+            )
 
 
 def _bool(row: sqlite3.Row, key: str) -> bool:
@@ -120,6 +134,7 @@ def _parse_preset(row: sqlite3.Row) -> dict:
         "is_builtin": _bool(row, "is_builtin"),
         "params": _dict(row, "params"),
         "created_from_run_id": row["created_from_run_id"],
+        "model_tier": row["model_tier"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }
@@ -134,6 +149,7 @@ def _parse_run(row: sqlite3.Row) -> dict:
         "config": _dict(row, "config_json"),
         "created_from_preset": row["created_from_preset"],
         "dataset_id": row["dataset_id"],
+        "model_tier": row["model_tier"],
         "error": row["error"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
@@ -167,13 +183,14 @@ def preset_create(
     is_builtin: bool,
     params: dict,
     created_from_run_id: str | None = None,
+    model_tier: str = "standard",
 ) -> None:
     """Insert a new presets row."""
     cur: sqlite3.Cursor = conn.cursor()
     cur.execute(
         """
-        INSERT INTO presets (id, name, is_builtin, params, created_from_run_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO presets (id, name, is_builtin, params, created_from_run_id, model_tier)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             id,
@@ -181,6 +198,7 @@ def preset_create(
             int(is_builtin),
             json.dumps(params),
             created_from_run_id,
+            model_tier,
         ),
     )
 
@@ -203,9 +221,19 @@ def preset_get(conn: sqlite3.Connection, preset_id: str) -> dict | None:
 
 
 def preset_by_name(conn: sqlite3.Connection, name: str) -> dict | None:
-    """Return a single presets by name, or None."""
+    """Return a single presets by name (first match), or None."""
     cur: sqlite3.Cursor = conn.cursor()
     cur.execute("SELECT * FROM presets WHERE name = ?", (name,))
+    row: sqlite3.Row | None = cur.fetchone()
+    if row is None:
+        return None
+    return _parse_preset(row)
+
+
+def preset_by_name_and_tier(conn: sqlite3.Connection, name: str, tier: str) -> dict | None:
+    """Return a single presets by (name, model_tier) composite, or None."""
+    cur: sqlite3.Cursor = conn.cursor()
+    cur.execute("SELECT * FROM presets WHERE name = ? AND model_tier = ?", (name, tier))
     row: sqlite3.Row | None = cur.fetchone()
     if row is None:
         return None
@@ -275,13 +303,14 @@ def run_create(
     config: dict,
     dataset_id: str | None = None,
     created_from_preset: str | None = None,
+    model_tier: str = "standard",
 ) -> None:
     """Insert a new run row."""
     cur: sqlite3.Cursor = conn.cursor()
     cur.execute(
         """
-        INSERT INTO runs (run_id, name, config_json, dataset_id, created_from_preset)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO runs (run_id, name, config_json, dataset_id, created_from_preset, model_tier)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             run_id,
@@ -289,6 +318,7 @@ def run_create(
             json.dumps(config),
             dataset_id,
             created_from_preset,
+            model_tier,
         ),
     )
 

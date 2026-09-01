@@ -19,26 +19,12 @@ import TopBar from './components/TopBar.vue'
 </template>
 
 <style scoped>
-:root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --accent: #58a6ff;
-  --accent-hover: #79c0ff;
-  --border: #30363d;
-  --success: #3fb950;
-  --warning: #d29922;
-  --error: #f85149;
-}
-
 .app-shell {
   display: flex;
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .app-sidebar {

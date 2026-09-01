@@ -18,7 +18,12 @@ from server.db import (
     run_set_stop_requested,
 )
 from server.presets import bounds_to_dict, clamp_params, get_bounds
-from server.tasks import TaskRunner, get_task_runner, run_checkpoint_dir, runs_dir
+from server.tasks import (
+    TaskRunner,
+    get_task_runner,
+    run_checkpoint_dir,
+    runs_dir,
+)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -28,11 +33,13 @@ class RunCreateRequest(BaseModel):
     dataset_id: str | None = None
     preset_id: str | None = None
     params: dict | None = None
+    model_tier: str = "standard"
 
 
 class ValidateRequest(BaseModel):
     preset_id: str | None = None
     params: dict | None = None
+    model_tier: str = "standard"
 
 
 def _effective_params(conn: Any, preset_id: str | None, params: dict | None) -> dict[str, Any]:
@@ -63,10 +70,14 @@ def validate(req: ValidateRequest) -> dict[str, Any]:
     try:
         clamped, clamped_fields = _clamp_params(conn, req.preset_id, req.params)
         bounds = get_bounds()
+        preset = preset_get(conn, req.preset_id) if req.preset_id else None
+        preset_tier = preset.get("model_tier", "standard") if preset else "standard"
+        model_tier_mismatch = preset_tier != req.model_tier
         return {
             "params": clamped,
             "clamped_fields": clamped_fields,
             "bounds": bounds_to_dict(bounds),
+            "model_tier_mismatch": model_tier_mismatch,
         }
     finally:
         conn.close()
@@ -92,6 +103,7 @@ def create_run(
             config,
             req.dataset_id,
             created_from_preset=req.preset_id,
+            model_tier=req.model_tier,
         )
         conn.commit()
 
@@ -103,6 +115,7 @@ def create_run(
             "task_id": task_id,
             "config": config,
             "clamped_fields": clamped_fields,
+            "model_tier": req.model_tier,
         }
     finally:
         conn.close()
@@ -197,6 +210,25 @@ def resume_run(
                 status_code=409,
                 detail=f"run not resumable in state {status}",
             )
+        stored_tier = run.get("model_tier", "standard")
+        ckpt_dir = run_checkpoint_dir(run_id)
+        if ckpt_dir.exists():
+            from server.tasks import latest_checkpoint as _latest_ckpt
+
+            latest = _latest_ckpt(run_id)
+            if latest is not None:
+                import torch as _torch
+
+                ckpt = _torch.load(latest, map_location="cpu", weights_only=True)
+                ckpt_tier = ckpt.get("variant_flags", {}).get("model_tier", "standard")
+                if ckpt_tier != stored_tier:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            f"checkpoint_tier_mismatch: run={stored_tier}, "
+                            f"checkpoint={ckpt_tier}"
+                        ),
+                    )
         run_set_stop_requested(conn, run_id, False)
         run_set_status(conn, run_id, "pending")
         conn.commit()

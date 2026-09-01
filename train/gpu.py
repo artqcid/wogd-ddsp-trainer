@@ -215,6 +215,61 @@ def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
     }
 
 
+@dataclass
+class VRAMEstimate:
+    """Lightweight VRAM accounting for a model configuration.
+
+    ``peak_gb`` is the estimated peak VRAM in GB.
+    ``warning`` is a human-readable message when the estimate exceeds a
+    known threshold (e.g. PolyDDSP N>2 on 6 GB), or ``None``.
+    """
+
+    peak_gb: float
+    warning: str | None = None
+
+
+def estimate_model_vram(
+    model_tier: str,
+    n_voices: int = 1,
+    use_latent: bool = False,
+    use_content_encoder: bool = False,
+) -> VRAMEstimate:
+    """Estimate peak VRAM in GB for a given model configuration.
+
+    Base figures from architecture.md VRAM budget table
+    (batch_size=1, seq_len=2 s @ 16 kHz, mixed precision, 3-scale STFT):
+
+        baseline (standard DDSP)        ~2.2 GB
+        use_latent (+GRUEncoder/VAE)    +0.15 GB
+        use_content_encoder (+HuBERT)   +0.36 GB
+        PolyDDSP N voices               baseline x N
+
+    All tiers from 'standard' through 'engine' have the same baseline;
+    'advanced' activates the optional overhead params.
+    """
+    BASELINE_GB = 2.2
+    overhead = 0.0
+    warning = None
+
+    if model_tier == "advanced":
+        if use_latent:
+            overhead += 0.15
+        if use_content_encoder:
+            overhead += 0.36
+        if n_voices > 1:
+            overhead += BASELINE_GB * (n_voices - 1)
+
+    peak = BASELINE_GB + overhead
+
+    if peak > 6.0:
+        warning = (
+            f"Estimated {peak:.1f} GB exceeds 6 GB — "
+            f"recommend a GPU with at least {int(peak) + 1} GB VRAM."
+        )
+
+    return VRAMEstimate(peak_gb=round(peak, 2), warning=warning)
+
+
 def suggest_for_host() -> dict:
     """Return a host summary for the local machine.
 

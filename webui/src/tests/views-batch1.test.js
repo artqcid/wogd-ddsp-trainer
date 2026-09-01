@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { MockApiClient } from '../mocks/mockApiClient.js'
+import { useModelConfigStore } from '../stores/modelConfig.js'
 import UploadIngestionView from '../views/UploadIngestionView.vue'
 import DatasetManagerView from '../views/DatasetManagerView.vue'
 import PreprocessingView from '../views/PreprocessingView.vue'
@@ -84,26 +86,63 @@ describe('PreprocessingView', () => {
 })
 
 describe('TrainingConfigView', () => {
-  it('renders GPU info', async () => {
-    const wrapper = mount(TrainingConfigView, mountOptions)
+  it('renders wizard modal when no tier selected', async () => {
+    const pinia = createPinia()
+    const wrapper = mount(TrainingConfigView, {
+      global: {
+        provide: { apiClient: new MockApiClient() },
+        plugins: [pinia],
+      },
+    })
     await flushPromises()
-    expect(wrapper.find('[data-testid="gpu-info"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="gpu-info"]').text()).toContain('NVIDIA GeForce RTX 3060')
+    expect(wrapper.find('[data-testid="wizard-modal"]').exists()).toBe(true)
   })
 
-  it('renders preset select', async () => {
-    const wrapper = mount(TrainingConfigView, mountOptions)
+  it('renders tab bar after wizard completion', async () => {
+    const pinia = createPinia()
+    const store = useModelConfigStore(pinia)
+    store.wizardCompleted = true
+    store.activeTier = 'standard'
+    const wrapper = mount(TrainingConfigView, {
+      global: {
+        provide: { apiClient: new MockApiClient() },
+        plugins: [pinia],
+      },
+    })
     await flushPromises()
-    expect(wrapper.find('[data-testid="preset-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tab-bar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="reconfigure-btn"]').exists()).toBe(true)
   })
 
-  it('renders training speed selector', async () => {
-    const wrapper = mount(TrainingConfigView, mountOptions)
+  it('renders tier badge showing active tier', async () => {
+    const pinia = createPinia()
+    const store = useModelConfigStore(pinia)
+    store.wizardCompleted = true
+    store.activeTier = 'advanced'
+    const wrapper = mount(TrainingConfigView, {
+      global: {
+        provide: { apiClient: new MockApiClient() },
+        plugins: [pinia],
+      },
+    })
     await flushPromises()
-    expect(wrapper.find('[data-testid="training-speed"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="speed-FAST"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="speed-NORMAL"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="speed-QUALITY"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tier-badge"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Advanced')
+  })
+
+  it('renders start training button', async () => {
+    const pinia = createPinia()
+    const store = useModelConfigStore(pinia)
+    store.wizardCompleted = true
+    store.activeTier = 'standard'
+    const wrapper = mount(TrainingConfigView, {
+      global: {
+        provide: { apiClient: new MockApiClient() },
+        plugins: [pinia],
+      },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="start-training-btn"]').exists()).toBe(true)
   })
 })
 

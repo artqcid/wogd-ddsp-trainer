@@ -74,8 +74,8 @@ export const resumeRunFixture = { success: true }
 export const deleteRunFixture = { success: true }
 
 export const presetsFixture = [
-  { name: 'vctk_default', is_builtin: true, params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
-  { name: 'singing_model', is_builtin: true, params: { hidden_size: 256, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
+  { name: 'vctk_default', is_builtin: true, model_tier: 'standard', params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
+  { name: 'singing_model', is_builtin: true, model_tier: 'standard', params: { hidden_size: 256, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } },
 ]
 
 export const createPresetFixture = { name: 'custom_voice', is_builtin: false, params: { hidden_size: 128, stft_scales: 3, mixed_precision: 'required', gradient_checkpointing: 'optional' } }
@@ -159,6 +159,20 @@ export const variantFixture = {
   use_angular_cumsum: false,
   newt_n_hidden: 32,
   newt_n_layers: 4,
+}
+
+export const tierFeasibilityFixture = {
+  fits: true,
+  estimated_gb: 2.2,
+  available_gb: 4.1,
+  warning: null,
+  tier_feasibility: {
+    standard: { fits: true, estimated_gb: 2.2, warning: null },
+    component: { fits: true, estimated_gb: 2.4, warning: null },
+    hacks: { fits: true, estimated_gb: 2.4, warning: null },
+    engine: { fits: true, estimated_gb: 2.2, warning: null },
+    advanced: { fits: false, estimated_gb: 6.6, warning: 'PolyDDSP N=3 requires ~6.6 GB (8 GB GPU recommended)', worst_case_gb: 7.1, worst_case_warning: 'PolyDDSP N=3+latent+CE requires ~7.1 GB (8 GB GPU recommended)' },
+  },
 }
 
 export const morphFixture = {

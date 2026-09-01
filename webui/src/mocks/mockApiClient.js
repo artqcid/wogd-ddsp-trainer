@@ -27,6 +27,7 @@ import {
   validatePresetFixture,
   morphFixture,
   voiceConvertFixture,
+  tierFeasibilityFixture,
 } from './fixtures.js'
 
 /**
@@ -174,6 +175,10 @@ export class MockApiClient {
 
   async morph(formData) {
     return { ...morphFixture }
+  }
+
+  async getGpuFeasibility(_params) {
+    return { ...tierFeasibilityFixture }
   }
 
   async voiceConvert() {

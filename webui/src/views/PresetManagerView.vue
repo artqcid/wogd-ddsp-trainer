@@ -7,6 +7,7 @@ const presets = ref([])
 const loading = ref(false)
 const error = ref(null)
 const editingId = ref(null)
+const tierFilter = ref('all')
 const editForm = ref({
   name: '',
   type: 'custom',
@@ -37,6 +38,11 @@ const clampWarning = (params) => {
   }
   return warnings.length > 0 ? warnings.join(', ') : null
 }
+
+const filteredPresets = computed(() => {
+  if (tierFilter.value === 'all') return presets.value
+  return presets.value.filter(p => (p.model_tier || 'standard') === tierFilter.value)
+})
 
 const loadPresets = async () => {
   loading.value = true
@@ -132,6 +138,17 @@ onMounted(() => {
   <section class="preset-view">
     <header class="preset-header">
       <h2>Preset Manager</h2>
+      <div class="filter-row">
+        <label class="filter-label">Tier:</label>
+        <select v-model="tierFilter" class="tier-filter" data-testid="tier-filter" @change="loadPresets">
+          <option value="all">All tiers</option>
+          <option value="standard">Standard</option>
+          <option value="component">Component</option>
+          <option value="hacks">Hacks</option>
+          <option value="engine">Engine</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
       <p v-if="error" style="color: var(--error); font-size: 0.875rem;">{{ error }}</p>
     </header>
 
@@ -249,7 +266,7 @@ onMounted(() => {
     <div v-else-if="presets.length === 0" class="empty-state">No presets found. Create one above.</div>
     <div v-else class="preset-list">
       <div
-        v-for="preset in presets"
+        v-for="preset in filteredPresets"
         :key="preset.id"
         class="preset-card"
         data-testid="preset-card"
@@ -285,6 +302,9 @@ onMounted(() => {
 <style scoped>
 .preset-view { max-width: 900px; }
 .preset-header { margin-bottom: 1.5rem; }
+.filter-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+.filter-label { font-size: 0.8rem; color: var(--text-secondary); }
+.tier-filter { padding: 0.25rem 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; font-size: 0.8rem; }
 .create-form { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
 .create-form h3 { margin: 0 0 1rem; font-size: 0.9rem; }
 .form-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; }

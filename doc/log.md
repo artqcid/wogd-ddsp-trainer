@@ -3,6 +3,41 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M14: Dual-Mode Training UI + Backend Tier System
+
+**Creation:**
+- `train/gpu.py` — `VRAMEstimate` dataclass, `estimate_model_vram()` (baseline 2.2 GB, latent +0.15, CE +0.36, PolyDDSP N×)
+- `server/routes/gpu.py` — `GET /api/gpu/feasibility` endpoint (5-tier dict, fits/estimated_gb/warning)
+- `webui/src/style.css` — full global design token file (tier identity colors, utility classes, css reset)
+- `webui/src/utils/tierColors.js` — `TIER_META`, `tierColor()`, `tierLabel()`, `tierIcon()`, `tierAtLeast()`
+- `webui/src/stores/modelConfig.js` — Pinia store (activeTier, wizardCompleted, gpuFeasibility, buildFullConfig)
+- `webui/src/components/ModelTierCard.vue` — tier selection card with feasibility badge
+- `webui/src/components/GpuFeasibilityBanner.vue` — persistent VRAM banner (3 states)
+- `webui/src/components/WizardModal.vue` — 3-step setup wizard (tier → quality → mode)
+- `webui/src/components/TabCore.vue`, `TabComponent.vue`, `TabHacks.vue`, `TabEngine.vue`, `TabAdvanced.vue`
+- `tests/test_gpu_feasibility.py` — 10 pytest (estimate unit + endpoint integration)
+- `tests/test_presets_tier.py` — 8 pytest (tiered presets, key constants, clamp)
+- `tests/test_training_tier.py` — 7 pytest (tier-aware build_training)
+
+**Modification:**
+- `server/db.py` — `model_tier` column on presets/runs + migration, `preset_by_name_and_tier()`
+- `server/presets.py` — `VARIANT_KEYS`, `ENGINE_KEYS`, `ADVANCED_KEYS`; tier-aware `build_builtin_presets`/`seed_builtin_presets`
+- `server/routes/training.py` — `model_tier` in RunCreateRequest/ValidateRequest, checkpoint-tier guard in resume
+- `server/tasks.py` — tier-aware `build_training()` (gate variant/engine/advanced by tier)
+- `server/main.py` — seed all 5 tiers, register gpu router
+- `webui/index.html` — Inter + JetBrains Mono fonts
+- `webui/src/main.js` — import style.css
+- `webui/src/App.vue` — remove scoped :root, use global token vars
+- `webui/src/components/Sidebar.vue` — gradient SVG brand, emoji icons, glow, footer nav
+- `webui/src/components/TopBar.vue` — tier badge pill, modelConfig store integration
+- `webui/src/views/TrainingConfigView.vue` — refactored to tab-wrapper + WizardModal
+- `webui/src/views/PresetManagerView.vue` — model_tier filter dropdown
+- `webui/src/mocks/fixtures.js` — tierFeasibilityFixture, model_tier on presets
+- `webui/src/mocks/mockApiClient.js` — getGpuFeasibility()
+- `webui/src/tests/views-batch1.test.js` — updated TrainingConfigView tests (wizard, tabs, tier badge)
+
+**Verification:** 276 pytest, 24 vitest, ruff clean
+
 ## 2026-09-01 — M13: Voice Conversion (HuBERT/ContentVec) implemented
 
 **Creation:**

@@ -1,89 +1,96 @@
 <template>
   <nav class="sidebar">
-    <div class="sidebar-brand">wogd-ddsp-trainer</div>
+    <div class="sidebar-brand">
+      <svg class="sidebar-brand-icon" viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <defs>
+          <linearGradient id="brand-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" />
+            <stop offset="100%" stop-color="var(--accent-2)" />
+          </linearGradient>
+        </defs>
+        <path d="M12 2L2 7v10l10 5 10-5V7l-10-5z" fill="url(#brand-grad)" opacity="0.9" />
+        <path d="M12 12l-6-3v6l6 3 6-3V9l-6 3z" fill="var(--bg-primary)" opacity="0.5" />
+      </svg>
+      <span class="gradient-text">wogd-ddsp</span>
+    </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">Datasets &amp; Preprocessing</div>
+      <div class="sidebar-group-label">📦 Datasets &amp; Preprocessing</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/datasets" class="sidebar-link">Upload &amp; Ingestion</RouterLink>
+          <RouterLink to="/datasets" class="sidebar-link">📤 Upload &amp; Ingestion</RouterLink>
         </li>
         <li>
-          <RouterLink to="/datasets/manager" class="sidebar-link">Dataset Manager</RouterLink>
+          <RouterLink to="/datasets/manager" class="sidebar-link">🗂️ Dataset Manager</RouterLink>
         </li>
         <li>
-          <RouterLink to="/datasets/preprocess" class="sidebar-link">Preprocessing</RouterLink>
+          <RouterLink to="/datasets/preprocess" class="sidebar-link">⚙️ Preprocessing</RouterLink>
         </li>
       </ul>
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">Model Architecture</div>
+      <div class="sidebar-group-label">🧠 Model Architecture</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/model" class="sidebar-link">Training Config</RouterLink>
+          <RouterLink to="/model" class="sidebar-link">🎛️ Training Config</RouterLink>
         </li>
       </ul>
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">Training &amp; Monitor</div>
+      <div class="sidebar-group-label">📊 Training &amp; Monitor</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/training" class="sidebar-link">Training Dashboard</RouterLink>
+          <RouterLink to="/training" class="sidebar-link">📈 Training Dashboard</RouterLink>
         </li>
       </ul>
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">Inference &amp; Export</div>
+      <div class="sidebar-group-label">🔊 Inference &amp; Export</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/inference" class="sidebar-link">Inference Playground</RouterLink>
+          <RouterLink to="/inference" class="sidebar-link">🎵 Inference Playground</RouterLink>
         </li>
         <li>
-          <RouterLink to="/export" class="sidebar-link">Model Export</RouterLink>
+          <RouterLink to="/export" class="sidebar-link">💾 Model Export</RouterLink>
         </li>
         <li>
-          <RouterLink to="/presets" class="sidebar-link">Presets</RouterLink>
+          <RouterLink to="/presets" class="sidebar-link">📋 Presets</RouterLink>
         </li>
         <li>
-          <RouterLink to="/voice-conversion" class="sidebar-link">Voice Conversion</RouterLink>
+          <RouterLink to="/voice-conversion" class="sidebar-link">🎤 Voice Conversion</RouterLink>
         </li>
       </ul>
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">Experimental</div>
-      <ul class="sidebar-links">
-      <li>
-        <RouterLink to="/experimental/reverb" class="sidebar-link">Reverb IR Injection</RouterLink>
-      </li>
-       <li>
-         <RouterLink to="/experimental/f0-editor" class="sidebar-link">F0 Editor</RouterLink>
-       </li>
-<li>
-          <RouterLink to="/experimental/mixer" class="sidebar-link">Component Mixer</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/experimental/synth-hacks" class="sidebar-link">Synth Hacks</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/experimental/morphing" class="sidebar-link">Checkpoint Morphing</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/experimental/latent-explore" class="sidebar-link">Latent Explorer</RouterLink>
-        </li>
-       </ul>
-    </div>
-
-    <div class="sidebar-group">
-      <div class="sidebar-group-label">System</div>
+      <div class="sidebar-group-label">🧪 Experimental</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/settings" class="sidebar-link">Settings</RouterLink>
+          <RouterLink to="/experimental/reverb" class="sidebar-link">🔊 Reverb IR</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/f0-editor" class="sidebar-link">🎼 F0 Editor</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/mixer" class="sidebar-link">🔀 Component Mixer</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/synth-hacks" class="sidebar-link">⚡ Synth Hacks</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/morphing" class="sidebar-link">🔄 Morphing</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/latent-explore" class="sidebar-link">🌌 Latent Explorer</RouterLink>
         </li>
       </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <RouterLink to="/settings" class="sidebar-link sidebar-link--footer">⚙️ Settings</RouterLink>
     </div>
   </nav>
 </template>
@@ -106,21 +113,26 @@ const route = useRoute()
 }
 
 .sidebar-brand {
-  padding: 1rem;
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  letter-spacing: 0.02em;
   border-bottom: 1px solid var(--border);
 }
 
+.sidebar-brand-icon {
+  flex-shrink: 0;
+}
+
 .sidebar-group {
-  padding: 0.5rem 0;
+  padding: var(--space-2) 0;
 }
 
 .sidebar-group-label {
-  padding: 0.25rem 1rem;
+  padding: var(--space-1) var(--space-4);
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -136,12 +148,12 @@ const route = useRoute()
 
 .sidebar-link {
   display: block;
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   color: var(--text-primary);
   text-decoration: none;
   font-size: 0.875rem;
   border-left: 3px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .sidebar-link:hover {
@@ -152,5 +164,17 @@ const route = useRoute()
   background: var(--bg-tertiary);
   border-left-color: var(--accent);
   color: var(--accent);
+  box-shadow: inset 2px 0 8px var(--accent-glow);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: var(--space-2) 0;
+}
+
+.sidebar-link--footer {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 </style>

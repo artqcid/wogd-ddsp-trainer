@@ -6,6 +6,12 @@
       <span v-else class="topbar-version">loading…</span>
     </div>
 
+    <div class="topbar-center">
+      <span v-if="activeTierLabel" class="tier-pill" :style="{ background: tierColor(store.activeTier) + '22', color: tierColor(store.activeTier), borderColor: tierColor(store.activeTier) }" data-testid="tier-badge">
+        {{ tierIcon(store.activeTier) }} {{ activeTierLabel }}
+      </span>
+    </div>
+
     <div class="topbar-status">
       <span>
         <span :class="['status-dot', healthStatus]"></span>
@@ -20,18 +26,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, inject, onMounted } from 'vue'
+import { useModelConfigStore } from '../stores/modelConfig.js'
+import { tierLabel, tierColor, tierIcon } from '../utils/tierColors.js'
 
+const store = useModelConfigStore()
 const apiClient = inject('apiClient')
 const version = ref(null)
 const healthOk = ref(null)
 const tbRunning = ref(null)
-
 const healthStatus = ref('err')
 const healthLabel = ref('Backend: unknown')
-
 const tbStatus = ref('warn')
 const tbLabel = ref('TensorBoard: unknown')
+
+const activeTierLabel = computed(() => {
+  if (!store.activeTier) return null
+  return tierLabel(store.activeTier)
+})
 
 onMounted(async () => {
   if (!apiClient) return
@@ -40,7 +52,6 @@ onMounted(async () => {
     const health = await apiClient.health()
     version.value = health.version || null
     healthOk.value = health.ok
-
     healthStatus.value = healthOk.value ? 'ok' : 'err'
     healthLabel.value = healthOk.value ? 'Backend: ok' : 'Backend: error'
   } catch {
@@ -70,18 +81,29 @@ onMounted(async () => {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
 }
-
 .topbar-brand {
   font-weight: 600;
   font-size: 0.875rem;
 }
-
 .topbar-version {
   margin-left: 0.5rem;
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
-
+.topbar-center {
+  display: flex;
+  align-items: center;
+}
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
 .topbar-status {
   display: flex;
   align-items: center;
@@ -89,7 +111,6 @@ onMounted(async () => {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
-
 .status-dot {
   display: inline-block;
   width: 8px;
@@ -97,16 +118,7 @@ onMounted(async () => {
   border-radius: 50%;
   margin-right: 0.25rem;
 }
-
-.status-dot.ok {
-  background: var(--success);
-}
-
-.status-dot.warn {
-  background: var(--warning);
-}
-
-.status-dot.err {
-  background: var(--error);
-}
+.status-dot.ok { background: var(--success); }
+.status-dot.warn { background: var(--warning); }
+.status-dot.err { background: var(--error); }
 </style>
