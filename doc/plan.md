@@ -68,7 +68,23 @@ _Roadmap / open questions / risks. Active tasks live in
   extraction cached as `.npy`.
   Details: [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md).
 
-## Resolved questions
+- **M14 - Dual-Mode Training UI + Backend Tier System:** progressive complexity
+  system for the training UI spanning both frontend and backend.
+  **Backend-first (Phase 1):** DB schema migration (`model_tier` column on
+  `presets` + `runs`), `train/gpu.py:estimate_model_vram()`, new
+  `VARIANT_KEYS`/`ENGINE_KEYS`/`ADVANCED_KEYS` in `server/presets.py`,
+  tier-aware `build_training()` in `server/tasks.py`, new REST endpoint
+  `GET /api/gpu/feasibility`, extended `/validate` response
+  (`model_tier_mismatch`), checkpoint-tier guard on `/resume`.
+  **Frontend (Phase 2):** Pinia `modelConfig` store, `WizardModal.vue`
+  (3-step: Tier → Quality/Preset → Target Mode), `ModelTierCard.vue`,
+  `GpuFeasibilityBanner.vue`, tab-based `TrainingConfigView` with five
+  `Tab*.vue` panels unlocked progressively by tier, `PresetManagerView`
+  `model_tier` filter. **No breaking changes:** all new fields default to
+  `'standard'`; existing runs/presets/checkpoints unaffected.
+  Details: [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md).
+  Full spec: [`ui-requirements.md`](./ui-requirements.md#dual-mode-training-ui-m14),
+  [`architecture.md`](./architecture.md#model-tier-system--dual-mode-ui-m14).
 
 - **DDSP implementation:** self-owned PyTorch DDSP core (harmonic + filtered
   noise + reverb synth), specified by the DDSP paper (Engel et al. 2020).
@@ -127,5 +143,14 @@ _Roadmap / open questions / risks. Active tasks live in
   created as soon as the build artifacts/process exist (M1).
 - **Output quality:** raw DDSP synthesis is not studio-grade; a post-hoc
   output enhancer (vocoder / shallow diffusion) lifts it, informed by DDSP-SVC
+  (see [`related-work.md`](./related-work.md)). With PyTorch, native vocoders
+  (NSF-HiFiGAN) / shallow diffusion can be used directly.
+- **Dual-Mode Training UI (M14, 2026-09-01):** two parallel interaction modes
+  for the training config — Wizard Modal (simple users, 3-step guided flow)
+  and Power-User Tab view (5 tabs unlocked by model tier). Model tier is the
+  primary UI axis: `standard → component → hacks → engine → advanced`.
+  Backend is extended backend-first: DB migration, `estimate_model_vram()`,
+  tier-aware `build_training()`, `GET /api/gpu/feasibility`. No breaking
+  changes; all new fields default to `'standard'`.
   (see [`related-work.md`](./related-work.md)). With PyTorch, native vocoders
   (NSF-HiFiGAN) / shallow diffusion can be used directly.

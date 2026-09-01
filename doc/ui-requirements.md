@@ -156,6 +156,141 @@ UI:
 - **Run lifecycle** (M4.2): start/stop/resume training runs, run list/history,
   current run status.
 
+## Dual-Mode Training UI (M14)
+
+The training configuration UI must support two parallel interaction modes that
+share the same underlying Pinia store and REST contracts:
+
+### Model Tier system
+
+Five model tiers define which parameter groups are visible and which backend
+features are activated. The tier is the primary configuration axis:
+
+| Tier | Milestone | Description | Min. GPU |
+|---|---|---|---|
+| `standard` | M1–M6 | Standard DDSP (HarmonicOscillator + FilteredNoise) | 4 GB |
+| `component` | M7.2 | Standard + explicit harmonic/noise balance controls | 4 GB |
+| `hacks` | M8 | Component + DDSPVariant synthesis hacks (FM, PD, LFO…) | 4 GB |
+| `engine` | M9/M10 | Hacks + alternative synth engine (Sinusoidal/CombSub/NEWT) | 4 GB |
+| `advanced` | M11–M13 | Engine + VAE latent space / PolyDDSP / Voice Conversion | 6–12 GB |
+
+### Mode A — Wizard (simple users)
+
+A `WizardModal` opens automatically on first visit to Training Config (when
+`useModelConfigStore().wizardCompleted === false`). It guides the user through
+three steps:
+
+1. **Model Tier card grid** — one card per tier showing name, description,
+   GPU-feasibility badge (✓ fits / ⚠ needs N GB), and a short "what it does"
+   tooltip. GPU feasibility is pre-fetched via `GET /api/gpu/feasibility` (one
+   call, all tiers in the response).
+2. **Quality / Preset selector** — FAST / NORMAL / QUALITY cards showing
+   estimated VRAM usage and hidden_size for the current GPU, plus an optional
+   "load custom preset" selector filtered to the chosen tier.
+3. **Target mode** — Offline / Studio vs. Realtime / Low-Latency with export
+   format summary.
+
+Wizard completion writes `activeTier`, `selectedPreset`, and `targetMode`
+into the Pinia `modelConfig` store and closes the modal. A "Skip — I know
+what I'm doing" link is always visible (skips to Mode B with `activeTier`
+defaulting to `standard`). Power-users can reopen the Wizard at any time via
+the "⚙ Reconfigure Model" button in the Training Config header.
+
+### Mode B — Power-User Tabs (advanced users)
+
+`TrainingConfigView` renders a **tab bar** once `activeTier` is set. Tabs
+map 1:1 to tiers:
+
+| Tab | Visible when tier ≥ | Content |
+|---|---|---|
+| **Core** | always | Preset selector, ML params (LR/batch/epochs), target mode, decoder type, reverb toggle |
+| **Component** | `component` | n_harmonics / n_filter_banks sliders (link to ComponentMixerView) |
+| **Hacks** | `hacks` | DDSPVariant flags (waveform, FM depth/ratio, PD, LFO, wavetable, angular cumsum, loss band mask) — surfaced from SynthHacksView |
+| **Engine** | `engine` | Engine dropdown (harmonic / sinusoidal / combsub / NEWT) + engine-specific params |
+| **Advanced** | `advanced` | VAE (use_latent, latent_dim, kl_beta), PolyDDSP (n_voices), Voice Conversion (use_content_encoder, encoder name) |
+
+Tabs with tier > `activeTier` are rendered **disabled** (greyed, not hidden).
+Clicking a disabled tab shows a tooltip: "Switch to tier 'Engine' to unlock
+this tab" with an inline "Upgrade tier" link that reopens Step 1 of the Wizard.
+No parameters are blocked or removed from the DOM — the tab structure is
+purely a UX affordance.
+
+### GPU Feasibility Banner
+
+A `GpuFeasibilityBanner` component is permanently displayed at the top of
+`TrainingConfigView` (below the global top bar). It shows:
+
+- GPU name, total VRAM, available VRAM, VRAM tier.
+- Current config: estimated VRAM usage + fit/warning indicator.
+- Reactive updates: re-fetches `GET /api/gpu/feasibility` whenever `activeTier`,
+  `n_voices`, `use_latent`, or `use_content_encoder` changes in the store.
+- Proactive multi-tier summary: inline chip list showing which other tiers
+  would/would not fit on this GPU (visible but non-intrusive).
+
+### Preset system compatibility
+
+The existing FAST / NORMAL / QUALITY presets remain fully unchanged for
+`model_tier = 'standard'`. Extensions:
+
+- Every preset carries a `model_tier` field (DB column + API field,
+  default `'standard'`).
+- Built-in presets for non-standard tiers (`engine`, `advanced`) are generated
+  on startup from the same VRAM-relative scaling rules (25/50/100 %) but
+  include tier-specific param fields (engine, n_voices, use_latent, etc.).
+- When a preset's `model_tier` does not match the active tier, the UI shows a
+  **Rebase warning**: "This preset was created for a different model type —
+  transfer the compatible parameters?" The user can accept (rebase) or cancel.
+- Custom presets are always saved with the current `activeTier`.
+- On GPU hardware change, custom presets for all tiers are re-clamped with a
+  per-tier warning (same mechanism as the existing hardware-change detection).
+
+### Pinia store: `useModelConfigStore`
+
+All state shared between the Wizard, the Tab view, the GPU banner, and the
+Preset selector lives in a single store:
+
+```js
+// webui/src/stores/modelConfig.js
+{
+  activeTier: null,          // null → Wizard not yet completed
+  wizardCompleted: false,
+  gpuFeasibility: null,      // response from GET /api/gpu/feasibility
+  selectedPreset: null,
+  targetMode: 'offline',
+  coreParams:     { learning_rate, batch_size, epochs, decoder_type, use_reverb },
+  componentParams:{ n_harmonics, n_filter_banks },
+  hacksVariant:   { /* DDSPVariant fields */ },
+  engineParams:   { engine, newt_hidden, newt_layers },
+  advancedParams: { use_latent, latent_dim, kl_beta, n_voices,
+                    use_content_encoder, content_encoder_name },
+}
+```
+
+Actions: `setTierFromWizard(tier, preset, targetMode)`,
+`checkFeasibility()` (calls `GET /api/gpu/feasibility`), `resetToWizard()`.
+
+### New and changed Vue components (M14)
+
+New:
+
+- `WizardModal.vue` — 3-step modal; opens when `!wizardCompleted`.
+- `ModelTierCard.vue` — single tier card (icon, name, GPU badge, tooltip).
+- `GpuFeasibilityBanner.vue` — persistent reactive banner.
+- `TabCore.vue`, `TabComponent.vue`, `TabHacks.vue`, `TabEngine.vue`,
+  `TabAdvanced.vue` — tab content panels extracted from / extending
+  `TrainingConfigView`.
+
+Changed:
+
+- `TrainingConfigView.vue` — becomes a tab-wrapper + banner host; delegates
+  param sections to the Tab components; tier-awareness via store.
+- `PresetManagerView.vue` — `model_tier` filter in preset list.
+- `Sidebar.vue` — no structural change; Wizard reopen button lives in
+  `TrainingConfigView` header only.
+- `webui/src/stores/` — new `modelConfig.js` store.
+- `webui/src/mocks/mockApiClient.js` + `fixtures.js` — add `tier_feasibility`
+  fixture, `model_tier` field on preset fixtures.
+
 ## Experimental sound-design extensions (M7, non-binding for M1-M6)
 
 The following are **experimental** features scoped to milestone M7 (Musique
@@ -190,7 +325,8 @@ Views (grouped by navigation):
 - `PreprocessingView` — F0/loudness extraction progress + confidence warnings.
 - `TrainingConfigView` — ML + DDSP hyperparameters + target mode + GPU
   suggestions + preset selector (FAST/NORMAL/QUALITY + custom) + "Save as
-  Preset" dialog.
+  Preset" dialog. **Extended in M14:** tab-based, tier-aware (see Dual-Mode
+  Training UI section above).
 - `TrainingDashboardView` — TensorBoard embed (iframe/fallback link), run
   controls, optional REST checkpoint-audio player + "Save as Preset" button
   in run detail.
@@ -198,7 +334,8 @@ Views (grouped by navigation):
 - `ModelExportView` — weight download with format selection (Neutone / ONNX /
   TorchScript).
 - `PresetManagerView` — list/edit/delete custom presets (values clamped to
-  GPU bounds); view built-in presets (read-only).
+  GPU bounds); view built-in presets (read-only). **Extended in M14:**
+  `model_tier` filter column.
 
 Shared components:
 
@@ -211,7 +348,8 @@ Shared components:
 Data layer:
 
 - API-client interface (REST) + `MockApiClient` implementation and fixtures
-  under `webui/src/mocks/` for offline/mock mode.
+  under `webui/src/mocks/` for offline/mock mode. **Extended in M14:**
+  `tier_feasibility` fixture + `model_tier` on preset fixtures.
 
 ## Acceptance criteria
 
@@ -220,11 +358,14 @@ Data layer:
 - Decoupling rule enforced: no backend imports inside `webui/`.
 - Export formats restricted to the PyTorch stack (Neutone/ONNX/TorchScript).
 - Project checks green per Definition of Done (`ruff`, `pytest`, `vitest`).
+- **M14 additional:** `WizardModal` completes without a backend (mock feasibility
+  fixture); all five Tab components render independently with mock data;
+  `GpuFeasibilityBanner` renders in all three states (fits / warning / no-GPU).
 
 ## References
 
-- `plan.md` — milestone M5 (UI) + M7 (experimental), tech stack decision.
-- `checklist.md` — M5.x / M7.x open UI tasks.
+- `plan.md` — milestone M5 (UI) + M7 (experimental) + M14 (Dual-Mode UI), tech stack decision.
+- `checklist.md` — M5.x / M7.x / M14.x open UI tasks.
 - `experimental-ddsp.md` — rationale for the M7 experimental UI features.
-- `architecture.md` — backend-UI interface, data/event contracts.
+- `architecture.md` — backend-UI interface, data/event contracts, M14 backend extensions.
 - `coding-standards.md` — coding rules (CCD).

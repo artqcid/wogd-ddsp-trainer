@@ -10,8 +10,8 @@ _See `log.md` for the chronological append-only changelog._
 ---
 
 ## Architecture & Design
-- [`architecture.md`](./architecture.md) - System architecture: DDSP pipeline, dataset prep, model, training loop, web backend + UI, tech stack
-- [`ui-requirements.md`](./ui-requirements.md) - UI/product requirements: applies to ALL agents; app shell, 4 view groups, coupling rules, mock-data seam, TensorBoard doctrine
+- [`architecture.md`](./architecture.md) - System architecture: DDSP pipeline, dataset prep, model, training loop, web backend + UI, tech stack, M14 model tier system + backend extensions
+- [`ui-requirements.md`](./ui-requirements.md) - UI/product requirements: applies to ALL agents; app shell, 4 view groups, coupling rules, mock-data seam, TensorBoard doctrine, M14 Dual-Mode Training UI (Wizard + Power-User Tabs)
 - [`coding-standards.md`](./coding-standards.md) - Coding standards: Clean Code Developer (CCD) value system + compliance rule
 
 ## Domain Knowledge
@@ -21,7 +21,7 @@ _See `log.md` for the chronological append-only changelog._
 - [`related-work.md`](./related-work.md) - Reference: DDSP-SVC (real-time voice conversion) and its implications
 
 ## Plans & Roadmap
-- [`plan.md`](./plan.md) - Meta plan: milestones M1-M8, resolved questions/decisions, risks
+- [`plan.md`](./plan.md) - Meta plan: milestones M1-M14, resolved questions/decisions, risks
 - [`checklist.md`](./checklist.md) - Status: open tasks per milestone (short); source of truth for "what's next"
 - [`bugs.md`](./bugs.md) - Canonical bug ledger (single source of truth; `BUG-<id>` entries)
 - [`implementation/m1-scaffold.md`](./implementation/m1-scaffold.md) - M1 granular steps + history
@@ -37,6 +37,7 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m11-latent-space.md`](./implementation/m11-latent-space.md) - M11 granular steps (VAE encoder, β-VAE loss, morphing, latent steering)
 - [`implementation/m12-polyddsp.md`](./implementation/m12-polyddsp.md) - M12 granular steps (PolyDDSP, multi-pitch tracker, N-voice model)
 - [`implementation/m13-voice-conversion.md`](./implementation/m13-voice-conversion.md) - M13 granular steps (HuBERT/ContentVec, VC pipeline, VoiceConversionView)
+- [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md) - M14 granular steps: Backend-first (DB, gpu.py, presets, tasks, feasibility endpoint) then Frontend (Wizard, Tabs, Banner, store)
 
 ## Operations & Quality
 - [`test-strategy.md`](./test-strategy.md) - Test strategy: automated-first, test pyramid, coverage, mocking strategy (pytest/vitest)

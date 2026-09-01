@@ -96,6 +96,180 @@ not a `FeatureCache` directly. Rationale:
   permutation so that resumed training sees the same shuffled order (as long as
   the dataset contents have not changed).
 
+## Model Tier system & Dual-Mode UI (M14)
+
+The training UI supports five **model tiers** that activate progressively more
+complex backend features. The tier is stored per-run in the DB and carried
+through the entire pipeline from preset → validation → `build_training` →
+checkpoint. All tier extensions use safe defaults so existing runs
+(`model_tier = 'standard'`) are fully backwards-compatible.
+
+### Tier definitions
+
+| Tier | Milestones | New backend params | VRAM overhead |
+|---|---|---|---|
+| `standard` | M1–M6 | — (baseline) | ~1.3–2.2 GB |
+| `component` | M7.2 | `n_harmonics`, `n_filter_banks` (already in M7.2) | +~0 GB |
+| `hacks` | M8 | `DDSPVariant` fields (waveform, FM, PD, LFO, wavetable, …) | +~0 GB |
+| `engine` | M9/M10 | `engine` (sinusoidal/combsub/newt), engine-specific params | +~0 GB |
+| `advanced` | M11–M13 | `use_latent`, `latent_dim`, `kl_beta`, `n_voices`, `use_content_encoder`, `content_encoder_name` | +0.15–0.36 GB per feature; PolyDDSP N×baseline |
+
+### DB schema changes (M14)
+
+Two `ALTER TABLE ADD COLUMN` migrations (safe: `NOT NULL DEFAULT` on both;
+existing rows receive `'standard'` automatically):
+
+```sql
+ALTER TABLE presets ADD COLUMN model_tier TEXT NOT NULL DEFAULT 'standard';
+ALTER TABLE runs    ADD COLUMN model_tier TEXT NOT NULL DEFAULT 'standard';
+```
+
+`init_db()` updated to include `model_tier` in `CREATE TABLE IF NOT EXISTS`
+for fresh installs. Migration version tracked in the `meta` table
+(`key = 'schema_version'`).
+
+### `train/gpu.py` additions (M14)
+
+New dataclass and function:
+
+```python
+@dataclass
+class VRAMEstimate:
+    peak_gb: float
+    warning: str | None = None
+
+def estimate_model_vram(
+    model_tier: str,
+    n_voices: int = 1,
+    use_latent: bool = False,
+    use_content_encoder: bool = False,
+) -> VRAMEstimate:
+    """Estimate peak VRAM in GB for a given model configuration.
+
+    Base figures from architecture.md VRAM budget table:
+      baseline (standard DDSP, batch=1, fp16, 3-scale STFT) = 2.2 GB
+      use_latent (GRUEncoder + VAE)                          = +0.15 GB
+      use_content_encoder (HuBERT-Soft frozen)               = +0.36 GB
+      PolyDDSP N voices                                      = baseline × N
+    """
+```
+
+Used by `server/routes/host.py` and the new `/api/gpu/feasibility` endpoint.
+
+### `server/presets.py` changes (M14)
+
+- `PARAM_KEYS` (VRAM-bounded params) remains unchanged.
+- New constant tuples for per-tier validation (not VRAM-bounded):
+  - `VARIANT_KEYS` — DDSPVariant fields (M8)
+  - `ENGINE_KEYS` — engine + NEWT params (M9/M10)
+  - `ADVANCED_KEYS` — latent, n_voices, content encoder (M11–M13)
+- `clamp_params()` — unchanged; continues to clamp only `PARAM_KEYS`.
+- `build_builtin_presets(bounds, tier='standard')` — tier parameter added;
+  `'standard'` behaviour identical to current; other tiers extend the params
+  dict with tier-specific default fields and set `model_tier`.
+- `seed_builtin_presets()` — lookup changed to `(name, model_tier)` composite
+  to avoid name collision between `FAST/standard` and `FAST/engine`.
+
+### `server/routes/training.py` changes (M14)
+
+`RunCreateRequest` and `ValidateRequest` get `model_tier: str = 'standard'`
+(default `'standard'` → no breaking change). The `/validate` response gains:
+
+```json
+{
+  "params": { ... },
+  "clamped_fields": [ ... ],
+  "bounds": { ... },
+  "model_tier_mismatch": false   // true when preset.model_tier ≠ request.model_tier
+}
+```
+
+`_clamp_params()` routes to tier-specific validation after the existing
+VRAM-bounded clamping. Tier-specific fields use `model_config.get(key, default)`
+and are never clamped — only validated (allowed-value checks).
+
+**Checkpoint-compatibility guard on resume:** `POST /api/runs/{id}/resume`
+compares the stored run's `model_tier` against the model_tier of the latest
+checkpoint's `variant_flags`. If they differ the endpoint returns 409 with
+`"checkpoint_tier_mismatch"` detail.
+
+### `server/tasks.py` changes (M14)
+
+`build_training(model_config, checkpoint_dir)` becomes tier-aware:
+
+```python
+model_tier = model_config.get("model_tier", "standard")
+
+# Tier hacks (M8) — safe default: DDSPVariant() = no-op
+if model_tier in ("hacks", "engine", "advanced"):
+    variant = DDSPVariant.from_dict(model_config.get("variant", {}))
+else:
+    variant = DDSPVariant()
+
+# Tier engine (M9/M10) — safe default: "harmonic"
+engine = model_config.get("engine", "harmonic")
+
+# Tier advanced (M11–M13) — all safe defaults
+use_latent           = model_config.get("use_latent", False)
+latent_dim           = model_config.get("latent_dim", 32)
+kl_beta              = model_config.get("kl_beta", 1.0)
+n_voices             = model_config.get("n_voices", 1)
+use_content_encoder  = model_config.get("use_content_encoder", False)
+content_encoder_name = model_config.get("content_encoder_name", "hubert-soft")
+```
+
+All new fields default to the standard-tier behaviour → existing run records
+and checkpoints are unaffected.
+
+### New REST endpoint: `GET /api/gpu/feasibility` (M14)
+
+Added to `server/routes/host.py` (or a dedicated `server/routes/gpu.py`):
+
+```
+GET /api/gpu/feasibility
+    ?model_tier=standard
+    &n_voices=1
+    &use_latent=false
+    &use_content_encoder=false
+```
+
+Response:
+
+```json
+{
+  "fits": true,
+  "estimated_gb": 2.2,
+  "available_gb": 4.1,
+  "warning": null,
+  "tier_feasibility": {
+    "standard":  { "fits": true,  "estimated_gb": 2.2, "warning": null },
+    "component": { "fits": true,  "estimated_gb": 2.4, "warning": null },
+    "hacks":     { "fits": true,  "estimated_gb": 2.4, "warning": null },
+    "engine":    { "fits": true,  "estimated_gb": 2.2, "warning": null },
+    "advanced":  { "fits": false, "estimated_gb": 6.6,
+                   "warning": "PolyDDSP N=3 requires ~6.6 GB (8 GB GPU recommended)" }
+  }
+}
+```
+
+`tier_feasibility` is computed for the current GPU using fixed N-voice,
+use_latent=false, use_content_encoder=false defaults. The Wizard Step 1
+fetches this once to populate all tier-card badges. The `GpuFeasibilityBanner`
+calls the endpoint with the live store values to show the current-config
+estimate reactively.
+
+### Updated REST endpoint map (M14 additions)
+
+| Service | New / Changed Endpoints |
+|---|---|
+| GPU / Feasibility | **NEW** `GET /api/gpu/feasibility?model_tier=…&n_voices=…&use_latent=…&use_content_encoder=…` |
+| Runs | `POST /api/runs/validate` — **extended**: `model_tier_mismatch` in response |
+| Runs | `POST /api/runs/{id}/resume` — **extended**: 409 on checkpoint_tier_mismatch |
+| Presets | `GET /api/presets?model_tier=standard` — **extended**: optional `model_tier` filter |
+| Presets | `POST /api/presets` — **extended**: `model_tier` field in body |
+
+All existing endpoints and their current response shapes remain unchanged.
+
 ## Preset management
 
 The app manages training parameter presets — both built-in and user-defined.
@@ -283,6 +457,7 @@ M1 (scaffold), M2 (dataset prep), M3 (model + training), M4 (web backend),
 M5 (web UI) and M6 (polish) are implemented and tested. Final check suite:
 ruff/format 0, pytest 151 passed / 1 GPU-skip, vitest 23 passed, build clean.
 M7 (experimental sound design) and M8 (experimental synthesis hacks) are open.
+M14 (Dual-Mode UI + backend tier system) is designed; implementation pending.
 
 ### Known open items (identified in M1–M6 review 2026-08-31)
 

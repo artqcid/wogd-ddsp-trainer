@@ -3,6 +3,48 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-01 — M14 Dual-Mode Training UI + Backend Tier System designed (ARCHITECT)
+
+**Architecture decision:** Dual-Mode Training UI (Wizard + Power-User Tabs)
+confirmed. Model tier (`standard/component/hacks/engine/advanced`) is the
+primary UI axis; GPU feasibility is surfaced in both modes (Wizard Step 1
+tier cards + persistent `GpuFeasibilityBanner`).
+
+**Creation:** [`implementation/m14-dual-mode-ui.md`](./implementation/m14-dual-mode-ui.md)
+— full granular plan (18 subagent steps, Phase 1 backend-first then Phase 2
+frontend).
+
+**Update:** [`ui-requirements.md`](./ui-requirements.md) — new section
+"Dual-Mode Training UI (M14)": model tier table, Wizard spec (3 steps),
+Power-User Tab spec (5 tabs, lock/unlock by tier), GPU Feasibility Banner
+spec, Preset system extension (`model_tier` field), Pinia store definition,
+new/changed Vue components list. Acceptance criteria extended with M14
+mock-data seam requirements.
+
+**Update:** [`architecture.md`](./architecture.md) — new section "Model Tier
+system & Dual-Mode UI (M14)": tier definitions table, DB schema migration
+(`model_tier` on `presets` + `runs`), `train/gpu.py` additions
+(`VRAMEstimate`, `estimate_model_vram()`), `server/presets.py` changes
+(`VARIANT_KEYS`/`ENGINE_KEYS`/`ADVANCED_KEYS`, tier-aware seed),
+`server/routes/training.py` changes (`model_tier_mismatch` in validate,
+checkpoint-tier guard on resume), `server/tasks.py` changes (tier-aware
+`build_training()`), new `GET /api/gpu/feasibility` endpoint spec + full
+JSON response shape, updated REST endpoint map.
+
+**Update:** [`plan.md`](./plan.md) — M14 milestone entry added (chronological
+position after M13); Decisions section: "Dual-Mode Training UI (M14,
+2026-09-01)" recorded.
+
+**Update:** [`checklist.md`](./checklist.md) — M14 task sections added:
+Phase 1 Backend (M14.1.1–M14.1.9, 9 tasks) + Phase 2 Frontend
+(M14.2.1–M14.2.9, 9 tasks). Total: 18 new checkboxes.
+
+**Update:** [`index.md`](./index.md) — M14 implementation plan link added;
+`plan.md` summary updated to M1–M14; `architecture.md` + `ui-requirements.md`
+summaries updated.
+
+Wiki: re-index pending (no code changes in this commit).
+
 ## 2026-09-01 — M9–M13 implementation plans created (ARCHITECT)
 
 **Creation:** five new implementation-plan files for milestones M9–M13:
