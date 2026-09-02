@@ -3,6 +3,32 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-02 — Bugfix batch: BUG-10, BUG-11, BUG-12, BUG-13, BUG-14, BUG-15
+
+**Fix** of all 6 open bugs — all fixed and verified (see [`doc/bugs.md`](../doc/bugs.md)).
+- **BUG-15** — [`scripts/stop-app.ps1`](../scripts/stop-app.ps1): replaced locale-dependent
+  `netstat | Select-String "LISTENING"` with `Get-NetTCPConnection` (locale-independent).
+  Fallback via `netstat -ano` without LISTENING filter for older Windows. Commit `a1614bf`.
+- **BUG-10** — [`server/routes/gpu.py`](../server/routes/gpu.py): `gpu_feasibility()` now uses
+  `total_vram_gb` (not `available_vram_gb`) as the VRAM budget. Response includes `total_gb` and
+  `free_gb`. [`GpuFeasibilityBanner.vue`](../webui/src/components/GpuFeasibilityBanner.vue) shows
+  "total" instead of "available". [`fixtures.js`](../webui/src/mocks/fixtures.js) updated.
+  Backend test extended. Commit `0a5b9bb`.
+- **BUG-11** — [`WizardModal.vue`](../webui/src/components/WizardModal.vue): removed `:disabled`
+  prop from tier cards (all tiers selectable). Moved VRAM feasibility check to Step 2 (Quality
+  selection): each quality card shows its estimated VRAM and warns when exceeding `total_gb`.
+  Commit `aca10df`.
+- **BUG-12** — [`UploadIngestionView.vue`](../webui/src/views/UploadIngestionView.vue): CSS
+  `.hints-toggle` made visually interactive (`display: block`, accent color, underline).
+  Commit `b91e4bc`.
+- **BUG-13** — [`Sidebar.vue`](../webui/src/components/Sidebar.vue): restructured into 6 groups:
+  Datasets, Training, Presets (standalone), Inference & Export, Advanced Features
+  (VC/Morphing/Latent), Experimental (real hacks only). Commit `44bc9f4`.
+- **BUG-14** — [`TopBar.vue`](../webui/src/components/TopBar.vue): health check with retry
+  (3 attempts, 1s/2s/4s backoff) + 30s periodic polling to avoid false "Backend: error" on
+  startup. Commit `894f30c`.
+- Full verification: pytest 362/1, vitest 77/0, ruff format clean, wiki lint clean.
+
 ## 2026-09-02 — BUG-9 fix: startup crash on pre-M14 databases (legacy UNIQUE(name))
 
 **Fix** of app startup crash `sqlite3.IntegrityError: UNIQUE constraint failed:

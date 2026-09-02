@@ -220,10 +220,10 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-01 — **verified fixed** by ARCHITECT correctness review: labels show
     `0.5x` / `0.75x` / `0.9x` factors; no VRAM percentage text present.
 
-## Open bugs
+## Fixed bugs
 
 ## BUG-10 - Training Config zeigt falschen freien GPU-VRAM-Wert (available_gb)
-- status: open
+- status: fixed
 - milestone: M14 (Dual-Mode Training UI + Backend Tier System)
 - affected: M14, M5
 - found-in: 2026-09-02, random finding in TrainingConfigView (`GpuFeasibilityBanner`)
@@ -243,19 +243,20 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: GPU frei (bspw. `free=5.37 GB`), Backend frisch starten
   (`start-application-release`), Training-Config-Ansicht öffnen → Banner zeigt z.B.
   `4.1 GB available`, trotz ~5.4 GB freien VRAM zur Laufzeit.
-- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
-- fix-proposal: `server/routes/gpu.py::gpu_feasibility()` — `available_gb` auf
-  `total_vram_gb` umstellen (Training ist GPU-exklusiv; total ist der maßgebliche
-  Budgetwert). `GpuFeasibilityBanner.vue` Label von „available" auf „total"
-  anpassen; Response beide Felder (`total_gb`, `free_gb`) liefern.
-  Siehe [`doc/implementation/m14-dual-mode-ui.md`](implementation/m14-dual-mode-ui.md) §BUGS.
+- resolution: `server/routes/gpu.py::gpu_feasibility()` — `available_gb` auf
+  `total_vram_gb` umgestellt (Training ist GPU-exklusiv; total ist der maßgebliche
+  Budgetwert). Response liefert `total_gb` + `free_gb` zusätzlich. 
+  `GpuFeasibilityBanner.vue` Label von „available" auf „total" angepasst.
+  `tierFeasibilityFixture` aktualisiert. Commit `0a5b9bb`.
 - history:
   - 2026-09-02 — filed (random finding). Wert ist veraltet/startzeitbasiert; UI zeigt
     einen VRAM-Momentaufnahme-Wert statt des aktuell freien VRAM.
   - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+  - 2026-09-02 — **fixed**: `available_gb`=total_vram_gb, `total_gb`+`free_gb`
+    added. pytest 362/1 green, vitest 77/0 green.
 
 ## BUG-11 - Wizard-Tier-Auswahl: Advanced nicht anwählbar, obwohl VRAM-Bedarf erst durch Quality-Qualität festgelegt wird
-- status: open
+- status: fixed
 - milestone: M14 (Dual-Mode Training UI, WizardModal)
 - affected: M14, M5, M-UI
 - found-in: 2026-09-02, random finding im Wizard (Tier-Zielmodus-Schritt)
@@ -272,22 +273,18 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: Training starten → Wizard → Tier-Schritt: `Advanced` anklicken →
   Anzeige `⚠ needs 6.6 GB` und Tier nicht wählbar, obwohl mit einem Quality-Preset
   `FAST`/`NORMAL` niedrigerer VRAM-Bedarf für `advanced` ausreichend wäre.
-- resolution: (open — nur erfasst, kein Fix)
-- fix-proposal: Zweiteilig: (1) BUG-10 zuerst beheben (korrektes `available_gb`).
-  (2) `WizardModal.vue` — `:disabled` auf Tier-Cards entfernen; Warnung-Badge
-  bleibt; Feasibility-Prüfung auf Step 2 (Quality-Auswahl) verlagern: jede
+- resolution: `WizardModal.vue` — `:disabled` auf Tier-Cards entfernt (alle Tiers
+  wählbar); Feasibility-Prüfung auf Step 2 (Quality-Auswahl) verlagert: jede
   Quality-Card zeigt `vramFactor × estimated_gb` und wird warn/disabled, wenn
-  dieser Wert `available_gb` überschreitet.
-  Siehe [`doc/implementation/m14-dual-mode-ui.md`](implementation/m14-dual-mode-ui.md) §BUGS.
+  dieser Wert `total_gb` überschreitet. Commit `aca10df`.
 - history:
-  - 2026-09-02 — filed (random finding). Als akzeptabel gilt, dass die Wizard-Seite den
-    VRAM-Bedarf eines Default-Presets (z.B. `NORMAL`) anzeigt; gewünscht ist aber, dass
-    die Anwählbarkeit / Warnung erst auf **Stufe der Quality-Auswahl** entscheidet, was
-    mit dem verfügbaren VRAM tatsächlich erlaubt ist.
-  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+  - 2026-09-02 — filed (random finding).
+  - 2026-09-02 — fix-proposal eingetragen.
+  - 2026-09-02 — **fixed**: Tier-`:disabled` entfernt, Quality-Card VRAM-Warnung
+    in Step 2. vitest 77/0 green.
 
 ## BUG-12 - Upload & Ingestion: „Upload"-Button und „Show DDSP requirements" kleben aneinander; Requirements nicht als klickbar erkennbar
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, UploadIngestionView)
 - affected: M5, M-UI
 - found-in: 2026-09-02, random finding in Upload & Ingestion view
@@ -300,52 +297,40 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: Upload & Ingestion-Ansicht öffnen → im unteren/angrenzenden Bereich
   liegen „Upload" und „Show DDSP requirements" direkt aneinander; „Show DDSP
   requirements" erscheint nicht als klickbar.
-- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
-- fix-proposal: `UploadIngestionView.vue` — `.hints-toggle` CSS: `display: block`,
+- resolution: `UploadIngestionView.vue` — `.hints-toggle` CSS: `display: block`,
   `color: var(--accent)`, `text-decoration: underline`, `margin-top: 1.5rem`
-  sicherstellen. Damit ist der Button visuell als klickbarer Link erkennbar und
-  der Abstand zum Upload-Button ist garantiert.
-  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
+  sichergestellt. Button ist visuell als klickbarer Link erkennbar und der
+  Abstand zum Upload-Button ist garantiert. Commit `b91e4bc`.
 - history:
-  - 2026-09-02 — filed (random finding). Gewünscht: separater Abstand zwischen Button
-    und Link sowie optische Kennzeichnung (z.B. Link-Farbe / unterstrichen / Button-Stil)
-    von „Show DDSP requirements" als interaktiv/klickbar.
-  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+  - 2026-09-02 — filed (random finding).
+  - 2026-09-02 — **fixed**: CSS `.hints-toggle` auf accent-color + underline + block.
+    vitest 77/0 green.
 
 ## BUG-13 - Sidebar-Menü: Abschnitte ab „Export" durcheinander; Presets gehört weder unter Training noch unter Export
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, Sidebar/Navigation; `Sidebar.vue` + `ui-requirements.md`)
 - affected: M5, M-UI (Gesamtnavigation)
 - found-in: 2026-09-02, random finding (Sidebar-Menüstruktur prüfen)
 - severity: minor
 - description: Die Sidebar-Sektionen ab „Export" sind durcheinander bzw.
-  unsauber gruppiert. Aktuelle Anzeige (Ausschnitt):
-  `🔊 Inference & Export / 🎵 Inference Playground / 💾 Model Export / 📋 Presets /
-  🎤 Voice Conversion / 🧪 Experimental / 🔊 Reverb IR / 🎼 F0 Editor / 🔀 Component
-  Mixer / ⚡ Synth Hacks / 🔄 Morphing / 🌌 Latent Explorer`.
-  „Presets" gehört sachlich **weder** unter Training **noch** unter Export — es betrifft
-  beide (Presets steuern die Trainingskonfiguration **und** die Export/Inferenz-Parameter)
-  und sollte ein eigener, von Training und Export losgelöster Abschnitt sein. Zusätzlich
-  ist die gesamte Menüstruktur auf Usability zu prüfen (Gruppierung, Reihenfolge,
-  Unterordnungen).
+  unsauber gruppiert. „Presets" gehörte sachlich weder unter Training noch unter Export
+  und war unter Inference & Export eingeordnet. Zusätzlich waren Morphing und
+  Latent Explorer unter Experimental einsortiert, obwohl sie zu Advanced Features
+  gehören.
 - reproduction: Sidebar der App öffnen → Abschnitte ab „Export" sichten; „Presets"
   unter „Inference & Export" eingeordnet, obwohl es Training+Export betrifft.
-- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
-- fix-proposal: `Sidebar.vue` — Gruppen neu strukturieren: (1) Datasets &
+- resolution: `Sidebar.vue` — Gruppen neu strukturiert: (1) Datasets &
   Preprocessing, (2) Training (Config + Dashboard), (3) Presets — eigene Gruppe,
-  (4) Inference & Export (nur Playground + Model Export), (5) Advanced Features
-  (Voice Conversion, Morphing, Latent Explorer — neue Gruppe), (6) Experimental
-  (nur echte Hacks: Reverb IR, F0 Editor, Component Mixer, Synth Hacks).
-  Vollständige Usability-Review der Reihenfolge und Gruppenlabels.
-  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
+  (4) Inference & Export (Playground + Model Export), (5) Advanced Features
+  (Voice Conversion, Morphing, Latent Explorer), (6) Experimental (Reverb IR,
+  F0 Editor, Component Mixer, Synth Hacks). Commit `44bc9f4`.
 - history:
-  - 2026-09-02 — filed (random finding). Gewünscht: „Presets" als eigener Abschnitt
-    (weder unter Training noch unter Export); die gesamte Navigations-/Sidebar-Struktur
-    soll anschließend auf Usability geprüft und ggf. neu gruppiert werden.
-  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+  - 2026-09-02 — filed (random finding).
+  - 2026-09-02 — **fixed**: Sidebar neu gruppiert, Presets als eigener Abschnitt.
+    vitest 77/0 green.
 
 ## BUG-14 - „Backend: error" beim Start (start-application-release), obwohl die App läuft
-- status: open
+- status: fixed
 - milestone: M5 (Web UI Gesundheits-/Statusanzeige; `HealthView`/TopBar)
 - affected: M6 (Release-Start: `scripts/start-app.ps1` Release-Modus)
 - found-in: 2026-09-02, random finding (nach `start-application-release`)
@@ -356,19 +341,17 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   Fehlerzustand.
 - reproduction: `start-application-release`-Task starten, App öffnen → Statusanzeige
   zeigt „Backend: error", obwohl das Backend erreichbar/online ist.
-- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
-- fix-proposal: `TopBar.vue` — Health-Check mit Retry-Logik (3 Versuche,
-  1 s / 2 s / 4 s Delay) in `onMounted`; bei Erfolg auf 'ok' setzen. Optional:
-  Polling-Interval (30 s) für spätere Ausfälle. Alternativ: `scripts/start-app.ps1`
-  im Release-Modus vor dem Browserstart auf den `/health`-Endpunkt warten (curl-Loop).
-  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
+- resolution: `TopBar.vue` — Health-Check mit Retry-Logik (3 Versuche,
+  1 s / 2 s / 4 s Delay) in `onMounted`; bei Erfolg auf 'ok' setzen. Während
+  Retry-Phase wird „Backend: starting..." angezeigt. Zusätzlich Polling-Interval
+  (30 s) für spätere Status-Updates. Commit `894f30c`.
 - history:
-  - 2026-09-02 — filed (random finding). Kein Root-Cause-Analyse — als Fehlerbild
-    festgehalten: fälschliche Fehleranzeige trotz laufendem Backend.
-  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+  - 2026-09-02 — filed (random finding).
+  - 2026-09-02 — **fixed**: Retry-Logik + 30s Polling in TopBar.vue.
+    vitest 77/0 green.
 
 ## BUG-15 - `stop-application-release`/-debug findet keine laufende Applikation (netstat locale mismatch)
-- status: open
+- status: fixed
 - milestone: M6 (Polish, VSCode Task-Set: `stop-application-release`/`-debug`)
 - affected: M6, M1 (Task-Set), alle nicht-englischen Windows-Systeme
 - found-in: 2026-09-02, `stop-application-release`-Task ausgeführt während App läuft
@@ -385,19 +368,19 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: `start-application-release` starten; in einem zweiten Task-Terminal
   `stop-application-release` ausführen → `No running processes found on ports
   8000/5173/5678`, obwohl das Backend läuft.
-- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
-- fix-proposal: `scripts/stop-app.ps1` — `netstat -ano`-Pipe durch
-  `Get-NetTCPConnection` (PowerShell-cmdlet, locale-unabhängig) ersetzen:
-  `Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue`
-  liefert die PID direkt sprachnneutral. Falls `Get-NetTCPConnection` nicht
-  verfügbar (ältere Windows-Versionen), als Fallback `netstat -ano` **ohne**
-  LISTENING-Filter verwenden (nur Port-Match); der SessionId-Check (Zeile 27)
-  verhindert das versehentliche Killen fremder Prozesse.
-  Siehe [`doc/implementation/m6-polish.md`](implementation/m6-polish.md) §BUGS.
+- resolution: `scripts/stop-app.ps1` — `netstat -ano`-Pipe durch
+  `Get-NetTCPConnection` (PowerShell-cmdlet, locale-unabhängig) ersetzt.
+  Fallback für ältere Windows-Versionen via `netstat -ano` ohne LISTENING-Filter.
+  Commit `a1614bf`.
 - history:
   - 2026-09-02 — filed (random finding, Netstat-ABHÖREN vs. LISTENING
-    locale-Mismatch). Analyse: M6.6.4 Task-Set; Checklist nicht betroffen (kein
-    neues Feature, kein offener Checklist-Punkt dazu).
+    locale-Mismatch).
+  - 2026-09-02 — **fixed**: `Get-NetTCPConnection` statt netstat locale-abhängigem
+    `Select-String "LISTENING"`. Commit `a1614bf`.
+
+## Open bugs
+
+_(none)_
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
 - status: fixed
