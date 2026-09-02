@@ -274,6 +274,7 @@ Full detail: load the **`post-task-sync`** skill.
 | `mcp-think` | Global (`~/.config/opencode/skills/mcp-think/SKILL.md`) | Before any non-trivial reasoning, debugging, or design — use `@mcp-think` |
 | `definition-of-done` | `.opencode/skills/definition-of-done/SKILL.md` | Before marking a task complete |
 | `post-task-sync` | `.opencode/skills/post-task-sync/SKILL.md` | After every completed task (wiki sync) |
+| `frontend-debugging` | `.opencode/skills/frontend-debugging/SKILL.md` | When any frontend build or lint fails (Vue/JS/Vite errors) |
 
 External skills (installed via `npx skills add`):
 | Skill | Source | Purpose |
