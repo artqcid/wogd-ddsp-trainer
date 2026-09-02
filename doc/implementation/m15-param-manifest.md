@@ -325,9 +325,15 @@ tests/test_inference_n_params.py       NEW  — pytest: synthesize with N params
 
 ## History
 
-_Append-only. Newest first._
-
-<!-- entries added here after each completed step -->
+- **2026-09-02 — M15.1–M15.9 all completed.** Code verified:
+  `model/param_manifest.py` (InferenceParam + ParamManifest + 7 tier-default builders),
+  `train/trainer.py` (checkpoint embedding),
+  `server/routes/model.py` (GET/PUT params + custom-vst export endpoint),
+  `inference/export.py` (dynamic Neutone wrapper),
+  `inference/export_custom_vst.py` (CustomVSTWrapper + exporter),
+  `server/routes/inference.py` (N-params synthesize).
+  All 26+4+8+5+5+3 = 51 pytest pass. Checklist updated from [ ] to [x].
+  Checklist was stale — code existed but items were never marked done.
 
 ---
 

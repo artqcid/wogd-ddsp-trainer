@@ -115,10 +115,41 @@ export class ApiClient {
     throw new Error('ApiClient.listModels not implemented')
   }
 
-  /** @returns {Promise<Blob>} */
-  async downloadModel(runId, checkpoint) {
-    throw new Error('ApiClient.downloadModel not implemented')
+/** @returns {Promise<Blob>} */
+  async exportCustomVST(runId, checkpoint) {
+    throw new Error('ApiClient.exportCustomVST not implemented')
   }
+
+  /** @returns {Promise<string>} */
+  async getFirstAudioFile(datasetId) {
+    throw new Error('ApiClient.getFirstAudioFile not implemented')
+  }
+
+  /** @returns {Promise<object>} */
+  async preprocessDataset(datasetId) {
+    throw new Error('ApiClient.preprocessDataset not implemented')
+  }
+
+  /** @returns {Promise<{job_id: string}>} */
+  async exportModel(params) {
+    throw new Error('ApiClient.exportModel not implemented')
+  }
+
+  /** @returns {Promise<{state: string, error?: string, downloads?: Array}>} */
+  async exportStatus(jobId) {
+    throw new Error('ApiClient.exportStatus not implemented')
+  }
+
+  /** @returns {Promise<{job_id: string}>} */
+  async synthesizeMidi(params) {
+    throw new Error('ApiClient.synthesizeMidi not implemented')
+  }
+
+  /** @returns {Promise<object>} */
+  async getGpuFeasibility(params) {
+    throw new Error('ApiClient.getGpuFeasibility not implemented')
+  }
+}
 
   /** @returns {Promise<{url: string, running: boolean, port: number}>} */
   async getTensorboard() {

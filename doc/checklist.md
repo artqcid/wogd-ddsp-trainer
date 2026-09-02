@@ -225,31 +225,31 @@ See [`log.md`](./log.md) for the chronological changelog._
 _Full spec: `parameter-handling.md`. Prerequisite: M3, M4, M6.
 No breaking changes; all manifest keys default safely on old checkpoints._
 
-- [ ] **M15.1** `model/param_manifest.py` (NEW) — `InferenceParam` + `ParamManifest`
+- [x] **M15.1** `model/param_manifest.py` (NEW) — `InferenceParam` + `ParamManifest`
       dataclasses: `to_dict()`/`from_dict()`, `neutone_params`/`custom_vst_params`
       properties, `validate_manifest()`. Tests: `tests/test_param_manifest.py`
       (round-trip, filtering, validation errors).
-- [ ] **M15.2** `model/param_manifest.py` (extend M15.1) — tier-default builders:
+- [x] **M15.2** `model/param_manifest.py` (extend M15.1) — tier-default builders:
       `_standard/component/hacks/engine/advanced_manifest()`, public
       `build_default_manifest(model_tier, variant_flags)`. Tests: all 7 tier
       variants produce correct Neutone/Custom param counts and names.
-- [ ] **M15.3** `train/trainer.py` — embed `param_manifest` in `save_checkpoint()`;
+- [x] **M15.3** `train/trainer.py` — embed `param_manifest` in `save_checkpoint()`;
       expose `self.param_manifest` on load; backward-compat load for old checkpoints
       (generate defaults transparently). Tests: `tests/test_checkpoint_manifest.py`.
-- [ ] **M15.4** `server/routes/models.py` — `GET /api/models/{run_id}/{checkpoint}/params`:
+- [x] **M15.4** `server/routes/models.py` — `GET /api/models/{run_id}/{checkpoint}/params`:
       return manifest JSON (or tier-defaults if absent). 404 on missing checkpoint.
       Tests: `tests/test_model_params_endpoint.py`.
-- [ ] **M15.5** `server/routes/models.py` — `PUT /api/models/{run_id}/{checkpoint}/params`:
+- [x] **M15.5** `server/routes/models.py` — `PUT /api/models/{run_id}/{checkpoint}/params`:
       validate + overwrite manifest in checkpoint state dict. 422 on validation
       errors. Tests: extend `tests/test_model_params_endpoint.py`.
-- [ ] **M15.6** `inference/export.py` — Neutone wrapper reads manifest dynamically:
+- [x] **M15.6** `inference/export.py` — Neutone wrapper reads manifest dynamically:
       `neutone_params` → `get_neutone_parameters()`, assert ≤4; fallback for
       old checkpoints. Tests: `tests/test_export_neutone_manifest.py`.
-- [ ] **M15.7** `inference/export_custom_vst.py` (NEW) — `CustomVSTWrapper`
+- [x] **M15.7** `inference/export_custom_vst.py` (NEW) — `CustomVSTWrapper`
       (TorchScript-compatible, ≤16 params, `param_manifest_json` buffer) +
       `export_custom_vst()`; `POST …/export/custom-vst` endpoint.
       Tests: `tests/test_export_custom_vst.py`.
-- [ ] **M15.8** `server/routes/inference.py` — extend `POST /api/inference/synthesize`
+- [x] **M15.8** `server/routes/inference.py` — extend `POST /api/inference/synthesize`
       with optional `params` JSON dict; backward-compat (old 2-field calls still work).
       Tests: `tests/test_inference_n_params.py`.
 - [x] **M15.9** Full suite: `ruff check`, `ruff format --check`, `pytest` all green.
@@ -282,6 +282,25 @@ _Full spec: `parameter-handling.md`, `ui-requirements.md` §ModelParameterBuilde
       Vitest: extend `tests/views-batch2.test.js`.
 - [x] **M16.7** Full suite: `vitest run`, `ruff check`, `pytest` all green.
 - [ ] **M16.8** _(optional)_ VAE Latent Dimension Labelling mini-modal in `ParamCard.vue`:
+
+## Milestone M18 - Frontend-Backend Integration (RestApiClient)
+
+_Closes the mock-data seam. Prerequisite: M4, M5, M15._
+
+- [x] **M18.1** Add missing backend routes: `DELETE /api/datasets/{id}`, `POST …/export/neutone`
+      Files: `server/routes/dataset.py`, `server/routes/model.py`
+- [x] **M18.2** Add missing method declarations to abstract `ApiClient` class:
+      `getFirstAudioFile`, `preprocessDataset`, `exportModel`, `exportStatus`,
+      `synthesizeMidi`, `getGpuFeasibility`.
+      File: `webui/src/api/apiClient.js`
+- [x] **M18.3** Create `RestApiClient.js` — full `fetch()`-based HTTP implementation
+      of all ApiClient methods.
+      File: `webui/src/api/restApiClient.js` (NEW)
+- [x] **M18.4** Swap `MockApiClient` → `RestApiClient` in `main.js`.
+      File: `webui/src/main.js`
+- [x] **M18.5** Add CORS middleware (dev mode, behind env flag).
+      File: `server/main.py`
+- [x] **M18.6** Full verification: `vitest`, `pytest`, `ruff`, `npm run build`.
       "Label this dimension" button → 3-preview modal (min/mid/max synthesis) → name field.
       Only visible for `advanced/use_latent` tier params. Vitest: modal open/confirm/cancel.
 

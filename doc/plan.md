@@ -123,6 +123,12 @@ _Roadmap / open questions / risks. Active tasks live in
   the Playground, tier-specific synth hints in tabs.
   Details: [`implementation/m17-midi-synth-vst.md`](./implementation/m17-midi-synth-vst.md).
 
+- **M18 - Frontend-Backend Integration (RestApiClient):** closes the mock-data
+  seam. Creates a `fetch()`-based `RestApiClient` that calls all real backend
+  endpoints (M4), adds two missing backend routes, and swaps the mock for the
+  real client in `main.js`. Adds CORS middleware for dev-mode debugging.
+  Details: [`implementation/m18-rest-api-client.md`](./implementation/m18-rest-api-client.md).
+
 - **DDSP implementation:** self-owned PyTorch DDSP core (harmonic + filtered
   noise + reverb synth), specified by the DDSP paper (Engel et al. 2020).
   Reference implementations: `acids-ircam/ddsp_pytorch` (Apache-2.0) and

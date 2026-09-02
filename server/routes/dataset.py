@@ -190,7 +190,6 @@ async def extract_content(
     for af in audio_files:
         try:
             audio, sr = librosa.load(str(af), sr=16000, mono=True)
-            # Compute target_frames to match DDSP frame rate
             target_frames = len(audio) // 256 + 1
             emb = extract_content_embedding(
                 audio, sr, model_name=model_name, target_frames=target_frames
@@ -204,3 +203,13 @@ async def extract_content(
             ) from exc
 
     return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}
+
+
+@router.delete("/{dataset_id}")
+async def delete_dataset(dataset_id: str) -> dict:
+    """Delete a dataset directory and all its contents."""
+    dataset_path = datasets_dir() / dataset_id
+    if not dataset_path.is_dir():
+        raise HTTPException(status_code=404, detail="dataset not found")
+    shutil.rmtree(str(dataset_path))
+    return {"status": "deleted", "dataset_id": dataset_id}

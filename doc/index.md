@@ -42,6 +42,7 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m15-param-manifest.md`](./implementation/m15-param-manifest.md) - M15 granular steps: ParamManifest dataclass + tier-default builders, checkpoint embedding, REST GET/PUT params, dynamic Neutone wrapper, CustomVSTWrapper + export endpoint, N-param synthesize
 - [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md) - M16 granular steps: ParamCard, ModelParameterBuilder, NeutoneSlotPanel (drag & drop), ModelExportView dual-export, InferencePlaygroundView dynamic N-param sliders
 - [`implementation/m17-midi-synth-vst.md`](./implementation/m17-midi-synth-vst.md) - M17 feasibility analysis + granular steps: MidiSynthWrapper, MIDI-synth export, Usage Mode wizard step, MIDI Preview, tier-specific synth hints
+- [`implementation/m18-rest-api-client.md`](./implementation/m18-rest-api-client.md) - M18 granular steps: RestApiClient, missing backend routes, CORS middleware, swap mock for real client
 
 ## Operations & Quality
 - [`handbook.md`](./handbook.md) - User manual (German): training operation only — quick start (standard model), complex models per tier, full parameter reference

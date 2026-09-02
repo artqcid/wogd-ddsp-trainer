@@ -225,4 +225,24 @@ export class MockApiClient {
     const blob = new Blob([JSON.stringify({ runId, checkpoint, format: 'custom-vst' })], { type: 'application/octet-stream' })
     return blob
   }
+
+  async getFirstAudioFile(datasetId) {
+    return '/api/mock/audio/sample.wav'
+  }
+
+  async preprocessDataset(datasetId) {
+    return { status: 'ok', dataset_id: datasetId, files_processed: 3 }
+  }
+
+  async exportModel(params) {
+    return { job_id: 'export_job_001' }
+  }
+
+  async exportStatus(jobId) {
+    return { state: 'completed', downloads: [{ format: 'torchscript', downloadUrl: '/api/mock/download/model.pt' }] }
+  }
+
+  async synthesizeMidi(params) {
+    return { job_id: 'midi_job_001' }
+  }
 }

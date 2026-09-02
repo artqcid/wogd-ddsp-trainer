@@ -164,3 +164,24 @@ async def export_custom_vst_endpoint(run_id: str, checkpoint: str) -> FileRespon
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Export failed: {exc}",
         ) from None
+
+
+@router.post("/{run_id}/{checkpoint}/export/neutone")
+async def export_neutone_endpoint(run_id: str, checkpoint: str) -> dict:
+    """Export a checkpoint as a Neutone FX plugin (sync, CPU only).
+
+    The underlying SDK export is a stub that raises NotImplementedError
+    (the Neutone SDK does not yet ship a cp314/CUDA wheel). The route
+    exists for API completeness and returns a 501 status when called.
+    """
+    checkpoint_path = run_checkpoint_dir(run_id) / checkpoint
+    if not checkpoint_path.exists() or not checkpoint_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Checkpoint '{run_id}/{checkpoint}' not found",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Neutone export is deferred: the Neutone SDK does not yet "
+        "provide a cp314/CUDA wheel for this project.",
+    )

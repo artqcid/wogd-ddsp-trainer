@@ -7,6 +7,7 @@
 
 export const healthFixture = {
   status: 'ok',
+  ok: true,
   backend: 'mock',
   version: '0.1.0',
 }

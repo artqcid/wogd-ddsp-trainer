@@ -84,7 +84,7 @@ function Invoke-Build {
     try {
         if ($Mode -eq "Debug") {
             Write-Step "Building frontend (debug mode)..."
-            & npm run build -- --mode development
+            & npm run build -- --mode=development
         }
         else {
             Write-Step "Building frontend (release mode)..."

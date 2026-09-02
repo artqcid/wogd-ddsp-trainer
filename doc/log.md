@@ -3,6 +3,29 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-02 — M18: Frontend-Backend Integration (RestApiClient)
+
+**Feature** — closes the mock-data seam. The UI now calls the real backend via HTTP.
+- **M18.1** Added missing backend routes: `DELETE /api/datasets/{id}`, `POST …/export/neutone`.
+- **M18.2** Added 6 missing methods to abstract `ApiClient.js`
+  (`getFirstAudioFile`, `preprocessDataset`, `exportModel`, `exportStatus`,
+  `synthesizeMidi`, `getGpuFeasibility`).
+- **M18.3** Created `webui/src/api/restApiClient.js` — full `fetch()`-based HTTP
+  implementation of all 40+ ApiClient methods.
+- **M18.4** Swapped `MockApiClient` → `RestApiClient` in `main.js`.
+- **M18.5** Added CORS middleware behind `WOGD_DEV_CORS` env flag for dev-mode debugging.
+- **M18.6** Verification: vitest 77/77, pytest 362/1, ruff clean, build success.
+
+## 2026-09-02 — Fix: build --mode passthrough + mock healthFixture missing ok field
+
+**Fix** two bugs preventing the app from starting and showing correct health status.
+- [`scripts/start-app.ps1`](../scripts/start-app.ps1): Changed `--mode development` to
+  `--mode=development` — PowerShell split two args, passing `development` as entry
+  path to Vite (`Could not resolve entry module "development/index.html"`).
+- [`webui/src/mocks/fixtures.js`](../webui/src/mocks/fixtures.js): Added `ok: true` to
+  `healthFixture`. TopBar.vue checks `health.ok` (line 54) but the mock fixture only
+  had `status`, `backend`, `version` — `health.ok` was `undefined` → always "Backend: error".
+
 ## 2026-09-02 — Bugfix batch: BUG-10, BUG-11, BUG-12, BUG-13, BUG-14, BUG-15
 
 **Fix** of all 6 open bugs — all fixed and verified (see [`doc/bugs.md`](../doc/bugs.md)).
