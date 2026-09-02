@@ -20,7 +20,6 @@
             :icon="t.icon"
             :feasibility="tierFeasibility[t.tier]"
             :selected="selectedTier === t.tier"
-            :disabled="!tierFeasibility[t.tier]?.fits"
             @select="selectTier"
           />
         </div>
@@ -35,16 +34,20 @@
         <p class="wizard-hint">Choose the training speed / quality trade-off for your <strong>{{ tierLabel(selectedTier) }}</strong> model.</p>
         <div class="quality-grid">
           <div
-            v-for="q in qualityOptions"
+            v-for="q in qualityOptionsWithFit"
             :key="q.key"
             class="quality-card"
-            :class="{ 'quality-card--selected': selectedQuality === q.key }"
+            :class="{
+              'quality-card--selected': selectedQuality === q.key,
+              'quality-card--warn': !q.fits,
+            }"
             :data-testid="`quality-${q.key}`"
-            @click="selectedQuality = q.key"
+            @click="selectQuality(q)"
           >
             <div class="quality-card-label">{{ q.label }}</div>
             <div class="quality-card-desc">{{ q.desc }}</div>
-            <div class="quality-card-vram">~{{ (q.vramFactor * currentTierEstimate).toFixed(1) }} GB</div>
+            <div class="quality-card-vram">~{{ q.vramGb }} GB</div>
+            <div v-if="!q.fits" class="quality-card-warn">⚠ exceeds GPU VRAM</div>
           </div>
         </div>
         <div class="wizard-actions">
@@ -133,6 +136,15 @@ const qualityOptions = [
   { key: 'QUALITY', label: 'QUALITY', desc: '1.0x size, best quality', vramFactor: 1.0 },
 ]
 
+const totalGb = computed(() => store.gpuFeasibility?.total_gb ?? 0)
+
+const qualityOptionsWithFit = computed(() => {
+  return qualityOptions.map(q => {
+    const vramGb = q.vramFactor * currentTierEstimate.value
+    return { ...q, vramGb: Math.round(vramGb * 10) / 10, fits: vramGb <= totalGb.value }
+  })
+})
+
 const tierList = TIER_ORDER.map(t => ({
   tier: t,
   label: TIER_META[t].label,
@@ -155,6 +167,11 @@ const isMidiHighlighted = computed(() => {
 
 function selectTier(tier) {
   selectedTier.value = tier
+  selectedQuality.value = null
+}
+
+function selectQuality(q) {
+  selectedQuality.value = q.key
 }
 
 function getTierDesc(tier) {
@@ -235,6 +252,10 @@ onMounted(async () => {
   border-color: var(--accent);
   box-shadow: var(--shadow-glow);
 }
+.quality-card--warn {
+  border-color: var(--warning);
+  background: rgba(245, 158, 11, 0.08);
+}
 .quality-card-label {
   font-weight: 600;
   font-size: 0.9rem;
@@ -249,6 +270,12 @@ onMounted(async () => {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
+}
+.quality-card-warn {
+  font-size: 0.7rem;
+  color: var(--warning);
+  font-weight: 600;
+  margin-top: var(--space-1);
 }
 .mode-options {
   display: flex;
