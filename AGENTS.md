@@ -277,10 +277,10 @@ Full detail: load the **`post-task-sync`** skill.
 | `frontend-debugging` | `.opencode/skills/frontend-debugging/SKILL.md` | When any frontend build or lint fails (Vue/JS/Vite errors) |
 
 External skills (installed via `npx skills add`):
-| Skill | Source | Purpose |
-|-------|--------|---------|
-| `frontend-design` | anthropics/skills | Vue UI design patterns, theming, composition |
-| `webapp-testing` | anthropics/skills | FastAPI + Vue full-stack testing |
-| `test-driven-development` | obra/superpowers | Red-green-refactor workflow |
-| `systematic-debugging` | obra/superpowers | 4-phase ML/debugging methodology |
-| `verification-before-completion` | obra/superpowers | Enforce quality gates at task end |
+| Skill | Source | Purpose | Load when |
+|-------|--------|---------|-----------|
+| `frontend-design` | anthropics/skills | Vue UI design patterns, theming, composition | UI design / layout tasks |
+| `webapp-testing` | anthropics/skills | FastAPI + Vue full-stack testing | End-to-end / integration testing |
+| `test-driven-development` | obra/superpowers | Red-green-refactor workflow | Implementing new features or bugfixes (write test before code) |
+| `systematic-debugging` | obra/superpowers | 4-phase ML/debugging methodology | **Every task that involves bug investigation, fixing, or unexpected behavior** — load before proposing any fix |
+| `verification-before-completion` | obra/superpowers | Enforce quality gates at task end | Before claiming any task complete, fixed, or passing |

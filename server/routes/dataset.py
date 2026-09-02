@@ -9,6 +9,7 @@ from typing import Annotated
 
 import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,10 @@ def _sanitize(name: str) -> str:
 
 
 def dataset_summary(path: Path) -> dict:
-    files = sorted(p.name for p in path.iterdir() if p.is_file())
+    files = sorted(
+        p.name for p in path.iterdir()
+        if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
+    )
     status: str
     if (path / PREPROCESSED_SENTINEL).exists():
         status = "preprocessed"
@@ -94,6 +98,10 @@ async def upload_dataset(
         with dest.open("wb") as out:
             shutil.copyfileobj(f.file, out)
 
+    if name:
+        name_path = dataset_path / "name.txt"
+        name_path.write_text(name.strip(), encoding="utf-8")
+
     logger.info("upload_dataset: id=%s name=%s files=%d",
                 dataset_id, name or dataset_id, len(files))
     return {
@@ -116,6 +124,20 @@ async def get_dataset(dataset_id: str) -> dict:
     if not dataset_path.is_dir():
         raise HTTPException(status_code=404, detail="dataset not found")
     return dataset_summary(dataset_path)
+
+
+@router.get("/{dataset_id}/{filename}")
+async def get_dataset_file(dataset_id: str, filename: str) -> FileResponse:
+    """Serve an individual audio file from a dataset directory."""
+    dataset_path = datasets_dir() / dataset_id
+    if not dataset_path.is_dir():
+        raise HTTPException(status_code=404, detail="dataset not found")
+    file_path = dataset_path / _sanitize(filename)
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="file not found")
+    if file_path.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="file type not allowed")
+    return FileResponse(str(file_path))
 
 
 @router.post("/{dataset_id}/f0-override/{filename}")

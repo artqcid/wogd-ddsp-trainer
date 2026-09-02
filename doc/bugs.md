@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 22`
+`next_id: 28`
 
 ## Bug template (copy for each new bug)
 
@@ -576,3 +576,98 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - history:
   - 2026-09-01 — filed by ARCHITECT during post-M9 correctness review.
   - 2026-09-01 — fixed in commit 4df2477 (DEV).
+
+## BUG-22 - Dataset name not persisted across page refresh (upload_dataset never writes name.txt)
+- status: fixed
+- milestone: M5 (Web UI, dataset upload lifecycle)
+- affected: M5.2, MT-A1
+- found-in: 2026-09-03, manual test MT-A1 retest
+- severity: major
+- description: `POST /api/datasets` accepts an optional `name` Form parameter and
+  returns it in the upload response, but never persists it to disk. `dataset_summary()`
+  reads the name from a `name.txt` file inside the dataset directory — a sidecar file
+  that was never written. After the page is refreshed, `list_datasets()` → `dataset_summary()`
+  falls back to `path.name` (the UUID directory name), so the user's custom name is lost.
+  The `name.txt` approach exists because there is no `datasets` table in the DB — dataset
+  metadata is purely filesystem-based.
+- reproduction: Upload files with a custom name → Dataset Manager shows the name immediately
+  → refresh the page → name reverts to UUID.
+- resolution: Added `name_path.write_text(name.strip(), encoding="utf-8")` in
+  `upload_dataset()` after writing files, gated on `if name:`.
+- history:
+  - 2026-09-03 — filed during MT-A1 manual retest; fixed inline.
+
+## BUG-23 - No backend route to serve dataset audio files (getFirstAudioFile returns 404)
+- status: fixed
+- milestone: M4 (Web Backend, dataset routes)
+- affected: MT-A1, MT-A2 (PreprocessingView waveform), any view loading audio
+- found-in: 2026-09-03, manual test MT-A2 (waveform never loads in PreprocessingView)
+- severity: major
+- description: `PreprocessingView.vue` calls `apiClient.getFirstAudioFile(datasetId)` which
+  returns a URL constructed as `/api/datasets/{datasetId}/{firstFilename}`. There was no GET
+  route registered for this path — only `POST /{dataset_id}/f0-override/{filename}` existed
+  for uploads but not for serving files. As a result, `loadWaveform()` silently fails and
+  no waveform is shown in the Preprocessing view. The Dataset Manager is a table view and
+  never had waveform rendering by design.
+- reproduction: Open Preprocessing → select a dataset → waveform container stays empty
+  (no error shown because the error is caught in a silent try/catch).
+- resolution: Added `@router.get("/{dataset_id}/{filename}")` returning `FileResponse`
+  with validation (dataset exists, file exists, extension allowed).
+- history:
+  - 2026-09-03 — filed during MT-A2 manual test; fixed inline.
+
+## BUG-24 - dataset_summary counts feature .npy files as dataset files
+- status: fixed
+- milestone: M4 (Web Backend, dataset routes)
+- affected: M5.2, MT-A2 (file count inflation after preprocessing)
+- found-in: 2026-09-03, manual test MT-A2 (9 audio files → 19 shown in Dataset Manager)
+- severity: minor
+- description: After preprocessing runs, the dataset directory contains both the original
+  audio files AND `.content_embedding.npy`, `.f0_hz.npy`, `.f0_confidence.npy`,
+  `.loudness_db.npy` feature files. `dataset_summary()` used `path.iterdir()` filtering
+  only on `p.is_file()` — counting all files including feature .npy files. 9 audio files
+  become 19 total after `extract-content` + feature extraction.
+  Note: 19 files is factually correct for the total file count (9 audio + 9 .content_embedding.npy
+  + 1 _preprocessed sentinel), but the Dataset Manager's "File Count" column is meant to
+  show how many audio files a dataset contains, not how many temporary files it has.
+- reproduction: Upload 9 audio files → run preprocessing → Dataset Manager shows file_count=19.
+- resolution: `dataset_summary()` now filters to `p.suffix.lower() in ALLOWED_EXTENSIONS`
+  when counting audio files. Feature .npy files and the _preprocessed sentinel are excluded.
+- history:
+  - 2026-09-03 — filed during MT-A2 manual test; fixed inline.
+
+## BUG-25 - PreprocessingView resultsText is a hardcoded placeholder, not real backend data
+- status: open
+- milestone: M5 (Web UI, PreprocessingView)
+- affected: MT-A2
+- found-in: 2026-09-03, manual test MT-A2
+- severity: minor
+- description: `PreprocessingView.vue` line 73 returns a hardcoded string for `resultsText`:
+  `'Extraction complete: F0 range 80-400Hz, Loudness -20 to -5 dBFS'`. This is not real
+  backend data — the preprocessing endpoint (`POST /api/datasets/{id}/extract-content`) does
+  not return F0 range or loudness statistics, and the UI never requests them. The text is
+  always the same regardless of what was actually extracted. After preprocessing completes,
+  the user sees this fake diagnostic text, which is misleading.
+- reproduction: Upload any audio → Preprocessing → Run Preprocessing → results show
+  "F0 range 80-400Hz" regardless of actual content.
+- resolution: (open — needs backend to return feature stats and frontend to display them,
+  or the hardcoded text to be replaced with a generic success message)
+- history:
+  - 2026-09-03 — filed during MT-A2 manual test; marked open.
+
+## BUG-27 - numba.core.byteflow DEBUG spam fills log file (99.9% noise, drowns real signals)
+- status: fixed
+- milestone: M6 (Polish, logging)
+- affected: M6, debugging/troubleshooting
+- found-in: 2026-09-03, manual debug log analysis during MT-A1/MT-A2 retest
+- severity: minor
+- description: The debug log file `%LOCALAPPDATA%\wogd-ddsp-trainer\logs\app-debug.log` is ~60KB
+  but nearly all content is `DEBUG`-level bytecode dumps from `numba.core.byteflow`. Of 540+ lines,
+  only ~30 lines are actual application log entries (upload/extract/delete events). The numba
+  trace output has no diagnostic value for the wogd application and actively harms debugging by
+  drowning out useful signals.
+- reproduction: Start app in debug mode → any operation that triggers numba JIT compilation
+  (e.g., librosa loading) → log file fills with bytecode dumps.
+- resolution: Added `logging.getLogger("numba").setLevel(logging.WARNING)` in `setup_logging()`.
+- history:
+  - 2026-09-03 — filed and fixed inline.
