@@ -211,6 +211,6 @@ onBeforeUnmount(() => {
 .upload-btn:hover { background: var(--accent-hover); }
 .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .upload-success { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: var(--success); color: #000; border-radius: 6px; font-size: 0.875rem; }
-.hints-toggle { margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; border: none; background: none; }
+.hints-toggle { display: block; margin-top: 1.5rem; color: var(--accent); text-decoration: underline; font-size: 0.8rem; cursor: pointer; border: none; background: none; }
 .hints-box { margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
 </style>
