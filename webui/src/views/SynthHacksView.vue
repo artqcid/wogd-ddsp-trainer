@@ -110,7 +110,6 @@ initBandMaskFromVariant()
         </label>
         <input type="range" min="2" max="8" step="1" v-model.number="variant.newt_n_layers" class="slider" />
       </div>
-      </div>
       <div class="row">
         <label class="label">Noise colour</label>
         <select v-model="variant.noise_color" class="select wide">
