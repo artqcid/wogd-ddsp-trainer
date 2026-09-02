@@ -153,6 +153,45 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
 - `BUG-6` — Training Speed radio button labels misleading (25/50/75% instead of
   actual 0.5×/0.75×/0.9× factors). See M5.8.4. Status: open.
 
+- **BUG-12** — Upload & Ingestion: „Upload"-Button und „Show DDSP requirements"
+  kleben aneinander; Requirements nicht als klickbar erkennbar. Status: open.
+  - Ursache: `UploadIngestionView.vue` — `.hints-toggle` Button hat keinen visuellen
+    Link-Stil (kein `color`, kein underline) und wirkt wie statischer Text. Der
+    `margin-top: 1.5rem` auf `.hints-toggle` sollte theoretisch Abstand geben, aber
+    ohne `display: block` kann der Abstand bei inlineartigen Buttons kollabieren.
+  - Fix-Vorschlag: `.hints-toggle` CSS ergänzen: `display: block`,
+    `color: var(--accent)`, `text-decoration: underline`, `margin-top: 1.5rem`
+    (sicherstellen). Damit ist der Button visuell als Link erkennbar und der Abstand
+    zum Upload-Button ist garantiert.
+
+- **BUG-13** — Sidebar-Menü: Abschnitte ab „Export" durcheinander; Presets gehört
+  weder unter Training noch unter Export. Status: open.
+  - Ursache: `Sidebar.vue` — „Presets" ist in der Gruppe „🔊 Inference & Export"
+    eingeordnet, obwohl Presets Training-Konfiguration und Export/Inferenz-Parameter
+    betreffen. Voice Conversion ist keine Export-Funktion sondern ein eigenes Feature
+    (M13). Morphing und Latent Explorer sind Advanced-Features, keine Experimental-Hacks.
+  - Fix-Vorschlag: Sidebar-Gruppen neu strukturieren:
+    1. 📦 Datasets & Preprocessing (Upload, Manager, Preprocessing) — unverändert
+    2. 🧠 Training (Training Config, Training Dashboard) — Monitor hierhin
+    3. 📋 Presets — eigene Gruppe, keine Unterordnung
+    4. 🔊 Inference & Export (Inference Playground, Model Export) — nur diese zwei
+    5. 🎤 Advanced Features (Voice Conversion, Morphing, Latent Explorer) — neue Gruppe
+    6. 🧪 Experimental (Reverb IR, F0 Editor, Component Mixer, Synth Hacks) — nur echte Hacks
+    Vollständige Usability-Review der Sidebar-Reihenfolge und Gruppenlabels.
+
+- **BUG-14** — „Backend: error" beim Start (`start-application-release`), obwohl App läuft.
+  Status: open.
+  - Ursache: `TopBar.vue` — `onMounted` ruft `apiClient.health()` einmalig auf. Im
+    Release-Modus öffnet sich der Browser teils bevor uvicorn vollständig bereit ist
+    (Race Condition: Start-Skript startet uvicorn und Browser fast gleichzeitig). Der
+    Health-Check schlägt fehl → `catch` → `healthStatus = 'err'` → „Backend: error".
+    Kein Retry, kein Polling — der Fehlerzustand bleibt dauerhaft.
+  - Fix-Vorschlag: `TopBar.vue` — Health-Check mit Retry-Logik (z.B. 3 Versuche mit
+    1 s / 2 s / 4 s Delay) in `onMounted`. Bei Erfolg auf 'ok' setzen. Zusätzlich
+    optionaler Polling-Interval (z.B. alle 30 s) um spätere Backend-Ausfälle zu
+    erkennen. Alternativ: `start-app.ps1` im Release-Modus vor dem Browseröffnen auf
+    den `/health`-Endpunkt warten (curl-Loop).
+
 ## History
 
 _Append-only, newest first._

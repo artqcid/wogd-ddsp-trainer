@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 14`
+`next_id: 15`
 
 ## Bug template (copy for each new bug)
 
@@ -244,9 +244,15 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   (`start-application-release`), Training-Config-Ansicht öffnen → Banner zeigt z.B.
   `4.1 GB available`, trotz ~5.4 GB freien VRAM zur Laufzeit.
 - resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
+- fix-proposal: `server/routes/gpu.py::gpu_feasibility()` — `available_gb` auf
+  `total_vram_gb` umstellen (Training ist GPU-exklusiv; total ist der maßgebliche
+  Budgetwert). `GpuFeasibilityBanner.vue` Label von „available" auf „total"
+  anpassen; Response beide Felder (`total_gb`, `free_gb`) liefern.
+  Siehe [`doc/implementation/m14-dual-mode-ui.md`](implementation/m14-dual-mode-ui.md) §BUGS.
 - history:
   - 2026-09-02 — filed (random finding). Wert ist veraltet/startzeitbasiert; UI zeigt
     einen VRAM-Momentaufnahme-Wert statt des aktuell freien VRAM.
+  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
 
 ## BUG-11 - Wizard-Tier-Auswahl: Advanced nicht anwählbar, obwohl VRAM-Bedarf erst durch Quality-Qualität festgelegt wird
 - status: open
@@ -267,11 +273,18 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   Anzeige `⚠ needs 6.6 GB` und Tier nicht wählbar, obwohl mit einem Quality-Preset
   `FAST`/`NORMAL` niedrigerer VRAM-Bedarf für `advanced` ausreichend wäre.
 - resolution: (open — nur erfasst, kein Fix)
+- fix-proposal: Zweiteilig: (1) BUG-10 zuerst beheben (korrektes `available_gb`).
+  (2) `WizardModal.vue` — `:disabled` auf Tier-Cards entfernen; Warnung-Badge
+  bleibt; Feasibility-Prüfung auf Step 2 (Quality-Auswahl) verlagern: jede
+  Quality-Card zeigt `vramFactor × estimated_gb` und wird warn/disabled, wenn
+  dieser Wert `available_gb` überschreitet.
+  Siehe [`doc/implementation/m14-dual-mode-ui.md`](implementation/m14-dual-mode-ui.md) §BUGS.
 - history:
   - 2026-09-02 — filed (random finding). Als akzeptabel gilt, dass die Wizard-Seite den
     VRAM-Bedarf eines Default-Presets (z.B. `NORMAL`) anzeigt; gewünscht ist aber, dass
     die Anwählbarkeit / Warnung erst auf **Stufe der Quality-Auswahl** entscheidet, was
     mit dem verfügbaren VRAM tatsächlich erlaubt ist.
+  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
 
 ## BUG-12 - Upload & Ingestion: „Upload"-Button und „Show DDSP requirements" kleben aneinander; Requirements nicht als klickbar erkennbar
 - status: open
@@ -288,10 +301,16 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   liegen „Upload" und „Show DDSP requirements" direkt aneinander; „Show DDSP
   requirements" erscheint nicht als klickbar.
 - resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
+- fix-proposal: `UploadIngestionView.vue` — `.hints-toggle` CSS: `display: block`,
+  `color: var(--accent)`, `text-decoration: underline`, `margin-top: 1.5rem`
+  sicherstellen. Damit ist der Button visuell als klickbarer Link erkennbar und
+  der Abstand zum Upload-Button ist garantiert.
+  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
 - history:
   - 2026-09-02 — filed (random finding). Gewünscht: separater Abstand zwischen Button
     und Link sowie optische Kennzeichnung (z.B. Link-Farbe / unterstrichen / Button-Stil)
     von „Show DDSP requirements" als interaktiv/klickbar.
+  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
 
 ## BUG-13 - Sidebar-Menü: Abschnitte ab „Export" durcheinander; Presets gehört weder unter Training noch unter Export
 - status: open
@@ -312,10 +331,41 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - reproduction: Sidebar der App öffnen → Abschnitte ab „Export" sichten; „Presets"
   unter „Inference & Export" eingeordnet, obwohl es Training+Export betrifft.
 - resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
+- fix-proposal: `Sidebar.vue` — Gruppen neu strukturieren: (1) Datasets &
+  Preprocessing, (2) Training (Config + Dashboard), (3) Presets — eigene Gruppe,
+  (4) Inference & Export (nur Playground + Model Export), (5) Advanced Features
+  (Voice Conversion, Morphing, Latent Explorer — neue Gruppe), (6) Experimental
+  (nur echte Hacks: Reverb IR, F0 Editor, Component Mixer, Synth Hacks).
+  Vollständige Usability-Review der Reihenfolge und Gruppenlabels.
+  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
 - history:
   - 2026-09-02 — filed (random finding). Gewünscht: „Presets" als eigener Abschnitt
     (weder unter Training noch unter Export); die gesamte Navigations-/Sidebar-Struktur
     soll anschließend auf Usability geprüft und ggf. neu gruppiert werden.
+  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+
+## BUG-14 - „Backend: error" beim Start (start-application-release), obwohl die App läuft
+- status: open
+- milestone: M5 (Web UI Gesundheits-/Statusanzeige; `HealthView`/TopBar)
+- affected: M6 (Release-Start: `scripts/start-app.ps1` Release-Modus)
+- found-in: 2026-09-02, random finding (nach `start-application-release`)
+- severity: minor
+- description: Nach dem Start per `start-application-release` wird der Backend-Status
+  im UI als `error` angezeigt („Backend: error"), obwohl die Anwendung tatsächlich läuft
+  (die App ist erreichbar und funktioniert). Die Statusanzeige meldet fälschlich einen
+  Fehlerzustand.
+- reproduction: `start-application-release`-Task starten, App öffnen → Statusanzeige
+  zeigt „Backend: error", obwohl das Backend erreichbar/online ist.
+- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
+- fix-proposal: `TopBar.vue` — Health-Check mit Retry-Logik (3 Versuche,
+  1 s / 2 s / 4 s Delay) in `onMounted`; bei Erfolg auf 'ok' setzen. Optional:
+  Polling-Interval (30 s) für spätere Ausfälle. Alternativ: `scripts/start-app.ps1`
+  im Release-Modus vor dem Browserstart auf den `/health`-Endpunkt warten (curl-Loop).
+  Siehe [`doc/implementation/m5-webui.md`](implementation/m5-webui.md) §BUGS.
+- history:
+  - 2026-09-02 — filed (random finding). Kein Root-Cause-Analyse — als Fehlerbild
+    festgehalten: fälschliche Fehleranzeige trotz laufendem Backend.
+  - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
 - status: fixed

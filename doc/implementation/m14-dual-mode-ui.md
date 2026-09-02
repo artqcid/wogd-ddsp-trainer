@@ -2110,6 +2110,31 @@ _Append-only. Add entries as steps are completed._
 
 ## BUGS
 
-_Bug references only (full records in `doc/bugs.md`):_
+_Bug references only (full records in [`doc/bugs.md`](../bugs.md)):_
 
-<!-- Add BUG-<id> references here if issues are discovered during M14. -->
+- **BUG-10** — Training Config zeigt falschen freien GPU-VRAM-Wert (`available_gb`). Status: open.
+  - Ursache: `server/routes/gpu.py::gpu_feasibility()` liefert `available_vram_gb`
+    (`torch.cuda.mem_get_info()` — Momentaufnahme), nicht `total_vram_gb`. Beim
+    App-Start ist der CUDA-Kontext bereits initialisiert (~1-2 GB reserviert),
+    sodass der angezeigte Wert zu niedrig ist.
+  - Fix-Vorschlag: `gpu_feasibility()` soll `total_vram_gb` für `available_gb`
+    verwenden (Training läuft exklusiv auf der GPU; total ist der maßgebliche
+    Budgetwert). `GpuFeasibilityBanner.vue` Label von „X GB available" auf
+    „X GB total" anpassen. Beide Felder (`total_gb`, `free_gb`) im Response
+    liefern für künftige Anzeige.
+
+- **BUG-11** — Wizard-Tier-Auswahl: `Advanced` nicht anwählbar, obwohl VRAM-Bedarf
+  erst durch Quality-Auswahl festgelegt wird. Status: open.
+  - Ursache: `WizardModal.vue` setzt `:disabled="!tierFeasibility[t.tier]?.fits"` auf
+    die Tier-Card. `fits` basiert auf dem `estimated_gb` des Default-Presets (NORMAL,
+    1.0×factor), nicht auf dem Minimum (FAST, 0.25×). Da `available_gb` durch BUG-10
+    zu niedrig ist, ist `advanced` pauschal gesperrt, bevor der Nutzer überhaupt eine
+    Quality wählen konnte.
+  - Fix-Vorschlag (zweiteilig):
+    1. BUG-10 zuerst beheben (korrekte `available_gb`).
+    2. `WizardModal.vue`: Tier-Cards nie per `:disabled` sperren. Warnung-Badge bleibt
+       sichtbar. Feasibility-Prüfung auf **Step 2 (Quality-Auswahl)** verlagern: jede
+       Quality-Card zeigt ihren VRAM-Bedarf (`vramFactor × estimated_gb`) und wird
+       disabled/warn markiert, wenn dieser Wert `available_gb` überschreitet. Nur wenn
+       **alle** Qualitäten eines Tiers die GPU überschreiten, kann optional eine
+       Gesamt-Warnung im Step-1-Badge erscheinen — aber kein `disabled`.
