@@ -142,6 +142,15 @@ _References only; full records in [`../bugs.md`](../bugs.md)._
   UI zeigt fake-GPU statt echter GPU; keine Preset+Speed-VRAM-Validierung.
   **status: fixed** (M6 — BUG-4 fix).
 
+- **BUG-15** — `stop-application-release`/-debug findet keine laufende
+  Applikation (netstat locale mismatch). Status: open.
+  - Ursache: `scripts/stop-app.ps1` Zeile 20: `netstat -ano | Select-String
+    "LISTENING"` — auf nicht-englischem Windows (z.B. Deutsch) lautet die
+    Zustandsbezeichnung `ABHÖREN`; der Literal-String matcht nichts.
+  - Fix-Vorschlag: `Get-NetTCPConnection -LocalPort $Port -State Listen`
+    (PowerShell-cmdlet, locale-unabhängig) verwenden; Fallback: `netstat`
+    ohne LISTENING-Filter (nur Port-Match, SessionId-Check schützt).
+
 ## History
 
 _Append-only, newest first._

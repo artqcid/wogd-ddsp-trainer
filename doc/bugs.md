@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 15`
+`next_id: 16`
 
 ## Bug template (copy for each new bug)
 
@@ -366,6 +366,38 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-02 — filed (random finding). Kein Root-Cause-Analyse — als Fehlerbild
     festgehalten: fälschliche Fehleranzeige trotz laufendem Backend.
   - 2026-09-02 — fix-proposal eingetragen (primary agent, Analyse).
+
+## BUG-15 - `stop-application-release`/-debug findet keine laufende Applikation (netstat locale mismatch)
+- status: open
+- milestone: M6 (Polish, VSCode Task-Set: `stop-application-release`/`-debug`)
+- affected: M6, M1 (Task-Set), alle nicht-englischen Windows-Systeme
+- found-in: 2026-09-02, `stop-application-release`-Task ausgeführt während App läuft
+- severity: minor
+- description: Wird das Backend per `start-application-release` gestartet und
+  läuft sichtbar auf `:8000` (Access-Logs im Terminal), so meldet
+  `stop-application-release` trotzdem `No running processes found on ports
+  8000/5173/5678`. Ursache: Zeile 20 in `scripts/stop-app.ps1` filtert
+  `netstat -ano` mit dem Literal `Select-String "LISTENING"`. Auf
+  **nicht-englischen Windows-Installationen** (z.B. Deutsch) lautet die
+  Zustandsbezeichnung aber `ABHÖREN`. Der locale-abhängige String matcht nie
+  → `$conn` ist leer → der Prozess wird nie gefunden und gestoppt.
+  Betroffen sind beide Modi (`stop-application-debug` + `-release`).
+- reproduction: `start-application-release` starten; in einem zweiten Task-Terminal
+  `stop-application-release` ausführen → `No running processes found on ports
+  8000/5173/5678`, obwohl das Backend läuft.
+- resolution: (open — es wurde noch kein Fix umgesetzt; nur erfasst)
+- fix-proposal: `scripts/stop-app.ps1` — `netstat -ano`-Pipe durch
+  `Get-NetTCPConnection` (PowerShell-cmdlet, locale-unabhängig) ersetzen:
+  `Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue`
+  liefert die PID direkt sprachnneutral. Falls `Get-NetTCPConnection` nicht
+  verfügbar (ältere Windows-Versionen), als Fallback `netstat -ano` **ohne**
+  LISTENING-Filter verwenden (nur Port-Match); der SessionId-Check (Zeile 27)
+  verhindert das versehentliche Killen fremder Prozesse.
+  Siehe [`doc/implementation/m6-polish.md`](implementation/m6-polish.md) §BUGS.
+- history:
+  - 2026-09-02 — filed (random finding, Netstat-ABHÖREN vs. LISTENING
+    locale-Mismatch). Analyse: M6.6.4 Task-Set; Checklist nicht betroffen (kein
+    neues Feature, kein offener Checklist-Punkt dazu).
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
 - status: fixed
