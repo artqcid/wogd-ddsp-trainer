@@ -74,6 +74,10 @@ def test_gpu_feasibility_endpoint_returns_tier_feasibility() -> None:
         assert "estimated_gb" in tf[tier] is not None
     assert "worst_case_gb" in tf["advanced"]
     assert "worst_case_warning" in tf["advanced"]
+    # BUG-10: verify total_gb and free_gb are present
+    assert "total_gb" in data
+    assert "free_gb" in data
+    assert data["total_gb"] == data["available_gb"]
 
 
 def test_gpu_feasibility_advanced_n3_does_not_fit() -> None:

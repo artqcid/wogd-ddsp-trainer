@@ -8,7 +8,7 @@
       <span class="banner-icon" v-if="feasibility.fits">✓</span>
       <span class="banner-icon" v-else>⚠</span>
       <span>
-        GPU · {{ availableGb }} GB available ·
+        GPU · {{ feasibility.total_gb }} GB total · {{ feasibility.free_gb }} GB free ·
         current config ~{{ feasibility.estimated_gb }} GB
         <span v-if="feasibility.fits" class="banner-ok">✓</span>
         <span v-else class="banner-warn">{{ feasibility.warning }}</span>
@@ -30,7 +30,7 @@ const props = defineProps({
 })
 
 const noGpu = computed(() => {
-  return !store.gpuFeasibility?.available_gb && store.gpuFeasibility?.available_gb !== 0
+  return !store.gpuFeasibility?.total_gb && store.gpuFeasibility?.total_gb !== 0
 })
 
 const feasibility = computed(() => {

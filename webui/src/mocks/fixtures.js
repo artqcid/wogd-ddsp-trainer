@@ -164,7 +164,9 @@ export const variantFixture = {
 export const tierFeasibilityFixture = {
   fits: true,
   estimated_gb: 2.2,
-  available_gb: 4.1,
+  available_gb: 6.4,
+  total_gb: 6.4,
+  free_gb: 5.4,
   warning: null,
   tier_feasibility: {
     standard: { fits: true, estimated_gb: 2.2, warning: null },

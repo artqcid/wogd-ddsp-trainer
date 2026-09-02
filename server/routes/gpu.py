@@ -14,11 +14,21 @@ def gpu_feasibility(
     use_latent: bool = False,
     use_content_encoder: bool = False,
 ) -> dict[str, Any]:
-    """Return VRAM feasibility for the requested config + all five tiers."""
+    """Return VRAM feasibility for the requested config + all five tiers.
+
+    ``available_gb`` is set to ``total_gb`` (training is GPU-exclusive, so
+    the total VRAM is the correct budget value, not the momentary free
+    amount).  Both ``total_gb`` and ``free_gb`` are also returned separately
+    for informative display.
+    """
     from train.gpu import detect_gpus, estimate_model_vram
 
     gpus = detect_gpus()
-    available_gb = max(
+    total_gb = max(
+        (g["total_vram_gb"] for g in gpus),
+        default=6.0,
+    )
+    free_gb = max(
         (g["available_vram_gb"] or g["total_vram_gb"] for g in gpus),
         default=6.0,
     )
@@ -30,7 +40,7 @@ def gpu_feasibility(
     for t in ALL_TIERS:
         e = estimate_model_vram(t)
         tier_feasibility[t] = {
-            "fits": e.peak_gb <= available_gb,
+            "fits": e.peak_gb <= total_gb,
             "estimated_gb": e.peak_gb,
             "warning": e.warning,
         }
@@ -39,9 +49,11 @@ def gpu_feasibility(
     tier_feasibility["advanced"]["worst_case_warning"] = e_adv.warning
 
     return {
-        "fits": est.peak_gb <= available_gb,
+        "fits": est.peak_gb <= total_gb,
         "estimated_gb": est.peak_gb,
-        "available_gb": round(available_gb, 2),
+        "available_gb": round(total_gb, 2),
+        "total_gb": round(total_gb, 2),
+        "free_gb": round(free_gb, 2),
         "warning": est.warning,
         "tier_feasibility": tier_feasibility,
     }
