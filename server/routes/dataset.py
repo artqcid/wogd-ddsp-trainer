@@ -10,6 +10,7 @@ import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 ALLOWED_EXTENSIONS = {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".aiff", ".aif"}
+PREPROCESSED_SENTINEL = "_preprocessed"
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
 
@@ -27,7 +28,13 @@ def _sanitize(name: str) -> str:
 
 def dataset_summary(path: Path) -> dict:
     files = sorted(p.name for p in path.iterdir() if p.is_file())
-    status = "uploaded" if files else "empty"
+    status: str
+    if (path / PREPROCESSED_SENTINEL).exists():
+        status = "preprocessed"
+    elif files:
+        status = "uploaded"
+    else:
+        status = "empty"
     name_path = path / "name.txt"
     name = path.name
     if name_path.exists():
@@ -201,6 +208,8 @@ async def extract_content(
                 status_code=500,
                 detail=f"failed to extract content for {af.name}: {exc}",
             ) from exc
+
+    (dataset_path / PREPROCESSED_SENTINEL).touch()
 
     return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}
 

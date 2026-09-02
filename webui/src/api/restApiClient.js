@@ -55,12 +55,13 @@ export class RestApiClient {
   // Datasets
   // --------------------------------------------------------------------------
 
-  async uploadDataset(files) {
-    const fd = new FormData()
-    for (const f of files) {
-      fd.append('files', f)
-    }
-    return this._fetchJson(this._url('/api/datasets'), { method: 'POST', body: fd })
+  async uploadDataset(formData) {
+    const body = formData instanceof FormData ? formData : (() => {
+      const fd = new FormData()
+      for (const f of formData) fd.append('files', f)
+      return fd
+    })()
+    return this._fetchJson(this._url('/api/datasets'), { method: 'POST', body })
   }
 
   async listDatasets() {

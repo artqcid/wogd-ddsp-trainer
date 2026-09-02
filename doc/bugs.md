@@ -378,10 +378,10 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-02 — **fixed**: `Get-NetTCPConnection` statt netstat locale-abhängigem
     `Select-String "LISTENING"`. Commit `a1614bf`.
 
-## Open bugs
+## Fixed bugs (continued)
 
 ## BUG-16 - Upload & Ingestion: waveform preview never appears after drag & drop
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, UploadIngestionView)
 - affected: M5.2, MT-A1
 - found-in: 2026-09-02, manual test MT-A1
@@ -394,10 +394,13 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   because `renderWaveform` is never invoked.
 - reproduction: Open Upload & Ingestion → drag & drop any audio file → the file
   appears in the list but no waveform preview renders below the filename.
-- resolution:
+- resolution: Added `await nextTick()` then `renderWaveform(f)` loop after `handleDrop()`.
+  Same fix in `addFilesFromInput()`.
+- history:
+  - 2026-09-02 — fixed by subagent (general, task_id ses_f9c05a3d2ffe9ykRb5BQCLPGjR).
 
 ## BUG-17 - Dataset Manager: file count always shows `-` (camelCase/snake_case mismatch)
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, DatasetManagerView)
 - affected: M5.2, MT-A1
 - found-in: 2026-09-02, manual test MT-A1
@@ -408,10 +411,12 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   Since neither backend responses nor mock fixtures contain a `fileCount` key, the
   column always displays `-` regardless of actual file count.
 - reproduction: Open Dataset Manager → any dataset row → File Count column shows `-`.
-- resolution:
+- resolution: Changed `ds.fileCount` to `ds.file_count` in template.
+- history:
+  - 2026-09-02 — fixed by subagent (general, task_id ses_f9c05c648ffeN1vOhfAyRIGOgF).
 
 ## BUG-18 - Upload dialog has no name field → datasets appear as UUID in Dataset Manager
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, UploadIngestionView)
 - affected: M5.2, MT-A1
 - found-in: 2026-09-02, manual test MT-A1
@@ -424,10 +429,14 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   The user explicitly needs to name datasets to select them for training.
 - reproduction: Open Upload & Ingestion → drag & drop files → click Upload → navigate
   to Dataset Manager → dataset name shown as raw UUID.
-- resolution:
+- resolution: Added `<input v-model="datasetName">` to upload form + builds FormData
+  with `name` field when non-empty. `restApiClient.uploadDataset()` updated to accept
+  pre-built FormData.
+- history:
+  - 2026-09-02 — fixed (subagent + primary restApiClient.js adjustment).
 
 ## BUG-19 - No "preprocessed" status after feature extraction completes
-- status: open
+- status: fixed
 - milestone: M5 (Web UI + Backend, Dataset status lifecycle)
 - affected: M5.2, MT-A2, training dataset selection
 - found-in: 2026-09-02, manual test MT-A2
@@ -444,10 +453,14 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   are trainable.
 - reproduction: Upload files → go to Preprocessing → Run Preprocessing (succeeds) →
   go to Dataset Manager → status still shows `uploaded` (or no matching badge color).
-- resolution:
+- resolution: Backend: `_preprocessed` sentinel file written after `extract-content`
+  returns success; `dataset_summary()` returns `"preprocessed"` when sentinel exists.
+  Frontend: added `.badge.preprocessed { background: var(--accent); color: #000; }` CSS.
+- history:
+  - 2026-09-02 — fixed (subagents: backend + frontend CSS).
 
 ## BUG-20 - Uploaded file list persists after successful upload (stale state)
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, UploadIngestionView)
 - affected: M5.2, MT-A1
 - found-in: 2026-09-02, manual test MT-A1
@@ -460,10 +473,12 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   upload so the drop zone is ready for the next batch.
 - reproduction: Upload files → success message appears → pre-upload file list still
   visible below the drop zone with waveforms.
-- resolution:
+- resolution: Added `files.value = []` after setting `uploadSuccess.value` in `uploadFiles()`.
+- history:
+  - 2026-09-02 — fixed by subagent (general, task_id ses_f9c05a3d2ffe9ykRb5BQCLPGjR).
 
 ## BUG-21 - UploadIngestionView: no dataset name text input
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, UploadIngestionView, dataset naming)
 - affected: MT-A1, dataset selection for training
 - found-in: 2026-09-02, manual test MT-A1
@@ -476,7 +491,9 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   specify a custom dataset name.
 - reproduction: Open Upload & Ingestion → no name field visible → upload succeeds →
   Dataset Manager shows UUID as name.
-- resolution:
+- resolution: (same as BUG-18) Added dataset name input + FormData name field.
+- history:
+  - 2026-09-02 — fixed (combined with BUG-18).
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
 - status: fixed

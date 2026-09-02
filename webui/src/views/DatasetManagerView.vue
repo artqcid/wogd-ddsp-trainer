@@ -45,7 +45,7 @@ async function deleteDataset(id, name) {
       <tbody>
         <tr v-for="ds in datasets" :key="ds.id" data-testid="dataset-row">
           <td data-testid="dataset-name">{{ ds.name }}</td>
-          <td>{{ ds.fileCount ?? '-' }}</td>
+           <td>{{ ds.file_count ?? '-' }}</td>
           <td data-testid="dataset-status">
             <span class="badge" :class="ds.status">{{ ds.status }}</span>
           </td>
@@ -71,6 +71,7 @@ async function deleteDataset(id, name) {
 .badge.idle { background: var(--warning); color: #000; }
 .badge.ready { background: var(--success); color: #000; }
 .badge.empty { background: var(--bg-tertiary); color: var(--text-secondary); }
+.badge.preprocessed { background: var(--accent); color: #000; }
 .delete-btn { padding: 0.25rem 0.75rem; background: transparent; border: 1px solid var(--error); color: var(--error); border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
 .delete-btn:hover { background: var(--error); color: #000; }
 .empty-state { text-align: center; padding: 3rem; color: var(--text-secondary); }

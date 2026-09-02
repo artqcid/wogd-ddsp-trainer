@@ -7,6 +7,7 @@ const apiClient = inject('apiClient')
 const ACCEPTED_EXTS = new Set(['wav', 'flac', 'ogg', 'mp3', 'm4a', 'mp4', 'aiff', 'aif'])
 
 const files = ref([])
+const datasetName = ref('')
 const isUploading = ref(false)
 const uploadSuccess = ref(null)
 
@@ -52,6 +53,10 @@ const handleDrop = async (e) => {
       files.value.push(entry)
     }
   }
+  await nextTick()
+  for (const f of files.value) {
+    await renderWaveform(f)
+  }
 }
 
 const addFilesFromInput = (inputEvent) => {
@@ -67,6 +72,11 @@ const addFilesFromInput = (inputEvent) => {
     }
   }
   if (inputEvent.target) inputEvent.target.value = ''
+  nextTick().then(() => {
+    for (const f of files.value) {
+      renderWaveform(f)
+    }
+  })
 }
 
 const renderWaveform = async (fileItem) => {
@@ -109,8 +119,16 @@ const uploadFiles = async () => {
   if (accepted.length === 0) return
   isUploading.value = true
   try {
-    await apiClient.uploadDataset(accepted.map((f) => f.file))
+    const fd = new FormData()
+    for (const f of accepted) {
+      fd.append('files', f.file)
+    }
+    if (datasetName.value) {
+      fd.append('name', datasetName.value)
+    }
+    await apiClient.uploadDataset(fd)
     uploadSuccess.value = `Uploaded: ${accepted.map((f) => f.file.name).join(', ')}`
+    files.value = []
   } finally {
     isUploading.value = false
   }
@@ -128,6 +146,13 @@ onBeforeUnmount(() => {
 <template>
   <section class="upload-view">
     <h2>Upload & Ingestion</h2>
+    <input
+      ref="datasetNameInput"
+      v-model="datasetName"
+      class="dataset-name-input"
+      placeholder="Dataset name (optional)"
+      data-testid="dataset-name-input"
+    />
     <div
       ref="dropZone"
       class="drop-zone"
