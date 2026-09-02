@@ -30,19 +30,22 @@
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">🧠 Model Architecture</div>
+      <div class="sidebar-group-label">🧠 Training</div>
       <ul class="sidebar-links">
         <li>
           <RouterLink to="/model" class="sidebar-link">🎛️ Training Config</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/training" class="sidebar-link">📈 Training Dashboard</RouterLink>
         </li>
       </ul>
     </div>
 
     <div class="sidebar-group">
-      <div class="sidebar-group-label">📊 Training &amp; Monitor</div>
+      <div class="sidebar-group-label">📋 Presets</div>
       <ul class="sidebar-links">
         <li>
-          <RouterLink to="/training" class="sidebar-link">📈 Training Dashboard</RouterLink>
+          <RouterLink to="/presets" class="sidebar-link">📋 Preset Manager</RouterLink>
         </li>
       </ul>
     </div>
@@ -56,11 +59,20 @@
         <li>
           <RouterLink to="/export" class="sidebar-link">💾 Model Export</RouterLink>
         </li>
-        <li>
-          <RouterLink to="/presets" class="sidebar-link">📋 Presets</RouterLink>
-        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">🚀 Advanced Features</div>
+      <ul class="sidebar-links">
         <li>
           <RouterLink to="/voice-conversion" class="sidebar-link">🎤 Voice Conversion</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/morphing" class="sidebar-link">🔄 Morphing</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/experimental/latent-explore" class="sidebar-link">🌌 Latent Explorer</RouterLink>
         </li>
       </ul>
     </div>
@@ -79,12 +91,6 @@
         </li>
         <li>
           <RouterLink to="/experimental/synth-hacks" class="sidebar-link">⚡ Synth Hacks</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/experimental/morphing" class="sidebar-link">🔄 Morphing</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/experimental/latent-explore" class="sidebar-link">🌌 Latent Explorer</RouterLink>
         </li>
       </ul>
     </div>
