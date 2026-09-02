@@ -63,9 +63,8 @@ async function checkHealth() {
 onMounted(async () => {
   if (!apiClient) return
 
-  // Health check with retry (3 attempts, exponential backoff)
-  const delays = [1000, 2000, 4000]
-  for (let attempt = 0; attempt <= 3; attempt++) {
+  // Health check with indefinite retry (never give up — backend may be slow)
+  for (let attempt = 0; ; attempt++) {
     try {
       const health = await apiClient.health()
       version.value = health.version || null
@@ -74,14 +73,10 @@ onMounted(async () => {
       healthLabel.value = healthOk.value ? 'Backend: ok' : 'Backend: error'
       break
     } catch {
-      if (attempt < 3) {
-        await new Promise(r => setTimeout(r, delays[attempt]))
-        healthStatus.value = 'warn'
-        healthLabel.value = 'Backend: starting...'
-      } else {
-        healthStatus.value = 'err'
-        healthLabel.value = 'Backend: unreachable'
-      }
+      const delay = Math.min(1000 * 2 ** attempt, 15000)
+      healthStatus.value = 'warn'
+      healthLabel.value = 'Backend: starting...'
+      await new Promise(r => setTimeout(r, delay))
     }
   }
 

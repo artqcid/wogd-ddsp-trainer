@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 16`
+`next_id: 22`
 
 ## Bug template (copy for each new bug)
 
@@ -380,7 +380,103 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Open bugs
 
-_(none)_
+## BUG-16 - Upload & Ingestion: waveform preview never appears after drag & drop
+- status: open
+- milestone: M5 (Web UI, UploadIngestionView)
+- affected: M5.2, MT-A1
+- found-in: 2026-09-02, manual test MT-A1
+- severity: major
+- description: `UploadIngestionView.vue` defines `renderWaveform(fileItem)` (line 72-94)
+  which creates a WaveSurfer instance and loads `fileItem.file` via `loadBlob()`, but
+  this function is **never called** after `handleDrop()`. After files are added to
+  `files.value`, no code iterates the file list and invokes `renderWaveform` for each
+  item. The `waveform-preview` divs render via `v-for` (line 168) but remain empty
+  because `renderWaveform` is never invoked.
+- reproduction: Open Upload & Ingestion → drag & drop any audio file → the file
+  appears in the list but no waveform preview renders below the filename.
+- resolution:
+
+## BUG-17 - Dataset Manager: file count always shows `-` (camelCase/snake_case mismatch)
+- status: open
+- milestone: M5 (Web UI, DatasetManagerView)
+- affected: M5.2, MT-A1
+- found-in: 2026-09-02, manual test MT-A1
+- severity: major
+- description: Backend `dataset_summary()` in `server/routes/dataset.py` returns
+  `file_count` (snake_case). Mock fixtures in `fixtures.js` also use `file_count`.
+  But `DatasetManagerView.vue` line 48 reads `ds.fileCount ?? '-'` using camelCase.
+  Since neither backend responses nor mock fixtures contain a `fileCount` key, the
+  column always displays `-` regardless of actual file count.
+- reproduction: Open Dataset Manager → any dataset row → File Count column shows `-`.
+- resolution:
+
+## BUG-18 - Upload dialog has no name field → datasets appear as UUID in Dataset Manager
+- status: open
+- milestone: M5 (Web UI, UploadIngestionView)
+- affected: M5.2, MT-A1
+- found-in: 2026-09-02, manual test MT-A1
+- severity: major
+- description: The backend `POST /api/datasets` accepts an optional `name` form field
+  (`server/routes/dataset.py` line 64), defaulting to `dataset_id` (a UUID) when not
+  provided. The `UploadIngestionView.vue` never sends a `name` parameter — the upload
+  form has no text input for a dataset name. As a result, the user sees the raw UUID
+  (`46147676-0409-4dd7-b958-c2352ceb13cb`) as the dataset name in the Dataset Manager.
+  The user explicitly needs to name datasets to select them for training.
+- reproduction: Open Upload & Ingestion → drag & drop files → click Upload → navigate
+  to Dataset Manager → dataset name shown as raw UUID.
+- resolution:
+
+## BUG-19 - No "preprocessed" status after feature extraction completes
+- status: open
+- milestone: M5 (Web UI + Backend, Dataset status lifecycle)
+- affected: M5.2, MT-A2, training dataset selection
+- found-in: 2026-09-02, manual test MT-A2
+- severity: major
+- description: After successful preprocessing feature extraction
+  (`POST /api/datasets/{id}/extract-content`), the dataset status in
+  `dataset_summary()` only ever returns `"uploaded"` (if files exist) or `"empty"`.
+  There is no mechanism — no DB column, no sidecar file, no RPC — to mark a dataset
+  as "preprocessed" / "features extracted" / "ready for training". The Dataset Manager
+  therefore cannot display a distinct status for preprocessed datasets. Additionally,
+  `DatasetManagerView.vue` CSS expects `.badge.idle / .badge.ready / .badge.empty`
+  classes, none of which match the backend's actual status strings (`"uploaded"`).
+  The user expects "preprocessed" as a visible status so they know which datasets
+  are trainable.
+- reproduction: Upload files → go to Preprocessing → Run Preprocessing (succeeds) →
+  go to Dataset Manager → status still shows `uploaded` (or no matching badge color).
+- resolution:
+
+## BUG-20 - Uploaded file list persists after successful upload (stale state)
+- status: open
+- milestone: M5 (Web UI, UploadIngestionView)
+- affected: M5.2, MT-A1
+- found-in: 2026-09-02, manual test MT-A1
+- severity: minor
+- description: After `uploadFiles()` succeeds, `files.value` is never cleared.
+  The user sees the pre-upload file listing (with local waveform previews) still
+  displayed below the drop zone. The success message is shown, but the stale file
+  list remains visible, giving the impression that the upload hasn't completed or
+  that the files are still pending. The file list should be cleared after a successful
+  upload so the drop zone is ready for the next batch.
+- reproduction: Upload files → success message appears → pre-upload file list still
+  visible below the drop zone with waveforms.
+- resolution:
+
+## BUG-21 - UploadIngestionView: no dataset name text input
+- status: open
+- milestone: M5 (Web UI, UploadIngestionView, dataset naming)
+- affected: MT-A1, dataset selection for training
+- found-in: 2026-09-02, manual test MT-A1
+- severity: minor
+- description: The upload dialog provides a drop zone and file listing but has no
+  text input for naming the dataset. The backend (`POST /api/datasets`) accepts a
+  `name` form field, defaulting to the UUID when absent. The user needs to assign
+  meaningful names to datasets so they can select the right one during training
+  configuration. A text input should be added to the upload form so the user can
+  specify a custom dataset name.
+- reproduction: Open Upload & Ingestion → no name field visible → upload succeeds →
+  Dataset Manager shows UUID as name.
+- resolution:
 
 ## BUG-7 - `DDSPModel.load_checkpoint` crashes with `WeightsOnlyLoad` error (DDSPConfig not a safe global)
 - status: fixed

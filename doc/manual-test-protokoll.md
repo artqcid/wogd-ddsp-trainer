@@ -53,7 +53,7 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | **Preconditions** | App running, backend + GPU status visible in the top bar |
 | **Steps** | 1. Open **Dataset & Preprocessing → Upload & Ingestion**.<br>2. Drag & drop at least one audio file (e.g. WAV/FLAC/MP3).<br>3. Verify a waveform preview appears per file.<br>4. Click **Upload**. |
 | **Expected** | File(s) ingested and listed in the dataset manager; waveform previews rendered; no backend error toast. |
-| **Result** | PASS / FAIL — Date — Tester — Notes: |
+| **Result** | FAIL — 2026-09-02 — — Notes: BUG-16 (no waveform preview), BUG-18/BUG-21 (no name input, UUID shown), BUG-20 (stale file list), BUG-17 (file count shows '-', in DatasetManager). |
 
 ### MT-A2 — Preprocessing (feature extraction)
 
@@ -62,7 +62,7 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | **Preconditions** | MT-A1 passed, dataset available |
 | **Steps** | 1. Open **Dataset & Preprocessing → Preprocessing**.<br>2. Select the dataset.<br>3. Start feature extraction.<br>4. Wait until progress reaches 100 %. |
 | **Expected** | F0 and loudness features extracted; progress indicators complete; low-`f0_confidence` warning shown only if tracking reliability is low; dataset marked as trainable. |
-| **Result** | PASS / FAIL — Date — Tester — Notes: |
+| **Result** | FAIL — 2026-09-02 — — Notes: BUG-19 (no 'preprocessed' status, dataset not marked as trainable). |
 
 ### MT-A3 — Model Setup Wizard (standard tier)
 

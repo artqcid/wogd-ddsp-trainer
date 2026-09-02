@@ -48,7 +48,7 @@ export class RestApiClient {
   // --------------------------------------------------------------------------
 
   async health() {
-    return this._fetchJson(this._url('/'))
+    return this._fetchJson(this._url('/api/health'))
   }
 
   // --------------------------------------------------------------------------

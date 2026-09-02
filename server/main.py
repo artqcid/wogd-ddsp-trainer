@@ -124,6 +124,11 @@ def root():
     return {"service": "wogd-ddsp-trainer", "status": "ok"}
 
 
+@app.get("/api/health")
+def health():
+    return {"service": "wogd-ddsp-trainer", "status": "ok", "ok": True, "version": app.version}
+
+
 @app.get("/api/tensorboard")
 def tensorboard():
     try:

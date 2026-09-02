@@ -17,38 +17,34 @@ param(
 $stopped = $false
 
 function Stop-ProcessOnPort($Port, $Label) {
-    $pid = $null
-    # Use Get-NetTCPConnection (locale-independent, modern Windows)
+    $procId = $null
     try {
         $tcpConn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop
         if ($tcpConn) {
-            $pid = $tcpConn.OwningProcess
+            $procId = $tcpConn.OwningProcess
         }
     }
     catch {
-        # Fallback: netstat -ano without locale-dependent string filter (older Windows)
         $conn = netstat -ano | Select-String ":$Port\s"
         foreach ($line in $conn) {
             $parts = $line.ToString() -split '\s+'
             $candidate = $parts[-1]
             if ($candidate -and $candidate -match '^\d+$') {
-                $pid = [int]$candidate
+                $procId = [int]$candidate
                 break
             }
         }
     }
-    if ($pid) {
+    if ($procId) {
         try {
-            $proc = Get-Process -Id $pid -ErrorAction Stop
+            $proc = Get-Process -Id $procId -ErrorAction Stop
             if ($proc.SessionId -eq (Get-Process -Id $PID).SessionId) {
-                Write-Host "  Stopping $Label (PID $pid on port $Port)..."
+                Write-Host "  Stopping $Label (PID $procId on port $Port)..."
                 $proc.Kill()
                 $stopped = $true
             }
         }
-        catch {
-            # already gone
-        }
+        catch { }
     }
 }
 

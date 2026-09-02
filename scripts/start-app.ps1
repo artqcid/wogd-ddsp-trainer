@@ -114,12 +114,12 @@ else {
 
 if ($Mode -eq "Debug") {
     Write-Step "Starting backend with debugpy on :$backendPort (debugger :$debugPort)..."
-    Write-Host "  Attach your debugger: F5 -> 'Debug Backend (attach)' (listen $debugPort)."
+    Write-Host "  Backend serves immediately. Attach debugger: F5 -> 'Debug Backend (attach)' (listen $debugPort)."
+    Write-Host "  (Add --wait-for-client to debug startup/lifespan code.)"
 
     $backend = Start-Process -FilePath $python -ArgumentList @(
         "-m", "debugpy",
         "--listen", "127.0.0.1:$debugPort",
-        "--wait-for-client",
         "-m", "uvicorn", "server.main:app",
         "--host", "127.0.0.1", "--port", "$backendPort"
     ) -WorkingDirectory $root -PassThru -NoNewWindow

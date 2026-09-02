@@ -80,12 +80,14 @@ The actual work lives in `scripts/start-app.ps1 -Mode <Debug|Release>`
 - `start-application-debug` → builds the frontend only if stale (dev build,
   `--mode development`), then starts:
   - the **backend** with debugpy (`python -m debugpy --listen 5678
-    --wait-for-client -m uvicorn server.main:app`) on `:8000`;
+     -m uvicorn server.main:app`) on `:8000`;
   - the **Vite dev server** on `:5173` (JS/HTML debuggable, hot reload).
-- To debug the backend: after starting the task, press `F5` with the
-  `Debug Backend (attach)` launch config (`.vscode/launch.json`, connects to
-  `127.0.0.1:5678`). The backend waits for the attach (so startup/lifespan can
-  be debugged), then serves and honours breakpoints in `server/`.
+- The backend serves immediately so the UI is usable on startup. To debug the
+  backend: press `F5` with the `Debug Backend (attach)` launch config
+  (`.vscode/launch.json`, connects to `127.0.0.1:5678`). Breakpoints set before
+  attaching will be hit as usual.
+- To debug startup/lifespan code: add `--wait-for-client` to the debugpy args
+  in `scripts/start-app.ps1`. This blocks uvicorn until the debugger attaches.
 - Alternative native path: the `Debug Application` **compound** launch config
   (Run and Debug panel, `F5`) starts `Debug Backend` + `Vite Dev (debug)`
   directly without the freshness check.
