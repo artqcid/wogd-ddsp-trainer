@@ -100,6 +100,48 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
         with suppress(sqlite3.OperationalError):
             cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
     _migrate_add_model_tier(cur)
+    _migrate_drop_presets_name_unique(cur)
+
+
+def _migrate_drop_presets_name_unique(cur: sqlite3.Cursor) -> None:
+    """Drop the legacy ``UNIQUE(name)`` constraint from the presets table.
+
+    Pre-M14 databases were created with ``name TEXT NOT NULL UNIQUE``; since the
+    per-tier builtin presets reuse the same names (FAST/NORMAL/QUALITY) across
+    all tiers, seeding the additional tiers fails with a UNIQUE constraint
+    violation on those legacy databases. SQLite cannot ALTER a column
+    constraint away, so the table is rebuilt without it (data preserved).
+    """
+    unique = [row for row in cur.execute("PRAGMA index_list(presets)") if row[3] == "u"]
+    if not unique:
+        return
+    with suppress(sqlite3.OperationalError):
+        cur.execute("PRAGMA foreign_keys = OFF")
+        cur.execute("ALTER TABLE presets RENAME TO presets_old")
+        cur.execute(
+            """
+            CREATE TABLE presets (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                is_builtin INTEGER NOT NULL DEFAULT 0,
+                params TEXT NOT NULL,
+                created_from_run_id TEXT,
+                model_tier TEXT NOT NULL DEFAULT 'standard',
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+        cur.execute(
+            """
+            INSERT INTO presets (id, name, is_builtin, params, created_from_run_id,
+                                 model_tier, created_at, updated_at)
+            SELECT id, name, is_builtin, params, created_from_run_id,
+                   COALESCE(model_tier, 'standard'), created_at, updated_at
+            FROM presets_old
+            """
+        )
+        cur.execute("DROP TABLE presets_old")
 
 
 def _migrate_add_model_tier(cur: sqlite3.Cursor) -> None:

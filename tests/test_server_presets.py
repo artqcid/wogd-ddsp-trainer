@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sqlite3
+
 from server.db import connect, init_db, preset_create
 from server.presets import (
     bounds_to_dict,
@@ -279,4 +281,44 @@ def test_fingerprint_change_first_check_returns_changed(tmp_path):
     changed2, fp2 = check_hardware_change(conn)
     assert changed2 is False
     assert fp == fp2
+    conn.close()
+
+
+def test_seed_builtin_presets_on_legacy_unique_name_db(tmp_path):
+    """A DB created before per-tier presets (name UNIQUE) must still boot + seed."""
+    path = tmp_path / "legacy_presets.db"
+    conn = sqlite3.connect(path)
+    conn.execute(
+        """
+        CREATE TABLE presets (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            is_builtin INTEGER NOT NULL DEFAULT 0,
+            params TEXT NOT NULL,
+            created_from_run_id TEXT,
+            model_tier TEXT NOT NULL DEFAULT 'standard',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """
+    )
+    conn.execute(
+        "INSERT INTO presets (id, name, is_builtin, params, model_tier)"
+        " VALUES (?, ?, 1, '{}', 'standard')",
+        ("builtin-fast", "FAST"),
+    )
+    conn.commit()
+    conn.close()
+
+    conn = connect(path)
+    init_db(conn)
+    origins = {row[3] for row in conn.execute("PRAGMA index_list(presets)")}
+    assert "u" not in origins  # legacy UNIQUE(name) constraint was dropped
+
+    bounds = _bounds()
+    tiers = ("standard", "component", "hacks", "engine", "advanced")
+    for tier in tiers:
+        seed_builtin_presets(conn, bounds, tier=tier)
+    count = conn.execute("SELECT COUNT(*) FROM presets").fetchone()[0]
+    assert count == 15  # 3 names x 5 tiers
     conn.close()

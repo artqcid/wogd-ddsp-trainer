@@ -3,6 +3,21 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-02 — BUG-9 fix: startup crash on pre-M14 databases (legacy UNIQUE(name))
+
+**Fix** of app startup crash `sqlite3.IntegrityError: UNIQUE constraint failed:
+presets.name` during `seed_builtin_presets` (see [`doc/bugs.md`](../doc/bugs.md) **BUG-9**).
+- [`server/db.py`](../server/db.py) — `_migrate_drop_presets_name_unique()` wired into
+  `_migrate_columns()`: rebuilds the `presets` table without the legacy
+  `UNIQUE(name)` index (origin `'u'`) when present; preserves all rows.
+- [`tests/test_server_presets.py`](../tests/test_server_presets.py) —
+  `test_seed_builtin_presets_on_legacy_unique_name_db` (regression, RED→GREEN).
+- Live `%LOCALAPPDATA%\wogd-ddsp-trainer` DB migrated (backup before),
+  12 per-tier builtin presets seeded, release boot smoke-tested (HTTP 200).
+
+Checks: ruff clean/format-clean, pytest 362 passed / 1 GPU-skip, wiki lint clean,
+index_project_code synced.
+
 ## 2026-09-02 — M17 MIDI Synth VST Export
 
 **Creation** of MIDI synth export infrastructure and UI:
