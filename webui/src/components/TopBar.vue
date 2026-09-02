@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, inject, onMounted, onBeforeUnmount } from 'vue'
 import { useModelConfigStore } from '../stores/modelConfig.js'
 import { tierLabel, tierColor, tierIcon } from '../utils/tierColors.js'
 
@@ -35,19 +35,19 @@ const apiClient = inject('apiClient')
 const version = ref(null)
 const healthOk = ref(null)
 const tbRunning = ref(null)
-const healthStatus = ref('err')
-const healthLabel = ref('Backend: unknown')
+const healthStatus = ref('warn')
+const healthLabel = ref('Backend: starting...')
 const tbStatus = ref('warn')
 const tbLabel = ref('TensorBoard: unknown')
+let pollTimer = null
 
 const activeTierLabel = computed(() => {
   if (!store.activeTier) return null
   return tierLabel(store.activeTier)
 })
 
-onMounted(async () => {
+async function checkHealth() {
   if (!apiClient) return
-
   try {
     const health = await apiClient.health()
     version.value = health.version || null
@@ -58,7 +58,34 @@ onMounted(async () => {
     healthStatus.value = 'err'
     healthLabel.value = 'Backend: unreachable'
   }
+}
 
+onMounted(async () => {
+  if (!apiClient) return
+
+  // Health check with retry (3 attempts, exponential backoff)
+  const delays = [1000, 2000, 4000]
+  for (let attempt = 0; attempt <= 3; attempt++) {
+    try {
+      const health = await apiClient.health()
+      version.value = health.version || null
+      healthOk.value = health.ok
+      healthStatus.value = healthOk.value ? 'ok' : 'err'
+      healthLabel.value = healthOk.value ? 'Backend: ok' : 'Backend: error'
+      break
+    } catch {
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, delays[attempt]))
+        healthStatus.value = 'warn'
+        healthLabel.value = 'Backend: starting...'
+      } else {
+        healthStatus.value = 'err'
+        healthLabel.value = 'Backend: unreachable'
+      }
+    }
+  }
+
+  // TensorBoard (no retry needed)
   try {
     const tb = await apiClient.getTensorboard()
     tbRunning.value = tb.running
@@ -68,6 +95,13 @@ onMounted(async () => {
     tbStatus.value = 'warn'
     tbLabel.value = 'TensorBoard: unknown'
   }
+
+  // Periodic health polling (30s)
+  pollTimer = setInterval(checkHealth, 30000)
+})
+
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer)
 })
 </script>
 
