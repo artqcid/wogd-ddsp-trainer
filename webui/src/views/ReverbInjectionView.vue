@@ -1,5 +1,6 @@
 <script setup>
 import { inject, ref, onMounted } from 'vue'
+import { logger } from '../utils/logger.js'
 
 const apiClient = inject('apiClient')
 
@@ -17,7 +18,7 @@ onMounted(async () => {
   try {
     models.value = await apiClient.listModels()
   } catch (err) {
-    console.error('Failed to load models:', err)
+    logger.error('Failed to load models:', err)
   }
 })
 
@@ -36,7 +37,7 @@ async function handleInject() {
     const result = await apiClient.injectIr(selectedRunId.value, irFile.value)
     injectStatus.value = result.status === 'ok' ? 'IR injected successfully' : 'Injection failed'
   } catch (err) {
-    console.error('Inject IR failed:', err)
+    logger.error('Inject IR failed:', err)
     injectStatus.value = `Error: ${err.message}`
   } finally {
     isInjecting.value = false
@@ -50,7 +51,7 @@ async function handleExtract() {
   try {
     extractUrl.value = await apiClient.extractIrUrl(selectedRunId.value)
   } catch (err) {
-    console.error('Extract IR failed:', err)
+    logger.error('Extract IR failed:', err)
   } finally {
     isExtracting.value = false
   }

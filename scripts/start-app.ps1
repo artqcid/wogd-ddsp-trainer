@@ -117,6 +117,8 @@ if ($Mode -eq "Debug") {
     Write-Host "  Backend serves immediately. Attach debugger: F5 -> 'Debug Backend (attach)' (listen $debugPort)."
     Write-Host "  (Add --wait-for-client to debug startup/lifespan code.)"
 
+    $env:WOGD_MODE = "debug"
+
     $backend = Start-Process -FilePath $python -ArgumentList @(
         "-m", "debugpy",
         "--listen", "127.0.0.1:$debugPort",
@@ -137,6 +139,7 @@ if ($Mode -eq "Debug") {
 else {
     Write-Step "Starting backend serving webui/dist on :$backendPort..."
     $env:WOGD_SERVE_STATIC = "1"
+    $env:WOGD_MODE = "release"
     & $python -m uvicorn server.main:app --host 127.0.0.1 --port $backendPort
     Remove-Item Env:WOGD_SERVE_STATIC -ErrorAction SilentlyContinue
 }

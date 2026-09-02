@@ -50,8 +50,10 @@ def mount_frontend(app: FastAPI, dist: Path) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from server.logging_config import setup_logging
     from server.paths import ensure_data_dirs
 
+    setup_logging()
     ensure_data_dirs()
     conn = connect()
     init_db(conn)

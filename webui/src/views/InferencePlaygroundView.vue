@@ -1,6 +1,7 @@
 <script setup>
 import { inject, ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import ABComparisonPlayer from '../components/ABComparisonPlayer.vue'
+import { logger } from '../utils/logger.js'
 
 const apiClient = inject('apiClient')
 
@@ -88,7 +89,7 @@ async function loadParamManifest() {
       }
     }
   } catch (err) {
-    console.error('Failed to load param manifest:', err)
+    logger.error('Failed to load param manifest:', err)
     paramManifest.value = null
     paramValues.value = {}
   }
@@ -99,7 +100,7 @@ onMounted(async () => {
   try {
     models.value = await apiClient.listModels()
   } catch (err) {
-    console.error('Failed to load models:', err)
+    logger.error('Failed to load models:', err)
   }
 })
 
@@ -152,7 +153,7 @@ async function handleSynthesize() {
       startPolling()
     }
   } catch (err) {
-    console.error('Synthesis failed:', err)
+    logger.error('Synthesis failed:', err)
     jobStatus.value = 'failed'
   } finally {
     isSynthesizing.value = false
@@ -176,7 +177,7 @@ function startPolling() {
         pollInterval.value = null
       }
     } catch (err) {
-      console.error('Polling error:', err)
+      logger.error('Polling error:', err)
     }
   }, 3000)
 }
@@ -198,7 +199,7 @@ async function handleMidiPreview() {
     midiJobStatus.value = result.status
     startMidiPolling()
   } catch (err) {
-    console.error('MIDI preview failed:', err)
+    logger.error('MIDI preview failed:', err)
     midiJobStatus.value = 'failed'
   } finally {
     isMidiPreviewing.value = false
@@ -221,7 +222,7 @@ function startMidiPolling() {
         pollInterval.value = null
       }
     } catch (err) {
-      console.error('MIDI polling error:', err)
+      logger.error('MIDI polling error:', err)
     }
   }, 3000)
 }
@@ -231,7 +232,7 @@ async function loadArtifacts() {
   try {
     artifacts.value = await apiClient.getInferenceArtifacts(jobId.value)
   } catch (err) {
-    console.error('Failed to load artifacts:', err)
+    logger.error('Failed to load artifacts:', err)
   }
 }
 

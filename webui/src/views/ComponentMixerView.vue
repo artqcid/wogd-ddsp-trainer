@@ -1,6 +1,7 @@
 <script setup>
 import { ref, inject, onMounted } from 'vue'
 import ComponentMixer from '../components/ComponentMixer.vue'
+import { logger } from '../utils/logger.js'
 
 const apiClient = inject('apiClient')
 const models = ref([])
@@ -10,12 +11,12 @@ onMounted(async () => {
   try {
     models.value = await apiClient.listModels()
   } catch (e) {
-    console.error('Failed to load models:', e)
+    logger.error('Failed to load models:', e)
   }
 })
 
 function onApplyConfig(config) {
-  console.log('Apply mixer config:', config)
+  logger.info('Apply mixer config:', config)
 }
 </script>
 

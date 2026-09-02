@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from dataclasses import asdict, dataclass
@@ -18,6 +19,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from model import DDSPModel, MultiScaleSpectralLoss
 from model.param_manifest import ParamManifest, build_default_manifest
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_device(device_str: str) -> torch.device:
@@ -135,6 +138,16 @@ class Trainer:
         self._variant_flags = variant_flags or {}
         self._param_manifest: ParamManifest | None = None
 
+        logger.info(
+            "Trainer initialised: device=%s model=%s tier=%s steps=%d lr=%g amp=%s",
+            str(self.device),
+            type(self.model).__name__,
+            model_tier,
+            config.max_steps,
+            config.learning_rate,
+            use_amp,
+        )
+
     # ------------------------------------------------------------------
     # Gradient checkpointing helper
     # ------------------------------------------------------------------
@@ -223,6 +236,10 @@ class Trainer:
         step_before = self._step
         self._step += 1
 
+        logger.debug(
+            "train_step: step=%d loss=%.6f", step_before, float(loss.detach().cpu())
+        )
+
         return {"loss": float(loss.detach().cpu()), "step": step_before}
 
     # ------------------------------------------------------------------
@@ -284,6 +301,11 @@ class Trainer:
                 self.save_checkpoint(ckpt_path)
 
         if data_loader is not None:
+            logger.info(
+                "training run start: max_steps=%d loader=%s",
+                self.config.max_steps,
+                "data_loader" if data_loader else "single_batch",
+            )
             loader_iter = iter(cycle(data_loader))
             for _ in range(self.config.max_steps):
                 if stop_event is not None and stop_event.is_set():
@@ -304,6 +326,10 @@ class Trainer:
         if final_loss is None:
             # max_steps was 0.
             final_loss = 0.0
+
+        logger.info(
+            "training run finish: steps=%d final_loss=%s", self._step, final_loss
+        )
 
         return {"steps": self._step, "final_loss": final_loss}
 
@@ -335,6 +361,8 @@ class Trainer:
 
         torch.save(state, path)
 
+        logger.info("checkpoint saved: step=%d path=%s", self._step, path)
+
     def load_checkpoint(self, path: str) -> dict:
         """Load a checkpoint and restore model, optimizer, step, and manifest.
 
@@ -362,6 +390,7 @@ class Trainer:
             # Backward-compat: old checkpoints without manifest info.
             self._param_manifest = build_default_manifest("standard", {})
 
+        logger.info("checkpoint loaded: step=%d path=%s", self._step, path)
         return checkpoint
 
     @property

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import shutil
 import uuid
 from pathlib import Path
@@ -8,6 +9,8 @@ from typing import Annotated
 
 import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".aiff", ".aif"}
 PREPROCESSED_SENTINEL = "_preprocessed"
@@ -91,6 +94,8 @@ async def upload_dataset(
         with dest.open("wb") as out:
             shutil.copyfileobj(f.file, out)
 
+    logger.info("upload_dataset: id=%s name=%s files=%d",
+                dataset_id, name or dataset_id, len(files))
     return {
         "id": dataset_id,
         "name": name or dataset_id,
@@ -194,6 +199,9 @@ async def extract_content(
     if not audio_files:
         raise HTTPException(status_code=400, detail="no audio files in dataset")
 
+    logger.info("extract_content start: dataset_id=%s model=%s files=%d",
+                dataset_id, model_name, len(audio_files))
+
     for af in audio_files:
         try:
             audio, sr = librosa.load(str(af), sr=16000, mono=True)
@@ -211,6 +219,8 @@ async def extract_content(
 
     (dataset_path / PREPROCESSED_SENTINEL).touch()
 
+    logger.info("extract_content done: dataset_id=%s files_processed=%d",
+                dataset_id, len(audio_files))
     return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}
 
 
@@ -221,4 +231,5 @@ async def delete_dataset(dataset_id: str) -> dict:
     if not dataset_path.is_dir():
         raise HTTPException(status_code=404, detail="dataset not found")
     shutil.rmtree(str(dataset_path))
+    logger.info("delete_dataset: id=%s path=%s", dataset_id, dataset_path)
     return {"status": "deleted", "dataset_id": dataset_id}

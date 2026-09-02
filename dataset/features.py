@@ -6,6 +6,7 @@ librosa RMS-to-dB path. All returned arrays are plain 1-D float32 numpy.
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Callable
 
@@ -14,6 +15,8 @@ import numpy as np
 import parselmouth
 
 from .multi_pitch import extract_multi_pitch
+
+logger = logging.getLogger(__name__)
 
 try:  # pragma: no cover - torchcrepe is optional at import time, used by the crepe path only
     import torchcrepe
@@ -193,6 +196,12 @@ def compute_features(
     - loudness_db: min-max normalized to [0,1] over its own values.
     - f0_confidence: already in [0,1]; passed through unchanged.
     """
+    logger.debug(
+        "compute_features: extractor=%s audio_len=%d sr=%g",
+        f0_extractor_name,
+        len(audio),
+        sample_rate,
+    )
     if f0_override is not None:
         f0_hz_norm = normalize_feature(f0_override)
         confidence = np.ones_like(f0_hz_norm, dtype=np.float32)
@@ -346,6 +355,7 @@ def save_features(
         path = os.path.join(out_dir, f"{base_name}.{key}.npy")
         np.save(path, np.asarray(features[key], dtype=np.float32), allow_pickle=False)
         paths.append(path)
+    logger.debug("save_features: base=%s keys=%s", base_name, list(keys))
     return paths
 
 
@@ -370,6 +380,12 @@ def extract_content_embedding(
     Returns:
         embedding: (T_frames, 256) float32 numpy array.
     """
+    logger.debug(
+        "extract_content_embedding: model=%s audio_len=%d target_frames=%s",
+        model_name,
+        len(audio),
+        target_frames,
+    )
     import torch
 
     from model.content_encoder import ContentEncoderWrapper, resample_content

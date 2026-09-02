@@ -2,6 +2,7 @@
 import { ref, inject, onMounted } from 'vue'
 import F0Editor from '../components/F0Editor.vue'
 import F0RulesPanel from '../components/F0RulesPanel.vue'
+import { logger } from '../utils/logger.js'
 
 const apiClient = inject('apiClient')
 const datasets = ref([])
@@ -15,7 +16,7 @@ onMounted(async () => {
   try {
     datasets.value = await apiClient.listDatasets()
   } catch (e) {
-    console.error('Failed to load datasets:', e)
+    logger.error('Failed to load datasets:', e)
   }
 })
 
