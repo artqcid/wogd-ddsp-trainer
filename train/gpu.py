@@ -237,6 +237,15 @@ class VRAMEstimate:
     warning: str | None = None
 
 
+BASE_ESTIMATE_GB: dict[str, float] = {
+    "standard": 2.2,
+    "component": 2.25,
+    "hacks": 2.3,
+    "engine": 2.35,
+    "advanced": 2.35,
+}
+
+
 def estimate_model_vram(
     model_tier: str,
     n_voices: int = 1,
@@ -249,14 +258,17 @@ def estimate_model_vram(
     (batch_size=1, seq_len=2 s @ 16 kHz, mixed precision, 3-scale STFT):
 
         baseline (standard DDSP)        ~2.2 GB
+        component (+component mixer)    +0.05 GB
+        hacks     (+DDSP variants)      +0.10 GB
+        engine    (+alt synth engines)  +0.15 GB
+        advanced  (+engine + optional)  +0.15 GB + advanced overheads below
         use_latent (+GRUEncoder/VAE)    +0.15 GB
         use_content_encoder (+HuBERT)   +0.36 GB
         PolyDDSP N voices               baseline x N
 
-    All tiers from 'standard' through 'engine' have the same baseline;
-    'advanced' activates the optional overhead params.
+    Tier keys not in ``BASE_ESTIMATE_GB`` fall back to 2.2 GB.
     """
-    BASELINE_GB = 2.2
+    baseline_gb = BASE_ESTIMATE_GB.get(model_tier, 2.2)
     overhead = 0.0
     warning = None
 
@@ -266,9 +278,9 @@ def estimate_model_vram(
         if use_content_encoder:
             overhead += 0.36
         if n_voices > 1:
-            overhead += BASELINE_GB * (n_voices - 1)
+            overhead += baseline_gb * (n_voices - 1)
 
-    peak = BASELINE_GB + overhead
+    peak = baseline_gb + overhead
 
     if peak > 6.0:
         warning = (

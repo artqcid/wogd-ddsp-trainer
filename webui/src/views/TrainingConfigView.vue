@@ -116,7 +116,7 @@ function handleTierMismatchCancel() {
         <span v-if="store.activeTier" class="tier-badge" :style="{ color: tierColor(store.activeTier) }" data-testid="tier-badge">
           {{ tierIcon(store.activeTier) }} {{ tierLabel(store.activeTier) }}
         </span>
-        <button class="btn btn--ghost" @click="reconfigure" data-testid="reconfigure-btn">⚙ Reconfigure Model</button>
+        <button class="btn btn--ghost" @click="reconfigure" data-testid="reconfigure-btn">⚙ Start Config Wizard</button>
         <button class="btn btn--ghost" data-testid="save-preset-btn" @click="showDialog = true">Save as Preset</button>
       </div>
     </div>
@@ -202,7 +202,7 @@ function handleTierMismatchCancel() {
 .btn-row { margin-top: 1.5rem; }
 .validation-result { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; }
 .validation-result.ok { background: var(--success); color: #000; }
-.validation-result.err { background: var(--error); color: #fff; }
+.validation-result.err { background: var(--error); color: #fff; overflow-wrap: break-word; word-break: break-word; max-height: 200px; overflow-y: auto; }
 
 .midi-hint-banner {
   display: flex;

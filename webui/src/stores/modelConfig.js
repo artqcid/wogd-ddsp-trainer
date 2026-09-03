@@ -23,6 +23,7 @@ export const useModelConfigStore = defineStore('modelConfig', {
       n_voices: 1,
       use_content_encoder: false, content_encoder_name: 'hubert-soft',
     },
+    dataset_id: null,
   }),
   getters: {
     isFeasible: (state) => state.gpuFeasibility?.fits ?? true,
@@ -60,6 +61,8 @@ export const useModelConfigStore = defineStore('modelConfig', {
         ...this.coreParams,
         model_tier: this.activeTier ?? 'standard',
         target_mode: this.targetMode,
+        name: `${this.activeTier ?? 'standard'}-${this.selectedPreset ?? 'wizard'}-${this.targetMode}`,
+        dataset_id: this.dataset_id,
         ...this.componentParams,
       }
       if (this.activeTier === 'hacks' || this.activeTier === 'engine' || this.activeTier === 'advanced') {

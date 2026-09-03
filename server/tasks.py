@@ -250,8 +250,7 @@ def run_preprocessing_job(dataset_id: str) -> dict:
 
     ALLOWED = {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".aiff", ".aif"}
     audio_files = sorted(
-        str(p) for p in dataset_path.iterdir()
-        if p.is_file() and p.suffix.lower() in ALLOWED
+        str(p) for p in dataset_path.iterdir() if p.is_file() and p.suffix.lower() in ALLOWED
     )
 
     if not audio_files:
@@ -259,6 +258,9 @@ def run_preprocessing_job(dataset_id: str) -> dict:
 
     splits = split_file_list(audio_files, seed=42, val_fraction=0.2)
     cache = FeatureCache(dataset_path)
+
+    all_f0_concat: list = []
+    all_loudness_concat: list = []
 
     for split_key, file_list in splits.items():
         if not file_list:
@@ -287,10 +289,39 @@ def run_preprocessing_job(dataset_id: str) -> dict:
             "loudness_db": np.concatenate(all_loudness).astype(np.float32),
         }
         cache.save(split_key, merged)
+        all_f0_concat.append(merged["f0_hz"])
+        all_loudness_concat.append(merged["loudness_db"])
+
+    # Aggregate diagnostics across all splits.
+    if all_f0_concat:
+        f0 = np.concatenate(all_f0_concat)
+        loudness = np.concatenate(all_loudness_concat)
+        voiced = f0 > 0.0
+        f0_voiced_pct = float(np.mean(voiced)) * 100.0
+        if voiced.any():
+            f0_mean_hz = float(np.mean(f0[voiced]))
+            f0_median_hz = float(np.median(f0[voiced]))
+        else:
+            f0_mean_hz = 0.0
+            f0_median_hz = 0.0
+        diagnostics = {
+            "f0_voiced_pct": f0_voiced_pct,
+            "f0_mean_hz": f0_mean_hz,
+            "f0_median_hz": f0_median_hz,
+            "loudness_mean_db": float(np.mean(loudness)),
+            "loudness_std_db": float(np.std(loudness)),
+        }
+    else:
+        diagnostics = None
 
     (dataset_path / "_preprocessed").touch()
     logging.info("run_preprocessing_job done: dataset_id=%s files=%d", dataset_id, len(audio_files))
-    return {"ok": True, "dataset_id": dataset_id, "files_processed": len(audio_files)}
+    return {
+        "ok": True,
+        "dataset_id": dataset_id,
+        "files_processed": len(audio_files),
+        "diagnostics": diagnostics,
+    }
 
 
 @celery_app.task(name="server.tasks.run_training_job")

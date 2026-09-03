@@ -311,9 +311,7 @@ class DDSPModel(nn.Module):
             ValueError: if either model does not have `use_latent == True`.
         """
         if not self.config.use_latent or not other.config.use_latent:
-            raise ValueError(
-                "morph() requires both models to have config.use_latent == True"
-            )
+            raise ValueError("morph() requires both models to have config.use_latent == True")
 
         self.eval()
         other.eval()
@@ -325,9 +323,7 @@ class DDSPModel(nn.Module):
             z = alpha * mu_a + (1.0 - alpha) * mu_b
 
             B, T_frames = f0.shape
-            features = torch.cat(
-                [torch.stack([f0, loudness], dim=-1), z], dim=-1
-            )
+            features = torch.cat([torch.stack([f0, loudness], dim=-1), z], dim=-1)
 
             gru_out, _ = self.gru(features)
             hidden = F.relu(self.feature_proj(gru_out))

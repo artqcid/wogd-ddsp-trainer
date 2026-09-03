@@ -72,9 +72,7 @@ def setup_logging() -> None:
     root.addHandler(file_handler)
     root.addHandler(console_handler)
 
-    logging.getLogger("server").debug(
-        "logging initialised: mode=%s file=%s", mode, log_file
-    )
+    logging.getLogger("server").debug("logging initialised: mode=%s file=%s", mode, log_file)
 
     # Silence numba.core.byteflow DEBUG bytecode dumps that flood the debug log
     # with ~99.9% useless noise and drown out real application signals.

@@ -13,6 +13,13 @@
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">Dataset</label>
+      <select class="form-select" v-model="store.dataset_id" data-testid="dataset-select">
+        <option value="">--- Select Dataset ---</option>
+        <option v-for="d in datasets" :key="d.id" :value="d.id">{{ d.name }} ({{ d.file_count }} files, {{ d.status }})</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">Learning Rate</label>
       <input class="form-input" type="number" step="0.0001" v-model.number="store.coreParams.learning_rate" data-testid="learning-rate" />
     </div>
@@ -49,31 +56,34 @@ const store = useModelConfigStore()
 const apiClient = inject('apiClient')
 const presets = ref([])
 const selectedPresetName = ref('')
+const datasets = ref([])
 
 const customPresets = computed(() => presets.value.filter(p => !p.is_builtin))
 
+function applyPresetParams() {
+  if (store.wizardCompleted && store.selectedPreset) {
+    selectedPresetName.value = store.selectedPreset
+  }
+  if (selectedPresetName.value) {
+    const preset = presets.value.find(p => p.name === selectedPresetName.value)
+    if (preset?.params) {
+      Object.assign(store.coreParams, preset.params)
+    }
+  }
+}
+
 onMounted(async () => {
   if (apiClient) {
+    datasets.value = await apiClient.listDatasets()
     presets.value = await apiClient.listPresets()
+    applyPresetParams()
   }
 })
 
-// Initialize selectedPresetName from wizard-chosen preset and apply params
-// once presets are loaded (async). Uses watch with immediate to handle both
-// the initial empty state and the async load completion.
 watch(
   presets,
   () => {
-    if (store.wizardCompleted && store.selectedPreset) {
-      selectedPresetName.value = store.selectedPreset
-    }
-    // Apply params when presets are actually available
-    if (selectedPresetName.value) {
-      const preset = presets.value.find(p => p.name === selectedPresetName.value)
-      if (preset?.params) {
-        Object.assign(store.coreParams, preset.params)
-      }
-    }
+    applyPresetParams()
   },
   { immediate: true }
 )

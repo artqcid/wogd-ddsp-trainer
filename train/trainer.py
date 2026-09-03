@@ -236,9 +236,7 @@ class Trainer:
         step_before = self._step
         self._step += 1
 
-        logger.debug(
-            "train_step: step=%d loss=%.6f", step_before, float(loss.detach().cpu())
-        )
+        logger.debug("train_step: step=%d loss=%.6f", step_before, float(loss.detach().cpu()))
 
         return {"loss": float(loss.detach().cpu()), "step": step_before}
 
@@ -327,9 +325,7 @@ class Trainer:
             # max_steps was 0.
             final_loss = 0.0
 
-        logger.info(
-            "training run finish: steps=%d final_loss=%s", self._step, final_loss
-        )
+        logger.info("training run finish: steps=%d final_loss=%s", self._step, final_loss)
 
         return {"steps": self._step, "final_loss": final_loss}
 

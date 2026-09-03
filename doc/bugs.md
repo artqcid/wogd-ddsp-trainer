@@ -1015,18 +1015,19 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-03 — filed after user feedback: preprocessing output too sparse, wants F0 + loudness diagnostics back (real stats, not hardcoded).
 
 ## BUG-46 - FEAT: Rename "⚙ Reconfigure Model" button to "⚙ Start Config Wizard"
-- status: open
+- status: resolved
 - milestone: M5 (Web UI, TrainingConfigView)
 - found-in: 2026-09-03, user feedback
 - severity: minor
 - description: The button text `⚙ Reconfigure Model` in TrainingConfigView is misleading — it doesn't reconfigure an existing model (there is none yet at config time). It opens the wizard to (re-)start the model setup process. Should be `⚙ Start Config Wizard` to clearly communicate what it does.
 - reproduction: Open Training Config → see button "⚙ Reconfigure Model" → confusing because no model exists yet.
-- resolution: (open)
+- resolution: resolved — button text changed from "⚙ Reconfigure Model" to "⚙ Start Config Wizard" in TrainingConfigView.vue:119.
 - history:
   - 2026-09-03 — filed as feature request.
+  - 2026-09-03 — resolved: one-line text change.
 
 ## BUG-47 - Wizard shows "fits 2.2 GB" for all tiers — estimate_model_vram ignores non-advanced tier differences
-- status: open
+- status: resolved
 - milestone: M14 (Dual-Mode Training UI, Backend VRAM estimation)
 - affected: M14.1.1, MT-A4 (wizard tier selection)
 - found-in: 2026-09-03, MT-A4 manual test (wizard shows every tier with "✓ fits 2.2 GB")
@@ -1050,12 +1051,13 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   The wizard calls `estimate_model_vram(t)` for each tier with default params and displays "✓ fits 2.2 GB" for all five — making the feasibility information completely useless and misleading.
 
 - reproduction: Open wizard → step "Select Model Tier" → every card shows "✓ fits 2.2 GB".
-- resolution: (open)
+- resolution: `train/gpu.py` now uses `BASE_ESTIMATE_GB` dict with per-tier baseline values (standard=2.2, component=2.25, hacks=2.3, engine=2.35, advanced=2.35); docstring and overhead logic updated.
 - history:
   - 2026-09-03 — filed after MT-A4 manual test. Root cause: `estimate_model_vram` needs per-tier baseline deltas beyond the single 2.2 GB constant.
+  - 2026-09-03 — resolved: `BASE_ESTIMATE_GB` dict added with per-tier baseline values.
 
 ## BUG-48 - Batch Size field still shows 1 despite BUG-43 fix — preset params don't reach coreParams
-- status: open
+- status: resolved
 - milestone: M3 (training loop / DataLoader / preset system)
 - affected: M5, M14 (all training config UI), MT-A4
 - found-in: 2026-09-03, MT-A4 retest after BUG-43 fix
@@ -1067,12 +1069,13 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   2. **Timing gap** in `TabCore.vue` watch: `watch(presets, ..., { immediate: true })` fires immediately with empty array → can't find preset → no params applied. When API data arrives, the second fire should apply params — but if the API response also lacks batch_size (e.g. stale DB seed), the value stays 1.
 
 - reproduction: Complete wizard → Core tab shows Batch Size = 1 even for QUALITY on a 6 GB GPU where preset should suggest batch_size=4.
-- resolution: (open)
+- resolution: Extracted preset param application into `applyPresetParams()` helper in TabCore.vue; called from both the `watch(presets, ...)` callback AND the end of `onMounted` after `presets.value = await apiClient.listPresets()`. This ensures params are applied regardless of timing.
 - history:
   - 2026-09-03 — filed after MT-A4 retest. User confirms batch_size still shows 1 despite BUG-43 backend changes.
+  - 2026-09-03 — resolved: `applyPresetParams()` extracted and called explicitly after API load.
 
 ## BUG-49 - Start Training fails with HTTP 422: missing required "name" field; no dataset selection; error message overflows text box
-- status: open
+- status: resolved
 - milestone: M5 (Web UI, TrainingConfigView + store + WizardModal)
 - affected: MT-A4, any training start
 - found-in: 2026-09-03, MT-A4 training start attempt
@@ -1094,6 +1097,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   **(c) Error message overflow.** The validation result `<div>` with class `.validation-result.err` has no `overflow` or `max-height` handling — when the error message is a long JSON 422 string, it grows beyond the red box boundaries or stretches the layout awkwardly. The container should expand vertically with the content (or scroll).
 
 - reproduction: Complete wizard → verify fields → click "▶ Start Training" → HTTP 422 popup shows raw API error in cramped red box. No dataset can be selected anywhere for training.
-- resolution: (open)
+- resolution: Three sub-issues resolved: (a) `buildFullConfig()` in store now auto-generates `name` from tier/preset/mode (e.g. "standard-NORMAL-offline"); (b) `dataset_id` added to store state, included in `buildFullConfig()`, and a dataset dropdown added to Core tab (fetches datasets via `apiClient.listDatasets()`); (c) `.validation-result.err` CSS now has `overflow-wrap: break-word; word-break: break-word; max-height: 200px; overflow-y: auto`.
 - history:
   - 2026-09-03 — filed after MT-A4 training start attempt.
+  - 2026-09-03 — resolved: name auto-generated, dataset dropdown in Core tab, CSS overflow fix.

@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -79,6 +79,7 @@ async def lifespan(app: FastAPI):
     # BUG-38: warn if Redis/Celery broker is unreachable at startup
     try:
         import redis as _redis
+
         _redis_url = os.environ.get("WOGD_REDIS_URL", "redis://localhost:6379/0")
         _r = _redis.from_url(_redis_url, socket_connect_timeout=2)
         _r.ping()
@@ -120,6 +121,7 @@ app.include_router(host.router, prefix="/api")
 app.include_router(reverb.router, prefix="/api")
 
 install_handlers(app)
+
 
 # API endpoints must be registered BEFORE the SPA fallback (mount_frontend),
 # otherwise the wildcard @app.get("/{_:path}") in mount_frontend catches them

@@ -32,8 +32,7 @@ def _sanitize(name: str) -> str:
 
 def dataset_summary(path: Path) -> dict:
     files = sorted(
-        p.name for p in path.iterdir()
-        if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
+        p.name for p in path.iterdir() if p.is_file() and p.suffix.lower() in ALLOWED_EXTENSIONS
     )
     status: str
     if (path / PREPROCESSED_SENTINEL).exists():
@@ -102,8 +101,9 @@ async def upload_dataset(
         name_path = dataset_path / "name.txt"
         name_path.write_text(name.strip(), encoding="utf-8")
 
-    logger.info("upload_dataset: id=%s name=%s files=%d",
-                dataset_id, name or dataset_id, len(files))
+    logger.info(
+        "upload_dataset: id=%s name=%s files=%d", dataset_id, name or dataset_id, len(files)
+    )
     return {
         "id": dataset_id,
         "name": name or dataset_id,
@@ -221,8 +221,12 @@ async def extract_content(
     if not audio_files:
         raise HTTPException(status_code=400, detail="no audio files in dataset")
 
-    logger.info("extract_content start: dataset_id=%s model=%s files=%d",
-                dataset_id, model_name, len(audio_files))
+    logger.info(
+        "extract_content start: dataset_id=%s model=%s files=%d",
+        dataset_id,
+        model_name,
+        len(audio_files),
+    )
 
     for af in audio_files:
         try:
@@ -241,8 +245,9 @@ async def extract_content(
 
     (dataset_path / PREPROCESSED_SENTINEL).touch()
 
-    logger.info("extract_content done: dataset_id=%s files_processed=%d",
-                dataset_id, len(audio_files))
+    logger.info(
+        "extract_content done: dataset_id=%s files_processed=%d", dataset_id, len(audio_files)
+    )
     return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}
 
 
@@ -282,11 +287,13 @@ async def delete_dataset(dataset_id: str, force: bool = False) -> dict:
     # BUG-42: cascade check — warn if active runs reference this dataset
     if not force:
         from server.db import connect, run_all
+
         conn = connect()
         try:
             runs = run_all(conn)
             active_runs = [
-                r for r in runs
+                r
+                for r in runs
                 if r.get("dataset_id") == dataset_id
                 and r.get("status") in {"pending", "running", "stopping"}
             ]

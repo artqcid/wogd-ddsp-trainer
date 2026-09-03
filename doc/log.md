@@ -3,6 +3,16 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — BUG-45..49 all resolved; TabCore preset param propagation fix; per-tier VRAM deltas; dataset dropdown; name auto-generation
+
+**Resolution** — All five open bugs resolved in a single fix session:
+
+- BUG-45: `run_preprocessing_job()` now returns `"diagnostics"` dict with `f0_voiced_pct`, `f0_mean_hz`, `f0_median_hz`, `loudness_mean_db`, `loudness_std_db` aggregated across train/val splits. Reference: `doc/bugs.md` BUG-45.
+- BUG-46: Button text changed from "⚙ Reconfigure Model" to "⚙ Start Config Wizard" in `TrainingConfigView.vue:119`. Reference: `doc/bugs.md` BUG-46.
+- BUG-47: `estimate_model_vram()` now uses `BASE_ESTIMATE_GB` dict with per-tier baseline deltas (standard=2.2, component=2.25, hacks=2.3, engine=2.35, advanced=2.35). Reference: `doc/bugs.md` BUG-47.
+- BUG-48: Preset param application extracted into `applyPresetParams()` helper in `TabCore.vue`; called from both `watch` and `onMounted` after API load to fix timing gap. Reference: `doc/bugs.md` BUG-48.
+- BUG-49: Three sub-issues resolved — (a) `buildFullConfig()` auto-generates `name` from tier/preset/mode; (b) `dataset_id` added to store state, dataset dropdown in Core tab; (c) `.validation-result.err` CSS gets overflow protection. Reference: `doc/bugs.md` BUG-49.
+
 ## 2026-09-03 — BUG-49: Start Training fails HTTP 422 missing "name" field; error message overflow
 
 **Creation** — BUG-49 filed after MT-A4 training start attempt. `store.buildFullConfig()` omits required `name` field → backend 422; no dataset selection in wizard or Core tab; validation error red box overflows long messages. Three sub-issues: (a) missing name, (b) missing dataset dropdown, (c) error box overflow. Reference: `doc/bugs.md` BUG-49.
