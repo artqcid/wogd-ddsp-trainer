@@ -3,6 +3,10 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — Restore .vscode/tasks.json with all original tasks; activate post-commit git hook
+
+**Fix** — Restored original tasks.json from commit 721f013: `build-debug`, `build-release`, `build-installer`, `e2e-test`, `start-application-debug`, `start-application-release`, `stop-application-debug`, `stop-application-release`. Added `clean-build-debug` and `clean-build-release` as new tasks. Activated git post-commit hook via `git config core.hooksPath .githooks`. Wiki sync + lint all clean.
+
 ## 2026-09-03 — BUG-45..49 all resolved; TabCore preset param propagation fix; per-tier VRAM deltas; dataset dropdown; name auto-generation
 
 **Resolution** — All five open bugs resolved in a single fix session:

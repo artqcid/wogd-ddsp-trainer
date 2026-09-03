@@ -35,10 +35,7 @@
         "cwd": "${workspaceFolder}/webui"
       },
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
+      "problemMatcher": []
     },
     {
       "label": "clean-build-release",
@@ -54,34 +51,85 @@
       }
     },
     {
-      "label": "start-debug",
+      "label": "build-installer",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/start-app.ps1 -Mode Debug",
-      "problemMatcher": [],
+      "command": "pwsh ${workspaceFolder}/scripts/build-installer.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated"
-      }
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
     },
     {
-      "label": "start-release",
+      "label": "e2e-test",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/start-app.ps1 -Mode Release",
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe -m pytest tests/e2e",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
     },
     {
-      "label": "stop-app",
+      "label": "start-application-debug",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/stop-app.ps1 -Mode Debug",
-      "problemMatcher": [],
+      "command": "pwsh ${workspaceFolder}/scripts/start-app.ps1 -Mode Debug",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated"
-      }
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "start-application-release",
+      "type": "shell",
+      "command": "pwsh ${workspaceFolder}/scripts/start-app.ps1 -Mode Release",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stop-application-debug",
+      "type": "shell",
+      "command": "pwsh ${workspaceFolder}/scripts/stop-app.ps1 -Mode Debug",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stop-application-release",
+      "type": "shell",
+      "command": "pwsh ${workspaceFolder}/scripts/stop-app.ps1 -Mode Release",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
     }
   ]
 }
