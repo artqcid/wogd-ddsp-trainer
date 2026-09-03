@@ -33,6 +33,9 @@ Load the **`knowledge-first`** skill for the full planning tier workflow. In sho
 - Bug IDs (`BUG-<id>`) are assigned only there (increment `next_id`).
 - Every other document (implementation plans, `log.md`) references bugs by
   `BUG-<id>` only. Never duplicate a full bug record across files.
+- **After creating a bug, always:**
+  1. Reference `BUG-<id>` in the `manual-test-protokoll.md` result row that discovered it (Notes column).
+  2. Append a changelog entry to `doc/log.md` referencing the new bug.
 
 ### Todo-first workflow + Autopilot (gated by explicit plan approval)
 

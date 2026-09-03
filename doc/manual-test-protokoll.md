@@ -80,7 +80,7 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | **Preconditions** | MT-A3 passed |
 | **Steps** | 1. In tab **Core** verify: preset NORMAL is pre-selected, learning rate 1e-3, batch size 1, epochs (e.g. 100), decoder GRU, reverb on.<br>2. Change **Decoder Type** to **RNN**, then back to **GRU**.<br>3. Change **Enable Reverb** off, then on again.<br>4. Click **▶ Start Training**. |
 | **Expected** | A run is created and starts; run ID and status displayed; training steps progress in the dashboard. |
-| **Result** | PASS / FAIL — Date — Tester — Notes: |
+| **Result** | PASS / FAIL — Date — Tester — Notes: BUG-44 (preset dropdown shows "-- Select Preset --" after wizard; Built-In optgroup confusing) |
 
 ### MT-A5 — Monitoring, stop and resume
 

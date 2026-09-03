@@ -3,6 +3,10 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — BUG-44: preset dropdown shows "-- Select Preset --" after wizard; Built-In optgroup confusing
+
+**Creation** — BUG-44 filed after MT-A4 manual test. Two UI problems in TabCore preset dropdown: (a) "-- Select Preset --" displayed after wizard completion instead of showing the wizard-chosen preset; (b) "Built-In" optgroup visible but selecting it does nothing. Reference: `doc/bugs.md` BUG-44.
+
 ## 2026-09-03 — Full Project Analysis: 10 new bugs (BUG-28..37) + 5 feature requests (BUG-38..42)
 
 **Analysis** — ARCHITECT full cross-perspective review (Dev Env, App Tech, DDSP Codebase, UI Usability).

@@ -1951,8 +1951,8 @@ Symbols:
 - `save_features` (function, lines 336-359) - def save_features(features, out_dir, base_name) - Write one .npy per feature into out_dir (created if needed).
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_features.py:105` (function) [wogd_ddsp_e220d961518f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\dataset\loader.py:1` (module) [wogd_ddsp_a3c7ee180261]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:722` (section) [wogd_ddsp_5289a1414797]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:341` (section) [wogd_ddsp_fc23a513fa07]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:722` (section) [wogd_ddsp_5289a1414797]
 - `extract_content_embedding` (function, lines 362-399) - def extract_content_embedding(audio, sample_rate, model_name='hubert_soft', target_frames=None, cache_dir=None) - Extract HuBERT/ContentVec semantic content embeddings from audio.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m13-voice-conversion.md:60` (section) [wogd_ddsp_a9c281300858]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m13-voice-conversion.md:170` (section) [wogd_ddsp_29577d7357af]
@@ -3352,12 +3352,12 @@ Symbols:
 - `m5-webui.md` (frontmatter, lines 1-9) - 
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\architecture.md:518` (section) [wogd_ddsp_39b6a9d9d58e]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\index.md:24` (section) [wogd_ddsp_231a764c2918]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:173` (section) [wogd_ddsp_7b6aba8b2388]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:202` (section) [wogd_ddsp_8366c77571f6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:429` (section) [wogd_ddsp_645a385515ad]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:741` (section) [wogd_ddsp_90a2b29fab28]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:894` (section) [wogd_ddsp_247a2301f303]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:1101` (section) [wogd_ddsp_f4fe89d6e29f]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:173` (section) [wogd_ddsp_7b6aba8b2388]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:202` (section) [wogd_ddsp_8366c77571f6]
 - `Implementation Plan - M5 Web UI` (section, lines 11-16) - # Implementation Plan - M5 Web UI
 - `How to use` (section, lines 17-24) - ## How to use
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m1-scaffold.md:17` (section) [wogd_ddsp_2611c412ddc7]
@@ -4023,8 +4023,8 @@ Symbols:
 - `GPU Feasibility Banner` (section, lines 402-413) - ### GPU Feasibility Banner
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:577` (section) [wogd_ddsp_c29ab8bb3186]
 - `Preset system compatibility` (section, lines 414-430) - ### Preset system compatibility
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:935` (section) [wogd_ddsp_ffcf76dd1841]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:6` (section) [wogd_ddsp_6f4f55602502]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:935` (section) [wogd_ddsp_ffcf76dd1841]
 - `Pinia store: `useModelConfigStore`` (section, lines 431-455) - ### Pinia store: `useModelConfigStore`
 - `New and changed Vue components (M14)` (section, lines 456-477) - ### New and changed Vue components (M14)
 - `Experimental sound-design extensions (M7, non-binding for M1-M6)` (section, lines 478-497) - ## Experimental sound-design extensions (M7, non-binding for M1-M6)
@@ -4307,10 +4307,10 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\mcp_rag\query.py:33` (function) [wogd_ddsp_a2f78f3ca1bc]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\mcp_rag\wiki.py:1` (module) [wogd_ddsp_e9161471058a]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\mcp_rag\__init__.py:1` (module) [wogd_ddsp_400ff3ba038b]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:801` (section) [wogd_ddsp_351a141e1ff3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:411` (section) [wogd_ddsp_b4ebe2a1a4c4]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:992` (section) [wogd_ddsp_75ef740042f6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:1014` (section) [wogd_ddsp_4762d1865e48]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\scripts\sync-wiki.py:14` (module) [wogd_ddsp_c5ed998b54f8]
 - `ProjectRAG.__init__` (method, lines 78-80) - def __init__(self, db_path)
 - `ProjectRAG._connect` (method, lines 83-89) - def _connect(self) - Open a fresh connection (thread-safe for parallel MCP calls).
 - `ProjectRAG._init_schema` (method, lines 92-142) - def _init_schema(self) - Create the tables; migrate old schemas (line chunking -> v2).
@@ -4619,8 +4619,8 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m8-experimental-sdk-hacking.md:688` (section) [wogd_ddsp_f7c93fe64bd7]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m9-alternative-synth-engines.md:468` (section) [wogd_ddsp_4ce305ab028b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:139` (section) [wogd_ddsp_7972d0ffc244]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:555` (section) [wogd_ddsp_a6256a485166]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:469` (section) [wogd_ddsp_e62ac497fa22]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:555` (section) [wogd_ddsp_a6256a485166]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\model\ddsp\variant.py
 
@@ -4709,7 +4709,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m9-alternative-synth-engines.md:427` (section) [wogd_ddsp_7fcb8a8d0453]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_synths_variant.py:102` (function) [wogd_ddsp_1d9bd3b42b9c]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:139` (section) [wogd_ddsp_7972d0ffc244]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:498` (section) [wogd_ddsp_cf367b3ba036]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:469` (section) [wogd_ddsp_e62ac497fa22]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\model\encoder.py
 
@@ -5029,11 +5029,11 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:226` (function) [wogd_ddsp_c32456ca4f1b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_presets.py:250` (function) [wogd_ddsp_eac813268a3c]
 - `_migrate_columns` (function, lines 95-107) - def _migrate_columns(conn) - Add columns that newer schema versions require (safe for existing DBs).
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:114` (section) [wogd_ddsp_8a65582b08c2]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
 - `_migrate_drop_presets_name_unique` (function, lines 110-148) - def _migrate_drop_presets_name_unique(cur) - Drop the legacy ``UNIQUE(name)`` constraint from the presets table.
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:114` (section) [wogd_ddsp_8a65582b08c2]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
 - `_migrate_add_model_tier` (function, lines 151-159) - def _migrate_add_model_tier(cur) - Add model_tier column to presets and runs if not already present.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1557` (section) [wogd_ddsp_959921bbcbc6]
 - `_bool` (function, lines 162-164) - def _bool(row, key) - Convert an INTEGER column to Python bool.
@@ -5115,8 +5115,8 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:103` (function) [wogd_ddsp_f03173b9ce81]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\training.py:1` (module) [wogd_ddsp_5a5a13f7b792]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\training.py:136` (function) [wogd_ddsp_8d072e85936c]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:764` (section) [wogd_ddsp_36bb5f276d5d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\dataset.py:273` (function) [wogd_ddsp_e2b48d64c52b]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:764` (section) [wogd_ddsp_36bb5f276d5d]
 - `run_set_status` (function, lines 391-399) - def run_set_status(conn, run_id, status) - Update run status and bump updated_at.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_api_training.py:133` (function) [wogd_ddsp_c2594509ed62]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
@@ -5149,10 +5149,10 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\tasks.py:1` (module) [wogd_ddsp_105ee2ec845a]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\tasks.py:297` (function) [wogd_ddsp_b8a23510f354]
 - `run_update_progress` (function, lines 445-457) - def run_update_progress(conn, run_id, current_step, last_loss) - Update the live training progress columns for a run.
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\tasks.py:1` (module) [wogd_ddsp_105ee2ec845a]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\tasks.py:297` (function) [wogd_ddsp_b8a23510f354]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
 - `synth_create` (function, lines 465-479) - def synth_create(conn, job_id, run_id, params) - Insert a new synthesis job row.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:1` (module) [wogd_ddsp_825829c40a2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_server_db.py:151` (function) [wogd_ddsp_65eb39637c07]
@@ -5226,10 +5226,10 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
 - `install_handlers` (function, lines 140-143) - def install_handlers(app) - Register the error handlers on a FastAPI/Starlette application.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:839` (section) [wogd_ddsp_55538d32c9d8]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:800` (section) [wogd_ddsp_5efa9a8f38cb]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:1` (module) [wogd_ddsp_31c92646f4ac]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:103` (module) [wogd_ddsp_930fd8700b1c]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:839` (section) [wogd_ddsp_55538d32c9d8]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\logging_config.py
 
@@ -5240,8 +5240,8 @@ Symbols:
 - `_data_dir` (function, lines 23-28) - def _data_dir() - Resolve the effective data dir without importing server.paths at module load.
 - `_log_dir` (function, lines 31-34) - def _log_dir()
 - `setup_logging` (function, lines 37-81) - def setup_logging() - Configure the root logger based on ``WOGD_MODE``.
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:658` (section) [wogd_ddsp_ce02fa2984f6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py:52` (function) [wogd_ddsp_393881c10742]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:658` (section) [wogd_ddsp_ce02fa2984f6]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\main.py
 
@@ -5257,16 +5257,16 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:25` (section) [wogd_ddsp_e348396da87b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:118` (section) [wogd_ddsp_e72ece209eba]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:839` (section) [wogd_ddsp_55538d32c9d8]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:871` (section) [wogd_ddsp_44d0b3bab226]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:839` (section) [wogd_ddsp_55538d32c9d8]
 - `lifespan` (function, lines 52-92) - def lifespan(app)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\conftest.py:76` (function) [wogd_ddsp_a67288fc83b6]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\architecture.md:356` (section) [wogd_ddsp_d53b95094c0b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\workspace-workflow.md:78` (section) [wogd_ddsp_cc66a64f591c]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:225` (section) [wogd_ddsp_3c728efc0d5e]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:888` (section) [wogd_ddsp_eb2244e247e4]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
 - `_DEV_CORS` (constant, lines 102-102) - _DEV_CORS = os.environ.get("WOGD_DEV_CORS", "0") == "1"
 - `root` (function, lines 129-130) - def root()
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\coding-standards.md:31` (section) [wogd_ddsp_56114345444d]
@@ -5503,7 +5503,7 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1598` (section) [wogd_ddsp_6f125daf2c00]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1842` (section) [wogd_ddsp_f0a72a28a2bf]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\checklist.md:313` (section) [wogd_ddsp_a297cd85ce89]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:114` (section) [wogd_ddsp_8a65582b08c2]
 - `with_clamp_status` (function, lines 294-297) - def with_clamp_status(preset, bounds) - Return the preset dict with a ``clamped_fields`` entry.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:1` (module) [wogd_ddsp_14d7750237e3]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\presets.py:46` (function) [wogd_ddsp_b9b9edb2f5d4]
@@ -5550,17 +5550,17 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:25` (section) [wogd_ddsp_e348396da87b]
 - `_sanitize` (function, lines 29-30) - def _sanitize(name)
 - `dataset_summary` (function, lines 33-56) - def dataset_summary(path)
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:402` (section) [wogd_ddsp_09109ef03415]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:438` (section) [wogd_ddsp_d4b890a8d071]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:580` (section) [wogd_ddsp_93165f0d797f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:619` (section) [wogd_ddsp_b624b6f31735]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
 - `dataset_exists` (function, lines 59-60) - def dataset_exists(dataset_id)
 - `_list_datasets` (function, lines 63-72) - def _list_datasets()
 - `upload_dataset` (function, lines 76-113) - def upload_dataset(files, name='')
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:104` (section) [wogd_ddsp_2ec378ffaf9e]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:580` (section) [wogd_ddsp_93165f0d797f]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
 - `list_datasets` (function, lines 117-118) - def list_datasets()
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:580` (section) [wogd_ddsp_93165f0d797f]
 - `get_dataset` (function, lines 122-126) - def get_dataset(dataset_id)
@@ -5592,9 +5592,9 @@ Symbols:
 - `ValidatePresetRequest` (class, lines 26-28) - class ValidatePresetRequest(BaseModel)
 - `apply_speed` (function, lines 31-54) - def apply_speed(params, speed, bounds)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:776` (section) [wogd_ddsp_c05e2cc073db]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:202` (section) [wogd_ddsp_8366c77571f6]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:776` (section) [wogd_ddsp_c05e2cc073db]
 - `host_info` (function, lines 58-59) - def host_info()
 - `validate_preset` (function, lines 63-75) - def validate_preset(req)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
@@ -5727,11 +5727,11 @@ Symbols:
 - `create_run` (function, lines 96-132) - def create_run(req, runner)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1661` (section) [wogd_ddsp_2cef55de6f24]
 - `list_runs` (function, lines 136-158) - def list_runs()
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
 - `get_run` (function, lines 162-182) - def get_run(run_id)
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
 - `stop_run` (function, lines 186-205) - def stop_run(run_id)
 - `resume_run` (function, lines 209-251) - def resume_run(run_id, runner)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m14-dual-mode-ui.md:1661` (section) [wogd_ddsp_2cef55de6f24]
@@ -5791,24 +5791,24 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\architecture.md:518` (section) [wogd_ddsp_39b6a9d9d58e]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:25` (section) [wogd_ddsp_e348396da87b]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:679` (section) [wogd_ddsp_6462d70a6b7c]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:708` (section) [wogd_ddsp_2499279d2c76]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:741` (section) [wogd_ddsp_90a2b29fab28]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:813` (section) [wogd_ddsp_4c00d5c586d9]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:679` (section) [wogd_ddsp_6462d70a6b7c]
 - `run_preprocessing_job` (function, lines 231-293) - def run_preprocessing_job(dataset_id) - Run full DDSP preprocessing pipeline on a dataset directory.
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:722` (section) [wogd_ddsp_5289a1414797]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:903` (section) [wogd_ddsp_752187994e03]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:31` (section) [wogd_ddsp_f97215790e2d]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\server\routes\dataset.py:250` (function) [wogd_ddsp_162ae6c9d963]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:722` (section) [wogd_ddsp_5289a1414797]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:903` (section) [wogd_ddsp_752187994e03]
 - `run_training_job` (function, lines 297-393) - def run_training_job(run_id)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m4-backend.md:95` (section) [wogd_ddsp_32d36c594fdf]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m3-model-training.md:91` (section) [wogd_ddsp_58acbbd0e866]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:341` (section) [wogd_ddsp_fc23a513fa07]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:708` (section) [wogd_ddsp_2499279d2c76]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:679` (section) [wogd_ddsp_6462d70a6b7c]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:722` (section) [wogd_ddsp_5289a1414797]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:920` (section) [wogd_ddsp_bbaffe352bba]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:341` (section) [wogd_ddsp_fc23a513fa07]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:708` (section) [wogd_ddsp_2499279d2c76]
 - `run_synthesis_job` (function, lines 397-440) - def run_synthesis_job(job_id)
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
 - `run_morph_job` (function, lines 444-495) - def run_morph_job(job_id)
@@ -6583,8 +6583,8 @@ Symbols:
 - `test_reclamp_all_custom_skips_builtin` (function, lines 250-272) - def test_reclamp_all_custom_skips_builtin(tmp_path)
 - `test_fingerprint_change_first_check_returns_changed` (function, lines 275-284) - def test_fingerprint_change_first_check_returns_changed(tmp_path)
 - `test_seed_builtin_presets_on_legacy_unique_name_db` (function, lines 287-324) - def test_seed_builtin_presets_on_legacy_unique_name_db(tmp_path) - A DB created before per-tier presets (name UNIQUE) must still boot + seed.
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:114` (section) [wogd_ddsp_8a65582b08c2]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:522` (section) [wogd_ddsp_5cd24d899249]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_smoke.py
 
@@ -6852,8 +6852,8 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:220` (function) [wogd_ddsp_e0ce827af667]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\tests\test_gpu.py:245` (function) [wogd_ddsp_d50ff8d94758]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m6-polish.md:154` (section) [wogd_ddsp_5b617e06666b]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:776` (section) [wogd_ddsp_c05e2cc073db]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:124` (section) [wogd_ddsp_411d014f312f]
 
 ## C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\train\trainer.py
 
@@ -6894,8 +6894,8 @@ Symbols:
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:205` (section) [wogd_ddsp_066170413fde]
 - `Trainer.load_checkpoint` (method, lines 366-394) - def load_checkpoint(self, path) - Load a checkpoint and restore model, optimizer, step, and manifest.
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\implementation\m15-param-manifest.md:141` (section) [wogd_ddsp_6cd43caec90d]
-  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:864` (section) [wogd_ddsp_aee01408fbfc]
   - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\log.md:6` (section) [wogd_ddsp_6f4f55602502]
+  - *used by* `C:\Users\marku\Documents\GitHub\artqcid\ai-projects\wogd-ddsp-trainer\doc\bugs.md:864` (section) [wogd_ddsp_aee01408fbfc]
 - `Trainer.param_manifest` (method, lines 397-404) - def param_manifest(self) - The parameter manifest associated with this trainer instance.
 - `Trainer.resume` (method, lines 406-416) - def resume(self, path) - Convenience wrapper: load *path* and return the restored step.
 - `Trainer.close` (method, lines 422-424) - def close(self) - Close the TensorBoard summary writer.

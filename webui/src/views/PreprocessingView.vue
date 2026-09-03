@@ -1,13 +1,11 @@
 <script setup>
-import { inject, ref, onMounted, onUnmounted, computed } from 'vue'
-import WaveSurfer from 'wavesurfer.js'
+import { inject, ref, onMounted, computed } from 'vue'
 import PitchConfidenceIndicator from '../components/PitchConfidenceIndicator.vue'
 
 const apiClient = inject('apiClient')
 
 const datasets = ref([])
 const selectedDataset = ref('')
-const ws = ref(null)
 const isRunning = ref(false)
 const completed = ref(false)
 
@@ -15,7 +13,7 @@ const nVoices = ref(1)
 const showMultiF0 = computed(() => nVoices.value > 1)
 
 const confidence = ref(0.85)
-const preprocessingResult = ref(null)
+const processingResult = ref(null)
 
 onMounted(async () => {
   if (!apiClient) return
@@ -26,45 +24,23 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  if (ws.value) {
-    ws.value.destroy()
-    ws.value = null
-  }
-})
-
-const loadWaveform = async () => {
-  if (!apiClient || !selectedDataset.value) return
-  if (ws.value) {
-    ws.value.destroy()
-    ws.value = null
-  }
-  const container = document.getElementById('waveform-container')
-  if (!container) return
-  try {
-    const firstFile = await apiClient.getFirstAudioFile(selectedDataset.value)
-    if (!firstFile) return
-    ws.value = WaveSurfer.create({
-      container,
-      waveColor: 'var(--text-secondary)',
-      progressColor: 'var(--accent)',
-      height: 80
-    })
-    ws.value.load(firstFile)
-  } catch (e) {
-    // waveform load failed; leave empty container
-  }
-}
-
 const runPreprocessing = async () => {
   if (!apiClient || !selectedDataset.value || isRunning.value) return
   isRunning.value = true
   completed.value = false
+  processingResult.value = null
   try {
     const result = await apiClient.preprocessDataset(selectedDataset.value)
-    preprocessingResult.value = result?.message || result?.status || null
+    const n = result?.files_processed
+    if (n !== undefined) {
+      processingResult.value = `Processed ${n} audio files`
+    } else if (result?.message) {
+      processingResult.value = result.message
+    } else {
+      processingResult.value = 'Extraction complete.'
+    }
   } catch (e) {
-    preprocessingResult.value = null
+    processingResult.value = null
   }
   isRunning.value = false
   completed.value = true
@@ -72,9 +48,8 @@ const runPreprocessing = async () => {
 
 const resultsText = computed(() => {
   if (!completed.value) return ''
-  return preprocessingResult.value
-    ? `Extraction complete: ${preprocessingResult.value}`
-    : 'Extraction complete.'
+  if (processingResult.value) return processingResult.value
+  return 'Extraction complete.'
 })
 </script>
 
@@ -84,19 +59,13 @@ const resultsText = computed(() => {
       class="dataset-select"
       data-testid="dataset-select"
       :value="selectedDataset"
-      @change="selectedDataset = ($event.target.value); loadWaveform()"
+      @change="selectedDataset = $event.target.value"
     >
       <option value="">Select a dataset</option>
       <option v-for="ds in datasets" :key="ds.id" :value="ds.id">
         {{ ds.name }}
       </option>
     </select>
-
-    <div
-      id="waveform-container"
-      class="waveform-container"
-      data-testid="waveform-container"
-    ></div>
 
     <div class="preprocessing-controls">
       <button
@@ -135,7 +104,6 @@ const resultsText = computed(() => {
 <style scoped>
 .preprocessing-view { max-width: 900px; }
 .dataset-select { padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; font-size: 0.875rem; margin-bottom: 1rem; }
-.waveform-container { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
 .preprocessing-controls { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
 .run-btn { padding: 0.5rem 1.5rem; background: var(--accent); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
 .run-btn:hover { background: var(--accent-hover); }

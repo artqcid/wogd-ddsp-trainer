@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 43`
+`next_id: 45`
 
 ## Bug template (copy for each new bug)
 
@@ -963,3 +963,36 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - history:
   - 2026-09-03 — filed as feature request during full project analysis.
   - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 2B subagent).
+
+## BUG-43 - batch_size hardcoded to 1 regardless of VRAM budget — wastes 70-80% of GPU capacity
+- status: open
+- milestone: M3 (training loop / DataLoader / preset system)
+- affected: M4, M5, M14 (all training runs), MT-A4
+- found-in: 2026-09-03, MT-A4 manual test (RTX 3060 6.44 GB, QUALITY standard preset)
+- severity: major
+- description: `batch_size` is hardcoded to `1` in two places — the Pinia store default (`webui/src/stores/modelConfig.js:13`) and `server/tasks.py:342` (`DataLoader(ds, batch_size=1, ...)`). It is **not part of the preset system** at all: `ParameterBounds`, `propose_presets()`, `build_builtin_presets()`, the speed factors (`apply_speed()`), and `validate_preset()` all ignore `batch_size`.
+
+  On an RTX 3060 (6.44 GB total, 5.37 GB free, hidden_size=256 in QUALITY standard), the model easily fits batch size 4-8. With `batch_size=1`, 70-80% of VRAM sits unused — training takes 4-8x longer than necessary.
+
+  The VRAM estimation infrastructure (`estimate_model_vram()` in `train/gpu.py`) already computes VRAM per sample. Computing `max_batch_size = floor(free_vram / vram_per_sample)` is straightforward but unimplemented. The speed system (FAST/NORMAL/QUALITY) scales `hidden_size`, `stft_scales`, `mixed_precision`, and `gradient_checkpointing` — never `batch_size`.
+
+- reproduction: Open TrainingConfigView with any preset on a GPU with >4 GB VRAM → Batch Size field shows `1` regardless of selected tier, speed, or available VRAM. Start training → DataLoader runs with `batch_size=1` → GPU utilization is minimal.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 manual test analysis. batch_size should be derived from VRAM budget per-sample, similarly to how hidden_size is scaled by speed.
+
+## BUG-44 - Training Config preset dropdown shows "-- Select Preset --" after wizard; "Built-In" optgroup confusing
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView / TabCore)
+- affected: MT-A4
+- found-in: 2026-09-03, MT-A4 manual test
+- severity: minor
+- description: Two related UI problems in TabCore's preset dropdown:
+
+  **(a) "-- Select Preset --" shown after wizard completes.** After the wizard selects a preset (FAST/NORMAL/QUALITY) and the user reaches the Core tab, the dropdown displays "-- Select Preset --" as if nothing was chosen. It should show the wizard-generated preset (e.g. "NORMAL (wizard)") so the user can see what was selected. "-- Select Preset --" is confusing because it implies no preset is active.
+
+  **(b) "Built-In" optgroup is shown but not usable.** The `<optgroup label="Built-in">` lists `FAST/NORMAL/QUALITY` as selectable options, but selecting one does not actually apply the preset's params to the form — the dropdown only updates `selectedPresetName` in TabCore, which is disconnected from the store. The user has no way to know what "Built-In" means or how to use it. The built-in presets are already applied by the wizard and should either be hidden or clearly marked as read-only info.
+- reproduction: Complete wizard → Core tab shows "-- Select Preset --" in the dropdown. Click dropdown → "Built-In" group shows FAST/NORMAL/QUALITY → selecting any of them does nothing visible.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 manual test.
