@@ -65,6 +65,9 @@ See [`log.md`](./log.md) for the chronological changelog._
 - [x] **M4.1** FastAPI services: dataset, model, training, inference.
 - [x] **M4.2** Celery + Redis async training/synthesis jobs + run lifecycle
       over REST (start/stop/resume).
+      ⚠ _ARCHITECT audit 2026-09-03: M4.2 code exists but training is **non-functional**
+      without Redis (BUG-50, critical-open). `LocalTaskRunner` fallback required before
+      training works for end-users. M4.2 = "code scaffolded", NOT "end-to-end functional"._
 - [x] **M4.3** Backend tests.
 - [x] **M4.4** TensorBoard URL/embed provisioning for the UI.
 - [x] **M4.5** Preset management: SQLite schema (`presets` table), CRUD

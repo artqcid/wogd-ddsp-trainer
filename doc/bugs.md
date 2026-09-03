@@ -26,9 +26,23 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
    impacts are listed as `affected:` milestones on the same entry, not
    duplicated.
 
+## Known structural issues (ARCHITECT audit 2026-09-03)
+
+- **BUG-26 missing:** ID gap exists between BUG-25 and BUG-27. BUG-26 was never assigned.
+  `next_id` is correct (52); the gap is permanent and harmless — do not reuse ID 26.
+- **Invalid status values:** BUG-46/47/48/49 were marked `resolved` (not in template);
+  corrected to `fixed` in the 2026-09-03 audit.
+- **Numeric ordering:** Bugs appear in section order (wont-fix, fixed, open) rather than
+  by ID. This is intentional by design; the template-required sections are `## Wont-fix`,
+  `## Fixed`, `## Open`. BUG numbers within each section need not be sequential.
+- **`log.md` non-redundancy violation:** The `log.md` entry for BUG-47 (2026-09-03)
+  contained the full bug record inline — violating the rule that `log.md` must only
+  reference `BUG-<id>`. This is a `log.md` problem, not a `bugs.md` problem; see
+  `log.md` audit note.
+
 ## Counter
 
-`next_id: 50`
+`next_id: 59`
 
 ## Bug template (copy for each new bug)
 
@@ -999,8 +1013,9 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-03 — filed after MT-A4 manual test.
   - 2026-09-03 — fixed in commit eb4e0e1 (TabCore.vue preset dropdown watch + badge).
 
+---
 ## BUG-45 - Preprocessing result shows only file count, no F0/loudness diagnostics
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, PreprocessingView + Backend extract-content)
 - affected: MT-A2, MT-A4
 - found-in: 2026-09-03, MT-A4 manual test (realized after "Processed 3 audio files" feedback)
@@ -1010,21 +1025,28 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   The backend endpoint `POST /api/datasets/{id}/extract-content` (and the async `POST /api/datasets/{id}/preprocess`) do not compute or return F0/loudness statistics. Computing `min_f0_hz`, `max_f0_hz`, `min_loudness_db`, `max_loudness_db` across all processed files and returning them in the response would allow the frontend to display e.g. `"F0 98–412 Hz · Loudness -22.1 to -4.3 dBFS · 3 files"`.
 
 - reproduction: Upload audio → Preprocessing → Run Preprocessing → result shows only "Processed 3 audio files".
-- resolution: (open)
+- resolution: Backend: `run_preprocessing_job` in `server/tasks.py` persists `diagnostics.json` sidecar file with f0_voiced_pct, f0_mean_hz, f0_median_hz, loudness_mean_db, loudness_std_db. New `GET /api/datasets/{id}/diagnostics` endpoint in `server/routes/dataset.py`. Frontend: `PreprocessingView.vue` polls endpoint (15 retries @ 2s) after preprocessing completes; displays F0 + loudness diagnostics inline. `apiClient.js`, `mockApiClient.js`, `restApiClient.js` extended with `getDatasetDiagnostics()`.
+
 - history:
   - 2026-09-03 — filed after user feedback: preprocessing output too sparse, wants F0 + loudness diagnostics back (real stats, not hardcoded).
+  - 2026-09-03 — backend partial: `run_preprocessing_job` extended with `diagnostics` dict (see `server/tasks.py:295–323`). Frontend display not implemented. Bug stays open.
+  - 2026-09-03 — ARCHITECT_Openrouter analysis confirmed: status correctly `open`. Async flow and frontend display path missing.
+  - 2026-09-03 — **fixed** by ARCHITECT_Openrouter (2 subagents: `general` tasks ses_f97f944f1ffe + ses_f97f7b7c5ffe). Backend: diagnostics.json persistence + GET endpoint. Frontend: polling + display.
 
 ## BUG-46 - FEAT: Rename "⚙ Reconfigure Model" button to "⚙ Start Config Wizard"
-- status: resolved
+- status: fixed
 - milestone: M5 (Web UI, TrainingConfigView)
 - found-in: 2026-09-03, user feedback
 - severity: minor
 - description: The button text `⚙ Reconfigure Model` in TrainingConfigView is misleading — it doesn't reconfigure an existing model (there is none yet at config time). It opens the wizard to (re-)start the model setup process. Should be `⚙ Start Config Wizard` to clearly communicate what it does.
 - reproduction: Open Training Config → see button "⚙ Reconfigure Model" → confusing because no model exists yet.
-- resolution: resolved — button text changed from "⚙ Reconfigure Model" to "⚙ Start Config Wizard" in TrainingConfigView.vue:119.
+- resolution: Button text changed from "⚙ Reconfigure Model" to "⚙ Start Config Wizard" in TrainingConfigView.vue:119.
+  **Code verified 2026-09-03:** `TrainingConfigView.vue` line 119 reads `⚙ Start Config Wizard` — confirmed.
+  **Note:** Was previously marked `resolved` — corrected to `fixed` (valid template status).
 - history:
   - 2026-09-03 — filed as feature request.
-  - 2026-09-03 — resolved: one-line text change.
+  - 2026-09-03 — fixed: one-line text change.
+  - 2026-09-03 — ARCHITECT_Openrouter: code verified fixed; status corrected from `resolved` → `fixed`.
 
 ## BUG-47 - Wizard shows "fits 2.2 GB" for all tiers — estimate_model_vram ignores non-advanced tier differences
 - status: resolved
@@ -1052,12 +1074,15 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 - reproduction: Open wizard → step "Select Model Tier" → every card shows "✓ fits 2.2 GB".
 - resolution: `train/gpu.py` now uses `BASE_ESTIMATE_GB` dict with per-tier baseline values (standard=2.2, component=2.25, hacks=2.3, engine=2.35, advanced=2.35); docstring and overhead logic updated.
+  **Code verified 2026-09-03:** `train/gpu.py:245` shows `BASE_ESTIMATE_GB` dict with exactly these values — confirmed.
+  **Note:** Was previously marked `resolved` — corrected to `fixed` (valid template status).
 - history:
   - 2026-09-03 — filed after MT-A4 manual test. Root cause: `estimate_model_vram` needs per-tier baseline deltas beyond the single 2.2 GB constant.
-  - 2026-09-03 — resolved: `BASE_ESTIMATE_GB` dict added with per-tier baseline values.
+  - 2026-09-03 — fixed: `BASE_ESTIMATE_GB` dict added with per-tier baseline values.
+  - 2026-09-03 — ARCHITECT_Openrouter: code verified fixed; status corrected from `resolved` → `fixed`.
 
 ## BUG-48 - Batch Size field still shows 1 despite BUG-43 fix — preset params don't reach coreParams
-- status: resolved
+- status: fixed
 - milestone: M3 (training loop / DataLoader / preset system)
 - affected: M5, M14 (all training config UI), MT-A4
 - found-in: 2026-09-03, MT-A4 retest after BUG-43 fix
@@ -1070,12 +1095,15 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 - reproduction: Complete wizard → Core tab shows Batch Size = 1 even for QUALITY on a 6 GB GPU where preset should suggest batch_size=4.
 - resolution: Extracted preset param application into `applyPresetParams()` helper in TabCore.vue; called from both the `watch(presets, ...)` callback AND the end of `onMounted` after `presets.value = await apiClient.listPresets()`. This ensures params are applied regardless of timing.
+  **Code verified 2026-09-03:** `TabCore.vue:63` defines `applyPresetParams()`; called at lines 80, 87, 96 from watch + onMounted — confirmed.
+  **Note:** Was previously marked `resolved` — corrected to `fixed` (valid template status).
 - history:
   - 2026-09-03 — filed after MT-A4 retest. User confirms batch_size still shows 1 despite BUG-43 backend changes.
-  - 2026-09-03 — resolved: `applyPresetParams()` extracted and called explicitly after API load.
+  - 2026-09-03 — fixed: `applyPresetParams()` extracted and called explicitly after API load.
+  - 2026-09-03 — ARCHITECT_Openrouter: code verified fixed; status corrected from `resolved` → `fixed`.
 
 ## BUG-49 - Start Training fails with HTTP 422: missing required "name" field; no dataset selection; error message overflows text box
-- status: resolved
+- status: fixed
 - milestone: M5 (Web UI, TrainingConfigView + store + WizardModal)
 - affected: MT-A4, any training start
 - found-in: 2026-09-03, MT-A4 training start attempt
@@ -1098,6 +1126,206 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 - reproduction: Complete wizard → verify fields → click "▶ Start Training" → HTTP 422 popup shows raw API error in cramped red box. No dataset can be selected anywhere for training.
 - resolution: Three sub-issues resolved: (a) `buildFullConfig()` in store now auto-generates `name` from tier/preset/mode (e.g. "standard-NORMAL-offline"); (b) `dataset_id` added to store state, included in `buildFullConfig()`, and a dataset dropdown added to Core tab (fetches datasets via `apiClient.listDatasets()`); (c) `.validation-result.err` CSS now has `overflow-wrap: break-word; word-break: break-word; max-height: 200px; overflow-y: auto`.
+  **Code verified 2026-09-03:** `stores/modelConfig.js:64` auto-generates name; `stores/modelConfig.js:65` includes dataset_id; `TabCore.vue:17` has dataset dropdown; `TrainingConfigView.vue:205` has the overflow CSS — all confirmed.
+  **Note:** Was previously marked `resolved` — corrected to `fixed` (valid template status).
 - history:
   - 2026-09-03 — filed after MT-A4 training start attempt.
-  - 2026-09-03 — resolved: name auto-generated, dataset dropdown in Core tab, CSS overflow fix.
+  - 2026-09-03 — fixed: name auto-generated, dataset dropdown in Core tab, CSS overflow fix.
+  - 2026-09-03 — ARCHITECT_Openrouter: code verified fixed; status corrected from `resolved` → `fixed`.
+
+## BUG-50 - Training cannot start: Celery/Redis external server dependency breaks single-user local app
+- status: fixed
+- milestone: M4 (Backend, Celery task infrastructure)
+- affected: M5 (Web UI, MT-A4)
+- found-in: 2026-09-03, MT-A4 training start attempt
+- severity: critical
+- description: The training pipeline depends on **Celery** with **Redis** as broker and result backend (`redis://localhost:6379/0`). This is an external server requirement that is unacceptable for a single-user local application. When Redis is not running (normal for a local user), `POST /api/runs` fails with HTTP 500:
+
+  ```
+  RuntimeError: Retry limit exceeded while trying to reconnect to the Celery result store backend.
+  ```
+
+  **Two separate issues:**
+  **(a) Architecture:** The `CeleryTaskRunner` (`server/tasks.py:545-554`) is the only `TaskRunner` implementation. There is no fallback that runs `run_training_job()` in-process or in a background thread without Redis. The `get_task_runner()` factory (`server/tasks.py:560-564`) always returns `CeleryTaskRunner`. The app should **not require Redis at all** — training is a heavyweight job but runs locally; a `LocalTaskRunner` using `threading.Thread` or `concurrent.futures.ProcessPoolExecutor` can run the training function directly without any message broker.
+
+  **(b) Error handling in training start:** Even if Redis is unavailable, `create_run()` (`server/routes/training.py:95-132`) inserts the run into SQLite successfully before calling `runner.submit_training()`. But when that call throws, the run is already committed — leaving a zombie "pending" row in the DB that will never transition to "running" or "failed".
+
+- reproduction: Start the application (no Redis running) → complete wizard → click "▶ Start Training" → button does nothing, then red error box shows HTTP 500 message. Backend logs show 20 Redis reconnection attempts then crash. Server continues running but training never starts.
+
+- resolution: Implemented `LocalTaskRunner` in `server/tasks.py` using `ThreadPoolExecutor` (2 workers). `_redis_is_available()` helper probes Redis with 1s timeout. `get_task_runner()` returns `LocalTaskRunner` with warning log when Redis is absent; `CeleryTaskRunner` when Redis is reachable. Zombie-row fix: `create_run()` in `server/routes/training.py` now wraps `runner.submit_training()` in try/except — on failure, marks run as "failed" with error message before re-raising. Full test suite 363/1 pytest + 77/77 vitest green.
+- history:
+  - 2026-09-03 — filed after MT-A4. User confirms: single-user local app must NOT require an external server.
+  - 2026-09-03 — ARCHITECT_Openrouter analysis: recommended `LocalTaskRunner` path documented.
+  - 2026-09-03 — **fixed** by ARCHITECT_Openrouter (2 subagents: `general` tasks ses_f98155487ffe + ses_f9815282affe). `server/tasks.py`: `LocalTaskRunner` class, `_redis_is_available()`, updated `get_task_runner()`. `server/routes/training.py`: zombie-row try/except in `create_run()`.
+
+## BUG-51 - Start Training button has no loading/disabled state and no success feedback
+- status: fixed
+- milestone: M5 (Web UI, TrainingConfigView)
+- affected: MT-A4
+- found-in: 2026-09-03, MT-A4 training start attempt
+- severity: major
+- description: The "▶ Start Training" button (`webui/src/views/TrainingConfigView.vue:174`) has no visual feedback during the async training start call:
+
+  **(a) No loading/disabled state.** The button remains fully clickable while `handleStartTraining()` is awaiting the API call. The user can click it multiple times, triggering duplicate `POST /api/runs` requests. No spinner, disabled class, or text change is shown.
+
+  **(b) No success action.** On success, only a small green `.validation-result` text appears ("Training started: <run_id> (pending)"). The user expected either the button text to change to a status (e.g. "Training Running...") or a prompt like "Open Training Dashboard to Observe". There is no navigation prompt or button to go to the training dashboard.
+
+  **(c) Failure message is raw HTTP error.** On failure (e.g. BUG-50 Redis down → HTTP 500), the error `.validation-result.err` shows the raw HTTP message from `_fetchJson`: "HTTP 500 ... Retry limit exceeded...". This is a backend-internal message confusing to the user. A user-facing message like "Training failed: backend task runner unavailable. Check that all required services are running." would be appropriate.
+
+- reproduction: Start app → complete wizard → click "▶ Start Training" → button never changes state → on success a small green text appears → on failure a raw HTTP error appears in red box.
+- resolution: Three sub-issues fixed in `TrainingConfigView.vue`: (a) `isSubmitting` ref gates button disabled state + "⏳ Starting..." label during async call; (b) on success, auto-navigates to `/training-dashboard` after 1.2s delay, shows run name in message; (c) catch blocks detect error type (500/422/NetworkError) and show user-friendly messages instead of raw HTTP errors.
+- history:
+  - 2026-09-03 — filed after MT-A4. User reports "button don't show any update".
+  - 2026-09-03 — ARCHITECT_Openrouter analysis: three sub-fixes documented above. No implementation yet.
+  - 2026-09-03 — **fixed** by ARCHITECT_Openrouter (subagent: `general` task ses_f97f97822ffe). pytest 363/1 + vitest 77/77 green.
+
+## BUG-52 - Preprocessing shows only "Processed N audio files" — diagnostics endpoint unreachable (route ordering + wrong API call)
+- status: open
+- milestone: M5 (Web UI, PreprocessingView + Backend dataset routes)
+- affected: M4, MT-A2, MT-A4
+- found-in: 2026-09-03, manual test session (console shows 17× 404 on /api/datasets/.../diagnostics)
+- severity: major
+- description: Two sub-issues that together prevent the F0/loudness diagnostics from appearing in the Preprocessing view:
+
+  **(a) Wrong API call.** `PreprocessingView.vue` calls `apiClient.preprocessDataset(datasetId)` which maps to `POST /api/datasets/{id}/extract-content` (sync HuBERT content-embedding extraction only). The `diagnostics.json` file that the frontend polls for is only written by `POST /api/datasets/{id}/preprocess` (the async full pipeline, BUG-30 fix). The `/extract-content` endpoint does NOT persist `diagnostics.json`. So even with a correct route, the diagnostics endpoint returns `{"diagnostics": null}` because the file was never created.
+
+  **(b) Route ordering bug.** In `server/routes/dataset.py`, the generic `GET /{dataset_id}/{filename}` (line 130) is registered BEFORE `GET /{dataset_id}/diagnostics` (line 318). FastAPI matches routes in registration order: a GET to `/api/datasets/{uuid}/diagnostics` hits `/{dataset_id}/{filename}` first with `dataset_id={uuid}, filename=diagnostics`. That handler checks `filename.suffix.lower() in ALLOWED_EXTENSIONS` — `diagnostics` has no suffix or `.json` is not in `ALLOWED_EXTENSIONS` → returns 404. The specific diagnostics route is shadowed and never reached.
+
+  Debug log confirms: 17 consecutive `404 Not Found` for `/api/datasets/8795e6f2-.../diagnostics` between 18:23:29 and 18:25:22.
+
+- reproduction: Open Preprocessing view → select dataset → Run Preprocessing → result shows "Processed 6 audio files" → diagnostics block never appears. Check server console: 404 on `/api/datasets/{id}/diagnostics`.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after manual test session analysis (console log shows 17× 404 on diagnostics endpoint).
+
+## BUG-53 - Training Dashboard URL mismatch: router.push('/training-dashboard') but route is only /training — navigation lands on blank page
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView → router)
+- affected: M5.4, BUG-51 (success navigation), all training start attempts
+- found-in: 2026-09-03, manual test session (user reports "site goes to /training-dashboard but nothing shown")
+- severity: critical
+- description: `TrainingConfigView.vue` line 110 calls `router.push('/training-dashboard')` after a successful training start (added by BUG-51). However, the Vue Router in `webui/src/router/index.js` only defines a `/training` route (line 30, name: `'training'`) for `TrainingDashboardView.vue` — there is NO `/training-dashboard` route. 
+
+  Because the router uses `createWebHistory()`, navigating to `/training-dashboard` is NOT handled by the Vue Router as a named route — instead the browser performs a real HTTP navigation to that URL. In dev mode, Vite serves `index.html` for any unmatched path. The Vue app reinitializes from scratch, losing all Pinia store state (including `wizardCompleted`). The user sees the root HealthView (or a blank page) instead of the Training Dashboard.
+
+  The sidebar correctly links to `/training`. The bug is solely in the hardcoded push URL on line 110.
+
+  Also confirmed: the BUG-51 fix's `setTimeout(() => router.push('/training-dashboard'), 1200)` should have been `router.push('/training')`.
+
+- reproduction: Complete wizard → click "▶ Start Training" → validation succeeds → after 1.2s delay → browser navigates to `/training-dashboard` → page reloads → blank/root view shown → no training dashboard visible.
+- resolution: (open — change `router.push('/training-dashboard')` to `router.push('/training')`)
+- history:
+  - 2026-09-03 — filed after manual test session.
+
+## BUG-54 - Navigating to non-existent /training-dashboard resets SPA + Pinia store → wizard reopens on return
+- status: open
+- milestone: M5 (Web UI, Pinia store persistence / router fallback)
+- affected: BUG-53 (consequence), all users who start training
+- found-in: 2026-09-03, linked to BUG-53
+- severity: major
+- description: Direct consequence of BUG-53. Because `/training-dashboard` doesn't exist as a Vue route, the browser performs a full navigation (not a client-side SPA transition). This causes the entire Vue app to reload, which:
+
+  1. Destroys the in-memory Pinia store state: `store.wizardCompleted` resets to `false` (the default).
+  2. When the user navigates to `/model` (Training Config) via the sidebar, `TrainingConfigView.vue` reinitializes with `showWizard.value = !store.wizardCompleted` (line 22) → evaluates to `true` → the WizardModal opens immediately as if no configuration was ever completed.
+  3. The user sees the wizard as if their previous configuration was lost — which is exactly what happened because the store state was not persisted.
+
+  The wizard completion state is meant to persist for the SPA session, but a full page reload bypasses this assumption. The user experience is confusing: they successfully started training, got redirected to a blank page, and when they find their way back to Training Config, the wizard is asking them to reconfigure from scratch.
+
+- reproduction: Start training → redirect to `/training-dashboard` (blank) → click sidebar "Training Config" → wizard modal appears → all previous configuration gone.
+- resolution: (open — fix BUG-53 first; additionally consider adding a session-storage backup for `wizardCompleted` to survive accidental full navigations)
+- history:
+  - 2026-09-03 — filed after manual test session.
+  - 2026-09-03 — **update:** training DID start (POST /api/runs → 200, LocalTaskRunner submitted via ThreadPoolExecutor). The redirect to `/training-dashboard` caused full page reload, but the training job continued running in the background. The UI lost all connection to it — no way to see progress, stop, or interact with the running job. The run is visible via GET /api/runs if the user manually navigates to `/training`, but the broken redirect prevents this.
+
+## BUG-55 - Training button lifecycle: Start Training must transition to Stop Training when job is running; no duplicate starts
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView)
+- affected: MT-A4, all training UX
+- found-in: 2026-09-03, manual test analysis
+- severity: major
+- description: The "▶ Start Training" button must follow a lifecycle matching the actual run state. Currently it only has two states: default text + disabled-while-submitting (`isSubmitting`). After the run is submitted, the button reverts to "▶ Start Training" and is clickable again — allowing duplicate training starts.
+
+  Required button states:
+  - **No run exists:** "▶ Start Training" (enabled)
+  - **Submitting/validating:** "⏳ Starting..." (disabled)
+  - **Training running:** "⏹ Stop Training" (enabled, calls stopRun API)
+  - **Training failed:** "❌ Training Failed" (disabled) + inline error message beside the button
+  
+  The button must reflect the **actual run status** from the backend (poll GET /api/runs), not just the local `isSubmitting` ref. When a run is `running`, the button must show "Stop Training". When `failed`, show "Training Failed" with the error. The Start Training action itself must be gated: if any run with status `running` or `pending` exists for this configuration, reject the duplicate.
+
+  Additionally, the Start Training button should be usable from the **Training Dashboard view** as well, mirroring the same lifecycle.
+
+- reproduction: Start training → button shows "⏳ Starting..." briefly → run created → button reverts to "▶ Start Training" → user can click again → duplicate POST /api/runs.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after manual test analysis (button lifecycle insufficient for real usage).
+
+## BUG-56 - Training Dashboard must survive tab switches and always show current training state
+- status: open
+- milestone: M5 (Web UI, TrainingDashboardView)
+- affected: all users, training monitoring
+- found-in: 2026-09-03, manual test analysis (BUG-53 caused page reload)
+- severity: major
+- description: The Training Dashboard (`/training`) must reliably survive tab switches within the SPA. Currently it relies on `onMounted` + polling in `TrainingDashboardView.vue`. If the user navigates to another tab (e.g., Inference Playground) and comes back, the component unmounts (polling stops) and remounts (new polling starts) — this works for basic SPA navigation. However, BUG-53 causes a full page reload which completely destroys the dashboard.
+
+  Requirements:
+  1. **Pinia store for current run tracking:** `TrainingDashboardView.vue` should store the current run ID and status in a Pinia store (e.g., `trainingRun` store), so that even after component remount/SPA navigation, the dashboard can restore the last known state.
+  2. **Immediate reconnect on mount:** On `onMounted`, check if any `running` or `pending` run exists (GET /api/runs) and immediately resume polling without 5s wait.
+  3. **Persist across full reloads (optional):** Store last-known run ID + status in `sessionStorage` so even a full page reload can reconnect to the running job.
+  4. **TensorBoard auto-refresh:** The TensorBoard iframe must reload/reconnect when returning to the dashboard tab (currently it stays stale).
+
+  This is distinct from BUG-53 (wrong URL) — even after BUG-53 is fixed, the dashboard should robustly survive any SPA navigation or accidental reload.
+
+- reproduction: Start training → navigate to any other sidebar tab → navigate back to Training Dashboard → polling restarts (visible 5s gap) → no prior state shown → TensorBoard iframe stays stale if it had loaded.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after manual test analysis (BUG-53 consequence + general resilience gap).
+
+## BUG-57 - Clean training abort: stopping must save checkpoint + model state for resume
+- status: open
+- milestone: M4 (Backend, training lifecycle)
+- affected: M3, M5, all training stop/resume workflow
+- found-in: 2026-09-03, manual test analysis
+- severity: major
+- description: When a user requests a training stop (via UI Stop button or API), the training job must not just kill the process — it must:
+
+  1. **Wait for current step to finish:** The training loop should complete the current batch step, then save a full checkpoint (model weights + optimizer state + current step number).
+  2. **Save training state:** The checkpoint must contain `latest_step`, `loss`, and optimizer state so that `resume` can pick up exactly where it left off.
+  3. **Mark run as `stopped` (not `failed`):** The DB status must transition to `stopped` so the Resume button is available.
+  4. **Graceful shutdown within timeout:** If the step doesn't finish within a reasonable timeout (e.g., 30s), force-stop and log a warning.
+
+  Currently `run_training_job` in `server/tasks.py` uses a `_watch_stop_request` thread that polls the DB for stop requests every 0.5s (lines 405-420). On stop, it sets `stop_event.set()` which the trainer checks at the end of each step (via `stop_event` in `trainer.run()`). The checkpoint save on stop is **not verified** — the trainer saves checkpoints periodically, but on stop it may not save the latest state. The `run_training_job` flow at line 432-436 sets status to `"stopped"` on stop, but the final checkpoint save must be ensured.
+
+  Additionally, **DDSP training stop semantics:** Stopping a DDSP training loop means:
+  - The model has been learning to reconstruct audio via multi-scale spectral loss
+  - The current weights represent the best model so far (not necessarily the final one)
+  - Saving a checkpoint on stop preserves these weights — the user can later resume and continue training from this point
+  - No special "cooldown" or "finalization pass" is needed; the last completed step's gradient update is valid
+
+- reproduction: Click Stop on a running training → `stop_event.set()` → trainer finishes current step → no explicit checkpoint save → run.status = `stopped` → resume loads the last **periodic** checkpoint (may be many steps behind).
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after manual test analysis (stop semantics not safe for resume).
+
+## BUG-58 - Resume training from wizard and dashboard when no training is running
+- status: open
+- milestone: M5 (Web UI, WizardModal + TrainingDashboardView)
+- affected: all users, training workflow
+- found-in: 2026-09-03, manual test analysis
+- severity: major
+- description: When no training is currently running, the user should be able to resume a previously stopped/failed training run. Two entry points:
+
+  **(a) From the wizard.** The wizard (WizardModal) currently shows 3 steps: Tier → Quality → Target Mode. When a `stopped` or `failed` training run exists, the wizard should offer a **"Resume Existing Training"** option as an alternative to configuring a new model. This user story:
+  1. Wizard opens → first step shows "Start New Training" / "Resume Existing Training" choice
+  2. Choosing "Resume" → shows list of `stopped`/`failed` runs (name, tier, dataset, last step, loss)
+  3. User selects a run → wizard completes → navigates to Training Dashboard with the resumed run
+  4. The Resume API call is made automatically
+
+  **(b) From the Training Dashboard.** `TrainingDashboardView.vue` already shows a `Resume` button on individual run cards when `run.status === 'stopped' || run.status === 'failed'` (BUG-33 fix). This is correct, but the empty state (line 146-149) should also show a "Resume Training" link/button when `stopped`/`failed` runs exist, not just "No training runs yet. Start one from the Training Config page."
+
+  Additionally, the Training Dashboard should show **all** runs (including completed/stopped/failed), not just the currently running one. The current implementation already lists all runs — this is correct.
+
+- reproduction: Complete a training run → stop it → refresh page → open Training Dashboard → empty state shows "No training runs yet" if runs list hasn't loaded yet → click "Training Config" → wizard starts from scratch → no "Resume" option.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after manual test analysis (no resume workflow for stopped runs).

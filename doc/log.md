@@ -3,6 +3,99 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — BUG-52, BUG-53, BUG-54 created (preprocessing diagnostics + training dashboard routing)
+
+**Creation** — Three new bugs filed after manual test session analysis:
+
+- **BUG-52** (major) — Preprocessing diagnostics missing: two sub-issues. (a) `PreprocessingView.vue` calls `/extract-content` instead of `/preprocess`, so `diagnostics.json` is never written. (b) Route ordering: `/{dataset_id}/{filename}` (line 130) matches `/diagnostics` as a filename before `/{dataset_id}/diagnostics` (line 318) — causing 404. Console confirms 17× 404 on diagnostics endpoint. Reference: `doc/bugs.md` BUG-52.
+- **BUG-53** (critical) — `TrainingConfigView.vue` line 110 pushes to `/training-dashboard` (doesn't exist) instead of `/training`. Causes full page reload → Pinia store lost → blank view. Sidebar correctly links to `/training`. Reference: `doc/bugs.md` BUG-53.
+- **BUG-54** (major) — Consequence of BUG-53: full page reload resets `store.wizardCompleted` to `false`. Returning to Training Config opens wizard as if no config was ever done. Reference: `doc/bugs.md` BUG-54.
+
+Debug log analysis: training run was created (POST /api/runs 200) but no training progress logs appeared. `LocalTaskRunner` submitted job to `ThreadPoolExecutor`. Diagnostics endpoint 404 confirmed in server console.
+
+**Update** — BUG-53 analysis refined: training DID start (POST /api/runs 200, LocalTaskRunner submitted via ThreadPoolExecutor), but the redirect to `/training-dashboard` caused full page reload. The UI lost all connection to the running background job.
+
+## 2026-09-03 — BUG-55, BUG-56, BUG-57, BUG-58 created (training lifecycle, dashboard resilience, clean abort, resume workflow)
+
+**Creation** — Four new bugs filed after training lifecycle analysis:
+
+- **BUG-55** (major) — Training button lifecycle: "▶ Start Training" must transition to "⏹ Stop Training" when job is running, show "❌ Training Failed" on failure with inline error. No duplicate starts allowed. Button must reflect actual backend run status, not just local `isSubmitting` ref. Reference: `doc/bugs.md` BUG-55.
+- **BUG-56** (major) — Training Dashboard must survive tab switches: use Pinia store + sessionStorage for run state persistence, reconnect immediately on mount, TensorBoard auto-refresh. Reference: `doc/bugs.md` BUG-56.
+- **BUG-57** (major) — Clean training abort: stop must save checkpoint after current step (model weights + optimizer + step count) before marking `stopped`. No forced kill. Resume must pick up exactly where it stopped. Reference: `doc/bugs.md` BUG-57.
+- **BUG-58** (major) — Resume training from wizard and dashboard: wizard Step 1 offers "Start New" / "Resume Existing" choice; dashboard empty state shows resume option when stopped/failed runs exist. Reference: `doc/bugs.md` BUG-58.
+
+All entries filed in `doc/bugs.md`; `next_id` bumped to 59.
+
+## 2026-09-03 — BUG-50, BUG-51, BUG-45 all fixed (chronological bug-fix batch)
+
+**Update** — ARCHITECT_Openrouter fixed the last three open bugs in dependency-aware order.
+
+**BUG-50** (critical) — `LocalTaskRunner`: `server/tasks.py` — added `LocalTaskRunner` class
+(ThreadPoolExecutor, 2 workers), `_redis_is_available()` helper (1s timeout), updated
+`get_task_runner()` to fall back when Redis absent. `server/routes/training.py` — wrapped
+`runner.submit_training()` in try/except to avoid zombie pending rows. Subagents:
+`general` task `ses_f98155487ffe` (tasks.py), `ses_f9815282affe` (training.py).
+
+Pre-existing test fixes: `test_gpu_feasibility.py` — updated assertions for BUG-47
+BASE_ESTIMATE_GB values (advanced baseline 2.35, n3=7.05, latent=2.50, ce=2.71).
+`test_polyddsp.py` — added `batch_size_max=8` to `ParameterBounds` constructor (BUG-43 field).
+
+**BUG-51** (major) — Start Training button UX: `webui/src/views/TrainingConfigView.vue` —
+`isSubmitting` ref gates disabled state + dynamic label "⏳ Starting..."; success auto-navigates
+to `/training-dashboard` after 1.2s; catch blocks detect error type (500/422/NetworkError) and
+show user-friendly messages. Subagent: `general` task `ses_f97f97822ffe`.
+
+**BUG-45** (minor) — Preprocessing diagnostics: `server/tasks.py` — persists `diagnostics.json`
+after preprocessing run with f0_voiced_pct, f0_mean_hz, f0_median_hz, loudness_mean_db,
+loudness_std_db. `server/routes/dataset.py` — new `GET /api/datasets/{id}/diagnostics` endpoint.
+`webui/src/views/PreprocessingView.vue` — polls endpoint 15× @ 2s after completion; displays
+F0 + loudness diagnostics inline. `apiClient.js`, `mockApiClient.js`, `restApiClient.js` —
+added `getDatasetDiagnostics()`. Subagents: `general` tasks `ses_f97f944f1ffe` (backend),
+`ses_f97f7b7c5ffe` (frontend).
+
+**Verification:** pytest 363/1 green, vitest 77/77 green, ruff check clean, ruff format clean.
+No open bugs remain. Updated `bugs.md`: BUG-50/51/45 status `open` → `fixed` with resolutions.
+
+**Update** — ARCHITECT_Openrouter full audit of BUG-42..51 and whole `doc/` folder.
+
+**Bug status corrections (no code changes):**
+- BUG-46/47/48/49: status `resolved` → `fixed` (invalid status value; `resolved` is not in the
+  template `open|in-progress|fixed|verified`). Code verified for all four: changes confirmed in
+  `TrainingConfigView.vue:119`, `train/gpu.py:245`, `TabCore.vue:63`, `stores/modelConfig.js:64`.
+- BUG-45: remains `open` (correct). False "fixed by Batch 1D subagent" resolution text removed;
+  analysis documented: backend computes `diagnostics` dict (`server/tasks.py:295–323`) but
+  `PreprocessingView.vue` never reads `result.diagnostics`. Async polling path missing entirely.
+- BUG-50: analysis documented — `LocalTaskRunner` architecture path specified in resolution section.
+  This is the single highest-priority open bug (critical; blocks all real training).
+- BUG-51: three sub-fix paths documented in resolution section (loading state, success navigation,
+  user-friendly error messages).
+
+**Doc consistency issues found and documented:**
+1. **`bugs.md` BUG-26 gap:** ID 26 was never assigned (gap: BUG-25 → BUG-27). Documented in
+   `bugs.md` §Known structural issues. Gap is permanent; ID 26 must not be reused.
+2. **`log.md` non-redundancy violation (this file):** The `log.md` entry for BUG-47 at
+   line ~35–63 contains the full bug record inline (`- status: open`, `- milestone:`,
+   `- description:` etc.). This violates AGENTS.md rule: "`log.md` references bugs only by
+   `BUG-<id>`". The entry cannot be deleted (log is append-only), but is hereby flagged.
+   Future entries must reference bugs by ID only.
+3. **`checklist.md` M4.2 contradiction:** M4.2 (Celery + Redis async training) is marked `[x]`
+   (done), but BUG-50 (critical-open) proves training is entirely non-functional without Redis.
+   This is a semantic inconsistency — M4.2 means "the code exists", not "it works for end users".
+   Noted in `checklist.md` as a warning comment.
+4. **`checklist.md` ordering:** M14 content appears after M18 content (lines 308–422). M8 tasks
+   appear embedded within M14 Phase 2. This is messy but structurally harmless.
+5. **`log.md` entry "BUG-45..49 all resolved" (line ~17–26):** incorrectly claims BUG-45 was
+   resolved. That entry conflated the BUG-25-style fix (real API response) with BUG-45 (actual
+   F0/loudness stats). Logged here as correction; the original entry cannot be edited
+   (append-only), but BUG-45 status in `bugs.md` correctly remains `open`.
+
+Reference: `doc/bugs.md` BUG-45, BUG-46, BUG-47, BUG-48, BUG-49, BUG-50, BUG-51.
+
+**Creation** — MT-A4 retest: training never starts because Redis is not running. Celery requires an external Redis server — unacceptable for a single-user local app. Two bugs filed:
+
+- BUG-50: Celery/Redis mandatory dependency breaks training start (`server/tasks.py` only has `CeleryTaskRunner`, no in-process fallback). Training DB row left as zombie "pending" when Redis is down. Reference: `doc/bugs.md` BUG-50.
+- BUG-51: Start Training button has no loading/disabled state, no success feedback (no "go to dashboard" prompt), and raw HTTP error messages shown to user. Reference: `doc/bugs.md` BUG-51.
+
 ## 2026-09-03 — Restore .vscode/tasks.json with all original tasks; activate post-commit git hook
 
 **Fix** — Restored original tasks.json from commit 721f013: `build-debug`, `build-release`, `build-installer`, `e2e-test`, `start-application-debug`, `start-application-release`, `stop-application-debug`, `stop-application-release`. Added `clean-build-debug` and `clean-build-release` as new tasks. Activated git post-commit hook via `git config core.hooksPath .githooks`. Wiki sync + lint all clean.

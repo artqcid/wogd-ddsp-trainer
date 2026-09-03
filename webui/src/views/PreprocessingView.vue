@@ -14,6 +14,7 @@ const showMultiF0 = computed(() => nVoices.value > 1)
 
 const confidence = ref(0.85)
 const processingResult = ref(null)
+const diagnostics = ref(null)
 
 onMounted(async () => {
   if (!apiClient) return
@@ -44,6 +45,7 @@ const runPreprocessing = async () => {
   }
   isRunning.value = false
   completed.value = true
+  pollDiagnostics(selectedDataset.value)
 }
 
 const resultsText = computed(() => {
@@ -51,6 +53,22 @@ const resultsText = computed(() => {
   if (processingResult.value) return processingResult.value
   return 'Extraction complete.'
 })
+
+const pollDiagnostics = async (datasetId) => {
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 2000))
+    if (!apiClient) break
+    try {
+      const result = await apiClient.getDatasetDiagnostics(datasetId)
+      if (result?.diagnostics) {
+        diagnostics.value = result.diagnostics
+        break
+      }
+    } catch (e) {
+      // keep polling
+    }
+  }
+}
 </script>
 
 <template>
@@ -84,6 +102,10 @@ const resultsText = computed(() => {
 
     <div v-if="resultsText" class="results" data-testid="results">
       {{ resultsText }}
+    </div>
+
+    <div v-if="diagnostics" class="diagnostics" data-testid="diagnostics">
+      F0: {{ diagnostics.f0_mean_hz.toFixed(0) }} Hz (median {{ diagnostics.f0_median_hz }} Hz, {{ diagnostics.f0_voiced_pct }}% voiced) · Loudness: {{ diagnostics.loudness_mean_db.toFixed(1) }} dBFS (±{{ diagnostics.loudness_std_db.toFixed(1) }})
     </div>
 
     <PitchConfidenceIndicator

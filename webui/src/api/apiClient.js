@@ -135,6 +135,11 @@ export class ApiClient {
     throw new Error('ApiClient.exportModel not implemented')
   }
 
+  /** @returns {Promise<{dataset_id: string, diagnostics: object|null}>} */
+  async getDatasetDiagnostics(datasetId) {
+    throw new Error('ApiClient.getDatasetDiagnostics not implemented')
+  }
+
   /** @returns {Promise<{state: string, error?: string, downloads?: Array}>} */
   async exportStatus(jobId) {
     throw new Error('ApiClient.exportStatus not implemented')

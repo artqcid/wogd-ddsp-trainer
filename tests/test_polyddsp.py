@@ -136,6 +136,7 @@ def test_n_voices_clamp() -> None:
         stft_scales_max=5,
         mixed_precision="required",
         gradient_checkpointing="enabled",
+        batch_size_max=8,
     )
     result, flags = clamp_params({"n_voices": 0}, bounds)
     assert result["n_voices"] == N_VOICES_MIN

@@ -13,25 +13,25 @@ def test_estimate_standard() -> None:
 
 def test_estimate_advanced_no_addons() -> None:
     est = estimate_model_vram("advanced", n_voices=1)
-    assert est.peak_gb == 2.2
+    assert est.peak_gb == 2.35
     assert est.warning is None
 
 
 def test_estimate_advanced_latent() -> None:
     est = estimate_model_vram("advanced", use_latent=True)
-    assert est.peak_gb == 2.35
+    assert est.peak_gb == 2.50
     assert est.warning is None
 
 
 def test_estimate_advanced_content_encoder() -> None:
     est = estimate_model_vram("advanced", use_content_encoder=True)
-    assert est.peak_gb == 2.56
+    assert est.peak_gb == 2.71
     assert est.warning is None
 
 
 def test_estimate_advanced_n3() -> None:
     est = estimate_model_vram("advanced", n_voices=3)
-    assert est.peak_gb == 6.6
+    assert est.peak_gb == 7.05
     assert est.warning is not None
 
 
@@ -42,9 +42,10 @@ def test_estimate_advanced_n3_all() -> None:
 
 
 def test_estimate_non_advanced_ignores_params() -> None:
-    for tier in ("standard", "component", "hacks", "engine"):
+    expected = {"standard": 2.2, "component": 2.25, "hacks": 2.3, "engine": 2.35}
+    for tier, peak_gb in expected.items():
         est = estimate_model_vram(tier, n_voices=3, use_latent=True, use_content_encoder=True)
-        assert est.peak_gb == 2.2
+        assert est.peak_gb == peak_gb, f"{tier}: expected {peak_gb}, got {est.peak_gb}"
         assert est.warning is None
 
 

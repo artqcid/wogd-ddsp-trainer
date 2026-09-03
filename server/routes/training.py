@@ -14,6 +14,7 @@ from server.db import (
     run_create,
     run_delete,
     run_get,
+    run_set_error,
     run_set_status,
     run_set_stop_requested,
 )
@@ -117,7 +118,14 @@ def create_run(
         )
         conn.commit()
 
-        task_id = runner.submit_training(run_id)
+        try:
+            task_id = runner.submit_training(run_id)
+        except Exception as exc:
+            run_set_status(conn, run_id, "failed")
+            run_set_error(conn, run_id, str(exc))
+            conn.commit()
+            raise
+
         return {
             "run_id": run_id,
             "name": req.name,

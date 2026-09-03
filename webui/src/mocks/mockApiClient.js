@@ -234,6 +234,10 @@ export class MockApiClient {
     return { status: 'ok', dataset_id: datasetId, files_processed: 3 }
   }
 
+  async getDatasetDiagnostics(datasetId) {
+    return { dataset_id: datasetId, diagnostics: null }
+  }
+
   async exportModel(params) {
     return { job_id: 'export_job_001' }
   }

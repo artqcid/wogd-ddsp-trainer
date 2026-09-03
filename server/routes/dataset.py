@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import shutil
 import uuid
@@ -312,3 +313,18 @@ async def delete_dataset(dataset_id: str, force: bool = False) -> dict:
     shutil.rmtree(str(dataset_path))
     logger.info("delete_dataset: id=%s path=%s", dataset_id, dataset_path)
     return {"status": "deleted", "dataset_id": dataset_id}
+
+
+@router.get("/{dataset_id}/diagnostics")
+async def get_dataset_diagnostics(dataset_id: str) -> dict:
+    if not dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+    diag_path = datasets_dir() / dataset_id / "diagnostics.json"
+    if diag_path.is_file():
+        try:
+            data = json.loads(diag_path.read_text(encoding="utf-8"))
+        except Exception:
+            data = None
+        return {"dataset_id": dataset_id, "diagnostics": data}
+    return {"dataset_id": dataset_id, "diagnostics": None}

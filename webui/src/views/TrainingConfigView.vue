@@ -1,5 +1,6 @@
 <script setup>
 import { inject, ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useModelConfigStore } from '../stores/modelConfig.js'
 import { tierLabel, tierColor, tierIcon } from '../utils/tierColors.js'
 import GpuFeasibilityBanner from '../components/GpuFeasibilityBanner.vue'
@@ -13,6 +14,7 @@ import PresetSaveDialog from '../components/PresetSaveDialog.vue'
 
 const apiClient = inject('apiClient')
 const store = useModelConfigStore()
+const router = useRouter()
 
 const activeTab = ref('core')
 const showDialog = ref(false)
@@ -20,6 +22,7 @@ const validationResult = ref(null)
 const showWizard = ref(!store.wizardCompleted)
 const showTierMismatchWarning = ref(false)
 const pendingConfig = ref(null)
+const isSubmitting = ref(false)
 
 const TIER_TAB_MAP = {
   standard: ['core', 'component'],
@@ -62,6 +65,7 @@ async function handleStartTraining() {
   validationResult.value = null
   const config = store.buildFullConfig()
   try {
+    isSubmitting.value = true
     const validation = await apiClient.validateConfig(config)
     const clamped = validation.clamped_fields || []
     if (validation.model_tier_mismatch) {
@@ -74,7 +78,18 @@ async function handleStartTraining() {
     }
     await _doStartRun(config, clamped)
   } catch (e) {
-    validationResult.value = { ok: false, message: e.message || 'Validation failed' }
+    const msg = e.message || ''
+    if (msg.includes('500') || msg.includes('Internal Server Error')) {
+      validationResult.value = { ok: false, message: 'Training service unavailable (backend error). Check server logs.' }
+    } else if (msg.includes('422') || msg.includes('Unprocessable')) {
+      validationResult.value = { ok: false, message: 'Configuration invalid — check required fields are filled.' }
+    } else if (msg.includes('NetworkError') || msg.includes('fetch')) {
+      validationResult.value = { ok: false, message: 'Cannot reach backend. Is the server running?' }
+    } else {
+      validationResult.value = { ok: false, message: 'Training start failed: ' + msg }
+    }
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -87,13 +102,23 @@ onMounted(async () => {
 async function _doStartRun(config, clamped) {
   try {
     const run = await apiClient.startRun(config)
-    let msg = `Training started: ${run.run_id} (${run.status})`
+    let msg = `Training started: ${run.name || run.run_id} (${run.status})`
     if (clamped && clamped.length > 0) msg += ` — ${clamped.length} param(s) clamped.`
     validationResult.value = { ok: true, message: msg }
     showTierMismatchWarning.value = false
     pendingConfig.value = null
+    setTimeout(() => router.push('/training-dashboard'), 1200)
   } catch (e) {
-    validationResult.value = { ok: false, message: e.message || 'Failed to start run' }
+    const msg = e.message || ''
+    if (msg.includes('500') || msg.includes('Internal Server Error')) {
+      validationResult.value = { ok: false, message: 'Training service unavailable (backend error). Check server logs.' }
+    } else if (msg.includes('422') || msg.includes('Unprocessable')) {
+      validationResult.value = { ok: false, message: 'Configuration invalid — check required fields are filled.' }
+    } else if (msg.includes('NetworkError') || msg.includes('fetch')) {
+      validationResult.value = { ok: false, message: 'Cannot reach backend. Is the server running?' }
+    } else {
+      validationResult.value = { ok: false, message: 'Training start failed: ' + msg }
+    }
   }
 }
 
@@ -171,7 +196,7 @@ function handleTierMismatchCancel() {
       </div>
 
       <div class="btn-row">
-        <button class="btn btn--primary" data-testid="start-training-btn" @click="handleStartTraining">▶ Start Training</button>
+        <button class="btn btn--primary" data-testid="start-training-btn" :disabled="isSubmitting" @click="handleStartTraining">{{ isSubmitting ? '⏳ Starting...' : '▶ Start Training' }}</button>
       </div>
 
       <div v-if="validationResult" class="validation-result" :class="validationResult.ok ? 'ok' : 'err'" data-testid="validation-result">

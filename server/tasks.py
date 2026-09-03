@@ -6,14 +6,17 @@ Provides:
 - Job helpers: ``runs_dir``, ``run_checkpoint_dir``, ``latest_checkpoint``,
   ``fft_sizes_for_scales``, ``build_training``, ``build_tensors``.
 - Celery tasks: ``run_training_job``, ``run_synthesis_job``.
-- ``TaskRunner`` protocol + ``CeleryTaskRunner`` + ``get_task_runner()``.
+- ``TaskRunner`` protocol + ``CeleryTaskRunner`` + ``LocalTaskRunner`` +
+  ``get_task_runner()``.
 """
-
 from __future__ import annotations
 
+import json
 import logging
 import os
 import threading
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from pathlib import Path
 from typing import Protocol
@@ -39,6 +42,8 @@ from server.db import (
 )
 from train import Trainer, TrainingConfig
 
+_logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
 # Celery app
 # ---------------------------------------------------------------------------
@@ -52,6 +57,20 @@ celery_app.conf.task_serializer = "json"
 celery_app.conf.result_serializer = "json"
 celery_app.conf.accept_content = ["json"]
 celery_app.conf.task_track_started = True
+
+
+def _redis_is_available() -> bool:
+    """Return True if a Redis broker is reachable at WOGD_REDIS_URL."""
+    try:
+        import redis
+
+        url = os.environ.get("WOGD_REDIS_URL", "redis://localhost:6379/0")
+        r = redis.from_url(url, socket_connect_timeout=1, socket_timeout=1)
+        r.ping()
+        return True
+    except Exception:
+        return False
+
 
 # ---------------------------------------------------------------------------
 # Job helpers
@@ -311,6 +330,7 @@ def run_preprocessing_job(dataset_id: str) -> dict:
             "loudness_mean_db": float(np.mean(loudness)),
             "loudness_std_db": float(np.std(loudness)),
         }
+        (dataset_path / "diagnostics.json").write_text(json.dumps(diagnostics), encoding="utf-8")
     else:
         diagnostics = None
 
@@ -554,12 +574,44 @@ class CeleryTaskRunner:
         return result.id  # type: ignore[no-any-return]
 
 
+class LocalTaskRunner:
+    """In-process :class:`TaskRunner` for single-user use when Redis is unavailable.
+
+    Jobs are run on a small :class:`~concurrent.futures.ThreadPoolExecutor` so the
+    REST endpoints stay responsive.  Celery task functions (``run_training_job``,
+    ``run_synthesis_job``) are called as plain synchronous functions here — the
+    :func:`@celery_app.task` decorator allows direct invocation.
+    """
+
+    def __init__(self) -> None:
+        self._executor = ThreadPoolExecutor(max_workers=2)
+
+    def submit_training(self, run_id: str) -> str:
+        self._executor.submit(run_training_job, run_id)
+        return str(uuid.uuid4())
+
+    def submit_synthesis(self, job_id: str) -> str:
+        self._executor.submit(run_synthesis_job, job_id)
+        return str(uuid.uuid4())
+
+
 _runner: TaskRunner | None = None
 
 
 def get_task_runner() -> TaskRunner:
-    """Lazily construct and return the module-global ``TaskRunner``."""
+    """Lazily construct and return the module-global ``TaskRunner``.
+
+    On first call the function checks whether Redis is reachable at
+    ``WOGD_REDIS_URL`` (or ``redis://localhost:6379/0``).  If Redis is
+    available it returns a :class:`CeleryTaskRunner`; otherwise it logs a
+    warning and returns a :class:`LocalTaskRunner` for in-process execution.
+    The chosen runner is cached for the lifetime of the process.
+    """
     global _runner
     if _runner is None:
-        _runner = CeleryTaskRunner()
+        if _redis_is_available():
+            _runner = CeleryTaskRunner()
+        else:
+            _logger.warning("Redis not available — using LocalTaskRunner (in-process)")
+            _runner = LocalTaskRunner()
     return _runner

@@ -354,6 +354,12 @@ export class RestApiClient {
     )
   }
 
+  async getDatasetDiagnostics(datasetId) {
+    return this._fetchJson(
+      this._url(`/api/datasets/${encodeURIComponent(datasetId)}/diagnostics`),
+    )
+  }
+
   // --------------------------------------------------------------------------
   // Export (composite) — delegates to per-format routes
   // --------------------------------------------------------------------------
