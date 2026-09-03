@@ -128,6 +128,22 @@ _Roadmap / open questions / risks. Active tasks live in
   endpoints (M4), adds two missing backend routes, and swaps the mock for the
   real client in `main.js`. Adds CORS middleware for dev-mode debugging.
   Details: [`implementation/m18-rest-api-client.md`](./implementation/m18-rest-api-client.md).
+- **M19 - SPA / training-lifecycle bug batch (BUG-52..58):** makes the end-to-end
+  training workflow actually usable in the SPA. Central piece is the missing
+  application-level run-state store (`trainingRunStore`), of which four of the seven
+  bugs are symptoms; plus the critical router fix, wizard-state persistence,
+  preprocessing-diagnostics reachability, and save-on-stop for clean resume.
+  Details: [`implementation/m19-bug-fixes.md`](./implementation/m19-bug-fixes.md).
+- **M20 - Audio quality & training UX bug batch (BUG-59..67):** moves the project
+  from a 16 kHz speech-quality prototype to a 48 kHz production-quality trainer.
+  Three of the nine bugs (`sample_rate`, F0 range, Viterbi flag) invalidate the
+  feature cache, so they are executed as one strictly ordered batch
+  (BUG-60 -> BUG-61 -> BUG-59) to give users a single re-preprocessing pass.
+  Hard safety gate: the 48 kHz default must not land without the rate-aware VRAM
+  estimator, or the app breaks on its own 6 GB reference GPU. Also adds the Neutone
+  model card, TorchScript YIN, TensorBoard audio logging, warm-start checkpoints and
+  the epoch/pitch-range UX helpers.
+  Details: [`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md).
 
 - **DDSP implementation:** self-owned PyTorch DDSP core (harmonic + filtered
   noise + reverb synth), specified by the DDSP paper (Engel et al. 2020).

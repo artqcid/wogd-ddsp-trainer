@@ -3,7 +3,158 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
-## 2026-09-03 — BUG-52, BUG-53, BUG-54 created (preprocessing diagnostics + training dashboard routing)
+## 2026-09-03 — Open-bug re-analysis: all 16 open bugs code-verified, Group-B UI spec + M20 plan created
+
+**Update** — every open bug (BUG-52..67) was re-verified against the actual code rather
+than against its own filed description. Several claims turned out to be stale or plain
+wrong, so their resolutions would have sent implementers at the wrong files. Corrections
+are recorded per bug in [`bugs.md`](./bugs.md) and indexed in its new
+§"Open-bug re-analysis". No code changed.
+
+**Withdrawn as a non-bug:** one BUG-57 sub-fix. Verification showed the stop-watcher
+already exits its loop immediately after setting the stop event, so the "watcher spin"
+it targeted does not exist. Step M19.7b was deleted from
+[`implementation/m19-bug-fixes.md`](./implementation/m19-bug-fixes.md) and `server/tasks.py`
+is now explicitly out of scope for BUG-57.
+
+**Corrected premises (BUG-59, BUG-60, BUG-61, BUG-63, BUG-65, BUG-66):** the feature
+extraction module is already parameterised for both sample rate and F0 range, so those
+bugs' real gap is the threading above it plus the missing UI — not the module itself. The
+VRAM estimator holds no rate constants (only a docstring), the pitch decoder is inherited
+from an upstream default rather than hardcoded locally, the diagnostics payload lacks the
+field one UI bug was designed to read, one bug's "undocumented architecture" claim is
+already satisfied (status moved to `in-progress`), and one bug depends on a config field
+that does not exist yet. Each of these is now recorded with the verified file evidence.
+
+**New cross-cutting finding — a third re-preprocessing pass avoided:** BUG-61 also
+invalidates the feature cache but was missing from the ordering table that exists to
+protect users from repeated re-preprocessing. The canonical order is now
+**BUG-60 → BUG-61 → BUG-59**, giving a single pass instead of three.
+
+**Closed process gaps:**
+- [`ui-requirements.md`](./ui-requirements.md) gained §"Audio-quality & training-UX
+  controls (BUG-59..67)" — the seven Group-B UI additions previously existed only inside
+  bug resolutions, bypassing the binding UI source of truth. The section also fixes an
+  architecturally invalid control (an editable parameter that could not take effect) by
+  establishing the preprocessing-time vs. training-time parameter rule.
+- [`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md)
+  created — Group B had no implementation plan, unlike Group A.
+- [`plan.md`](./plan.md) gained the missing M19 and M20 milestone entries (both plans
+  existed and were indexed without any meta-plan entry).
+- BUG-47's status field still literally read an invalid value despite an earlier audit
+  claiming otherwise; now corrected.
+
+Two decisions recorded while resolving contradictions: the sample-rate control lives in
+the preprocessing view (authoritative) with a read-only display plus mismatch guard in
+the training config; and the warm-start base checkpoint is delivered by
+download-on-first-run with integrity checking and graceful offline degradation, rather
+than committed to the repository.
+
+**One new bug filed (BUG-68).** Running the Definition-of-Done gates against this
+documentation-only change set exposed that the formatting gate fails on *committed*
+code, i.e. it was already red before this session — see [`bugs.md`](./bugs.md).
+Because the change set touched no code, the failure could be attributed to the
+repository rather than to this session's edits.
+
+Affected: [`bugs.md`](./bugs.md), [`ui-requirements.md`](./ui-requirements.md),
+[`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md),
+[`implementation/m19-bug-fixes.md`](./implementation/m19-bug-fixes.md),
+[`plan.md`](./plan.md), [`checklist.md`](./checklist.md), [`index.md`](./index.md).
+
+## 2026-09-03 — BUG-59/BUG-60 implementation constraints recorded (feature-cache ordering + VRAM atomicity)
+
+**Update** — two implementation constraints identified during the BUG-59/65 architecture
+work were promoted from review commentary into the canonical records, so they cannot be
+lost before implementation starts. No code changed.
+
+**Constraint 1 — BUG-60 must land before BUG-59 (feature-cache ordering).** Both bugs add
+new keys to the feature-cache metadata and both invalidate every previously extracted
+`.npy` feature set (BUG-60: `f0_min_hz`/`f0_max_hz`, F0 re-extracted; BUG-59:
+`sample_rate`, audio + F0 + loudness all re-extracted). Landing BUG-59 first forces users
+through preprocessing twice. The two bugs additionally modify the same signatures
+(`extract_f0()`, `prepare_dataset()`, `run_preprocessing_job()`, `RunCreateRequest`,
+`PARAM_KEYS`), so the order also avoids a merge conflict. Recorded as a new
+`- depends-on:` + `- sequencing:` field on BUG-59 and a reciprocal `- blocks:` field on
+BUG-60 (discoverable from either side), plus history entries on both.
+
+**Constraint 2 — BUG-59 sub-steps (a) and (b) are atomic.** Sub-step (b) (making
+`train/gpu.py::estimate_model_vram()` rate-aware) is not optional polish. With the stated
+minimum target hardware being an RTX 3060 Laptop (6 GB), shipping (a) alone flips the
+default to 48 kHz while the estimator stays calibrated to 16 kHz — the feasibility
+endpoint and `batch_size_max` then under-report by ~3× and the wizard green-lights
+configurations that OOM on the project's own baseline GPU. Net assessment recorded:
+today's 16 kHz default is merely low-quality, whereas (a)-without-(b) is **broken on the
+reference hardware**, i.e. a regression rather than a partial improvement. Either ship
+(a)+(b) together or gate the 48 kHz default behind (b).
+
+**Files updated:**
+- `doc/bugs.md` — BUG-59: new `- depends-on:` field, atomicity warning at the top of
+  `- resolution:`, new `- sequencing:` section with the cache-key invalidation table,
+  history entry. BUG-60: new `- blocks:` field (also naming it as prerequisite for
+  BUG-65 and BUG-67), history entry.
+- `doc/checklist.md` — Group B: BUG-60 reordered above BUG-59 in the list with inline ⚠
+  markers on both; new subsection "Two hard constraints in Group B (not preferences)"
+  carrying the invalidation table and the hardware-regression argument.
+- `doc/architecture.md` — §"Sample rate pipeline": atomicity warning block after the VRAM
+  impact paragraph (incl. the 1.0 s chunk-length mitigation option from `realtimeDDSP`)
+  and an ordering-constraint paragraph pointing at BUG-60.
+
+Reference: `doc/bugs.md` BUG-59, BUG-60, BUG-65, BUG-67.
+
+## 2026-09-03 — Architecture decisions for BUG-59/65; open-bug milestone linkage; M19 fix-batch plan
+
+**User approval:** `"do it"` (plan with Steps 1–4 confirmed explicitly).
+
+**Update** — `doc/architecture.md`, two new design-decision subsections. No code changed.
+
+- **§ "Sample rate pipeline (design decision, BUG-59)"** — `sample_rate` is a user-configurable pipeline parameter with **default 48 000 Hz**; allowed values are a closed enum `16000|22050|44100|48000` (rationale: STFT sizes, hop length and the Nyquist harmonic ceiling all derive from it). Documents the **feature-cache coupling constraint** — features extracted at one rate are not reusable at another, so a run whose rate differs from its dataset's cached rate is rejected with 409 (same pattern as the M14 checkpoint-tier guard) and the checkpoint persists the rate for resume. Includes the full 9-layer threading table (REST → orchestration → features → dataset → training → model → export → UI) and the **VRAM consequence**: at 48 kHz the audio-domain terms scale ~3×, moving the ~1.3–2.2 GB baseline toward ~3.5–6 GB, so `estimate_model_vram()` must take `sample_rate` as an input before 48 kHz can be the effective default on the 6 GB minimum target hardware.
+- **§ "Realtime export pitch tracker constraint (design decision, BUG-65)"** — realtime wrappers MUST use streaming-compatible YIN/pYIN; **CREPE is forbidden** in any realtime wrapper. Decisive argument documented: CREPE's accuracy advantage comes from whole-utterance Viterbi decoding, which cannot be computed in a DAW plugin because the future does not exist; running CREPE without Viterbi keeps its cost and non-scriptable pre/post-processing while discarding the only property that made it better. Records the intentional **three-phase asymmetry** (offline preprocessing = CREPE+Viterbi, realtime = YIN, offline/API inference = CREPE+Viterbi), names the resulting train/inference feature mismatch as **accepted** and mitigated by the BUG-60 F0 range bound (which removes YIN's dominant octave-error failure mode), and specifies the new `inference/yin.py` module (TorchScript-scriptable, `f0_min`/`f0_max` as registered buffers from the checkpoint rather than per-call args, unvoiced → `0.0` to match `dataset/features.py` convention, lag-domain search range bounded for deterministic realtime cost).
+- **§ VRAM budget estimate** — stale-assumption warning added: the table is computed at 16 kHz and is superseded by the 48 kHz decision above.
+
+**Update** — `doc/checklist.md`, new section **"Open bugs — milestone linkage"**. Milestone/severity/status view over all 16 open bugs (full records stay in `bugs.md` only, per the non-redundancy rule). Split into **Group A** (BUG-52..58, SPA/training lifecycle — all have architectural resolution plans, ready for implementation) and **Group B** (BUG-59..67, audio quality & training UX from the Colab notebook analysis). Group A notes the shared `trainingRunStore` prerequisite spanning BUG-54/55/56/58. Group B carries a suggested execution order (F0/rate correctness first, since every later fix inherits the feature-cache format; export path last).
+
+**Creation** — `doc/implementation/m19-bug-fixes.md`. Granular ordered plan for the BUG-52..58 batch, 12 flat steps (M19.1 … M19.8b), one file per step per the AGENTS.md delegation constraint. Key structural decisions: the critical one-line router fix (BUG-53) lands **first** because it removes the page reload that causes BUG-54 and thereby makes BUG-54 testable; the shared `trainingRunStore` lands **third**, before all three of its consumers. Includes a dependency graph, the flat execution table, and an explicit **sequencing warning** — M19.1/M19.5 both edit `TrainingConfigView.vue` and M19.6/M19.8b both edit `TrainingDashboardView.vue`, so those pairs must run sequentially or the second subagent clobbers the first. Carries the batch Definition of Done and a `## BUGS` reference section (Group B explicitly out of scope).
+
+**Update** — `doc/index.md` — added the `m19-bug-fixes.md` entry; refreshed the `architecture.md` and `checklist.md` one-line summaries to mention the new sections.
+
+## 2026-09-03 — Colab notebook analysis: BUG-59 to BUG-67 filed (audio quality + training UX gaps)
+
+**Creation** — ARCHITECT_Openrouter analysed the `DDSP_training+neutone_19072024.ipynb`
+Colab notebook by Naotake Masuda (Qosmo/neutone), based on `hyakuchiki/realtimeDDSP`.
+Nine new bugs filed covering gaps identified by cross-comparing the reference implementation
+with our current project state. `next_id` bumped from 59 → 68.
+
+- **BUG-59** (major) — Sample rate hardcoded to 16 kHz; professional audio quality and Neutone export require 44.1/48 kHz. Not user-configurable. Three sub-steps: pipeline parameter threading (M2/M3), VRAM budget recalculation at 48 kHz, UI sample_rate selector. Reference: `doc/bugs.md` BUG-59.
+- **BUG-60** (major) — F0 range (min/max Hz) not configurable in UI or backend. Without constraining pitch range to the instrument, torchcrepe produces octave errors. "Without accurate pitch detection, the model can't learn at all!" Reference: `doc/bugs.md` BUG-60.
+- **BUG-61** (minor) — F0 Viterbi smoothing flag not exposed. Relevant for pitch-slide instruments (theremin, fretless bass). Currently hardcoded to Viterbi-on in `dataset/features.py`. Reference: `doc/bugs.md` BUG-61.
+- **BUG-62** (minor) — No pretrained warm-start checkpoint. Limited-range instruments train poorly from random init. Reference implementation bundles `pretrain_sawnoise.ckpt`. Two sub-steps: backend `warm_start_checkpoint` support; bundled asset + wizard UI toggle. Reference: `doc/bugs.md` BUG-62.
+- **BUG-63** (minor) — `max_steps` shown without estimated epochs context. Users don't know if 50 000 steps = 10 epochs or 1000 epochs on their dataset. Computed `estimatedEpochs` display in `TabCore.vue`. Reference: `doc/bugs.md` BUG-63.
+- **BUG-64** (minor) — Export metadata (author, description, is_experimental, model_version) missing from `ParamManifest` and export UI. Required for Neutone marketplace submission. Two sub-steps: `ModelCard` dataclass in `model/param_manifest.py`; editor in `ModelExportView.vue`. Reference: `doc/bugs.md` BUG-64.
+- **BUG-65** (major) — Neutone realtime export must use YIN/pYIN pitch tracker (streaming-compatible), not CREPE (non-streaming). Architecture constraint undocumented. `CustomVSTWrapper` pitch tracker unspecified. Two sub-steps: architecture.md documentation; `inference/yin.py` TorchScript implementation. Reference: `doc/bugs.md` BUG-65.
+- **BUG-66** (minor) — TensorBoard does not log reconstructed audio. Reference implementation logs `train_orig/n` vs `train_resyn/n` — the primary quality signal for DDSP training. Reference: `doc/bugs.md` BUG-66.
+- **BUG-67** (minor) — No instrument pitch range reference guide in UI. UX companion to BUG-60: once F0 range inputs exist, users need a pre-filled reference table (voice types, instruments). Reference: `doc/bugs.md` BUG-67.
+
+
+
+**Update** — ARCHITECT_Openrouter performed full read of source code for all open bugs and documented concrete architectural solutions. No code was changed.
+
+**BUG-52** (major, open) — Analysis confirmed from code: `restApiClient.js:352` calls `/extract-content` (confirmed); route ordering in `dataset.py` confirmed: wildcard `/{id}/{filename}` at line 130 shadows `/{id}/diagnostics` at line 318. Resolution documented: (a) change `restApiClient.preprocessDataset()` to call `/preprocess`; (b) reorder routes — specific paths before wildcard. Reference: `doc/bugs.md` BUG-52.
+
+**BUG-53** (critical, open) — Analysis confirmed from code: `TrainingConfigView.vue:110` calls `router.push('/training-dashboard')`; `router/index.js` has no such route. Resolution documented: use named route `router.push({ name: 'training' })`. Reference: `doc/bugs.md` BUG-53.
+
+**BUG-54** (major, open) — Analysis confirmed. Resolution documented: two-layer fix — (a) BUG-53 fix prevents reload; (b) sessionStorage backup for `wizardCompleted` + `activeTier` in `modelConfig.js`. Reference: `doc/bugs.md` BUG-54.
+
+**BUG-55** (major, open) — Analysis confirmed. Resolution documented: new `trainingRunStore` Pinia store with `activeRunId`/`activeRunStatus`. Button state computed from store. `TrainingConfigView` imports store + gates duplicate starts. Reference: `doc/bugs.md` BUG-55.
+
+**BUG-56** (major, open) — **Analysis corrected:** "5s gap on reconnect" claim was overstated — `loadRuns()` IS called immediately in `onMounted`. Real issues: empty-state flash (no `hasLoaded` ref), no sessionStorage recovery, stale TensorBoard iframe. Resolution documented: `trainingRunStore` for cached state; `<KeepAlive>` + `onActivated()` + `iframeKey` for TensorBoard refresh. Reference: `doc/bugs.md` BUG-56.
+
+**BUG-57** (major, open) — Analysis refined: stop check is at iteration START (before `train_step`), so last completed step is valid. Gap confirmed: no save-on-stop unless `step % checkpoint_interval == 0`. Resolution documented: add explicit final save in `trainer.run()` after loop exits with stop event set; fix watcher spin (early return after `stop_event.set()`). DDSP checkpoint confirmed sufficient for resume (model + optimizer + step + config). Reference: `doc/bugs.md` BUG-57.
+
+**BUG-58** (major, open) — **Analysis corrected:** empty state fires during in-flight load (fix: `hasLoaded` ref); dashboard already shows all runs (per-card Resume works). Real gap: wizard has no resume path. Resolution documented: WizardModal Step 0 "Choose Path" pre-check; dashboard CTA card when stopped/failed runs exist. Reference: `doc/bugs.md` BUG-58.
+
+**architecture.md updated:** New subsection "SPA run-state management: `trainingRunStore`" added to document the unified Pinia store pattern that spans BUG-54/55/56/58. Includes state shape, action signatures, usage per-component, and coupling constraint. Reference: `doc/architecture.md` §Run lifecycle.
+
+
 
 **Creation** — Three new bugs filed after manual test session analysis:
 

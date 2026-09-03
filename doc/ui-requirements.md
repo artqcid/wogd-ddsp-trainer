@@ -535,6 +535,133 @@ Data layer:
   under `webui/src/mocks/` for offline/mock mode. **Extended in M14:**
   `tier_feasibility` fixture + `model_tier` on preset fixtures.
 
+## Audio-quality & training-UX controls (BUG-59..67)
+
+_Binding UI specification for the Group-B open-bug batch. Added 2026-09-03 by
+ARCHITECT_Openrouter after the open-bug re-analysis found that all of these controls
+were described **only** inside `bugs.md` resolutions — which is not the binding UI
+source of truth. Implementation plan:
+[`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md);
+full bug records: [`bugs.md`](./bugs.md)._
+
+### Governing principle: preprocessing-time vs. training-time parameters
+
+Three of these controls (`sample_rate`, `f0_min_hz`/`f0_max_hz`, `f0_viterbi`) are
+consumed during **feature extraction** and are baked into the feature cache. The
+training loop reads a finished feature set and cannot retroactively change them.
+
+**Rule (non-negotiable):** a parameter that is baked into the feature cache is
+**editable only in the Preprocessing view**. Everywhere else it is rendered
+**read-only**, accompanied by a "Re-run preprocessing to change" action. The UI must
+never present an editable control that cannot take effect — that is a control which
+lies to the user. This mirrors the coupling constraint in `architecture.md`
+§"Sample rate pipeline".
+
+| Parameter | Editable in | Read-only display in | Bug |
+|---|---|---|---|
+| `sample_rate` | PreprocessingView | TabCore (+ mismatch warning) | BUG-59 |
+| `f0_min_hz` / `f0_max_hz` | PreprocessingView | TabCore | BUG-60 |
+| `f0_viterbi` | PreprocessingView (CREPE backend only) | TabCore | BUG-61 |
+| `warm_start_checkpoint` | Wizard + TabCore | — | BUG-62 |
+| `max_steps` epoch hint | — (derived, read-only) | TabCore | BUG-63 |
+| Model Card fields | ModelExportView | — | BUG-64 |
+| Pitch-range reference | PreprocessingView (helper) | — | BUG-67 |
+
+### 7. Preprocessing controls (`PreprocessingView.vue`)
+
+**7.1 Sample-rate selector (BUG-59).** A `<select>` bound to the preprocessing
+request, options `16000 | 22050 | 44100 | 48000`, default **48000**
+("DAW standard — recommended"); `16000` is labelled "Fast iteration, low quality"
+and shows the inline hint "16 kHz is phone quality — use only for fast experiments".
+The chosen rate is persisted with the dataset and is what all later views display.
+
+**7.2 F0 range inputs (BUG-60).** Two number inputs `f0_min_hz` / `f0_max_hz`,
+defaults **80 / 1100**, placed **above** the "Run Preprocessing" button. Client-side
+validation mirrors the backend: `0 < min < max` and `max < sample_rate / 2` (Nyquist).
+An invalid combination disables the Run button and shows the reason inline — it must
+never be silently clamped.
+
+**7.3 Viterbi smoothing checkbox (BUG-61).** `[x] F0 Viterbi smoothing (recommended)`,
+default checked, help text: "Disable for instruments with continuous pitch slides
+(theremin, fretless bass, bowed strings)." **CREPE-only:** when the parselmouth
+backend is active the control is rendered disabled with the hint "Only available with
+the CREPE pitch tracker" — never silently ignored.
+
+**7.4 Instrument pitch-range reference (BUG-67).** A collapsible
+`<details><summary>Instrument Pitch Range Reference</summary>` panel directly below
+the F0 range inputs. Renders a table of common instrument ranges (voice types, strings,
+winds, plus a "General voice 80–1100 Hz" catch-all) with a "Use this range" action per
+row that fills the two inputs. Inline data — no API call. A selected range that would
+violate the Nyquist guard at the current sample rate must surface the same warning as
+7.2 rather than being applied silently.
+
+**7.5 Re-preprocessing consequence warning.** Because 7.1–7.3 invalidate the feature
+cache, changing any of them for an already-preprocessed dataset must show a
+confirmation: "This re-extracts all features for this dataset. Existing runs that used
+the previous settings remain valid but cannot be resumed against the new features."
+
+### 8. Training-config additions (`TabCore.vue`)
+
+**8.1 Cached-parameter display (BUG-59/60/61).** Read-only display of the selected
+dataset's `sample_rate`, F0 range and Viterbi flag, each with a
+"Re-run preprocessing to change" link that routes to the Preprocessing view with the
+dataset preselected. **No editable duplicates of these fields.**
+
+**8.2 Sample-rate mismatch guard (BUG-59).** When the run config's `sample_rate`
+differs from the selected dataset's cached rate, show a blocking warning with a
+"Re-run preprocessing at N Hz" CTA. This is the UI half of the backend's 409 guard —
+starting training in this state must be prevented client-side, not merely rejected
+server-side.
+
+**8.3 Estimated-epochs hint (BUG-63).** Below the `max_steps` input, a read-only line
+`≈ N epochs on selected dataset`, derived from the diagnostics payload
+(`total_chunks`, `slice_length`) and `batch_size`. Purely informational — it never
+constrains or rewrites `max_steps`. When no dataset is selected or diagnostics are
+unavailable, the line is hidden behind the tooltip "Select and preprocess a dataset to
+see epoch estimate".
+
+**8.4 Warm-start selector (BUG-62).** A `warm_start_checkpoint` dropdown:
+`None` (default) / `Pretrained base model (harmonic sweep)` /
+`Custom checkpoint (pick file)`. The base-model option is **disabled with an
+explanatory hint when the asset is not available locally and cannot be fetched**
+(the asset is downloaded on first use, not shipped in the repo). Selecting it shows a
+one-line description of what the base model was trained on. The wizard carries the
+same option as a simple toggle, default off.
+
+### 9. Export model card (`ModelExportView.vue`, BUG-64)
+
+A collapsible `<details><summary>Model Card (Neutone metadata)</summary>` section
+**above** the export buttons, with fields `model_name` (text, required),
+`model_author` (text), `short_description` (text, max 100 chars),
+`long_description` (textarea, max 500 chars), `is_experimental` (checkbox, default
+checked) and `model_version` (text, default `1.0.0`). Pre-filled from the checkpoint's
+stored model card on mount; saved explicitly via a "Save Model Card" button.
+**Both the Neutone FX and the MIDI Synth export buttons are disabled while
+`model_name` is empty**, with the reason shown inline — a nameless export is unusable
+in a DAW plugin list and cannot be submitted to the Neutone marketplace.
+
+### Mock-data seam (Group B)
+
+The mock-first rule applies unchanged: every control above must render and be testable
+with `MockApiClient` alone. Required fixture extensions in
+`webui/src/mocks/fixtures.js`: `sample_rate`, `f0_min_hz`, `f0_max_hz`, `f0_viterbi`
+and `warm_start_checkpoint` on all preset fixtures; a `diagnosticsFixture` carrying
+`files_processed`, `total_chunks`, `avg_duration_s`, `slice_length` and the requested
+plus detected F0 range; and a `modelCardFixture`.
+
+### Acceptance criteria (Group B)
+
+- No feature-cache parameter is editable outside the Preprocessing view.
+- Every invalid F0/Nyquist combination blocks the action with an inline reason;
+  nothing is silently clamped or ignored.
+- The Viterbi control is visibly disabled (not hidden, not ignored) on the
+  parselmouth backend.
+- Changing a feature-cache parameter on a preprocessed dataset requires explicit
+  confirmation.
+- A `sample_rate` mismatch is caught in the UI before the request is sent.
+- Export is impossible without a model name.
+- All of the above render from mock fixtures with no backend running.
+
 ## Acceptance criteria
 
 - Every view renders and is testable with mock data (Vitest) without a running
@@ -553,3 +680,6 @@ Data layer:
 - `experimental-ddsp.md` — rationale for the M7 experimental UI features.
 - `architecture.md` — backend-UI interface, data/event contracts, M14 backend extensions.
 - `coding-standards.md` — coding rules (CCD).
+- `bugs.md` — open-bug records behind §"Audio-quality & training-UX controls (BUG-59..67)".
+- `implementation/m19-bug-fixes.md` — SPA / training-lifecycle fix batch (BUG-52..58).
+- `implementation/m20-audio-quality-bugs.md` — audio-quality & training-UX batch (BUG-59..67).

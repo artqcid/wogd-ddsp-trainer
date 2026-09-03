@@ -96,6 +96,75 @@ not a `FeatureCache` directly. Rationale:
   permutation so that resumed training sees the same shuffled order (as long as
   the dataset contents have not changed).
 
+### Sample rate pipeline (design decision, BUG-59)
+
+**Decision:** `sample_rate` is a **user-configurable pipeline parameter with
+default 48 000 Hz** — not a hardcoded constant. The original 16 kHz default was
+inherited from research reference implementations (`hyakuchiki/realtimeDDSP`)
+where it is a speed/VRAM compromise, not a quality target. Professional audio
+output and Neutone/VST integration require 44.1 or 48 kHz.
+
+**Allowed values:** `16000 | 22050 | 44100 | 48000`. Anything else is rejected
+at the REST layer (422). Rationale for a closed enum rather than a free integer:
+STFT window sizes, hop length, and the harmonic count ceiling
+(`n_harmonics ≤ sample_rate / (2 · f0_min)`) are all derived from it, and
+arbitrary rates make the VRAM estimate and the Nyquist guard unpredictable.
+
+**Coupling constraint (critical):** the sample rate is baked into the feature
+cache. Features extracted at 16 kHz are **not** reusable for a 48 kHz run.
+Therefore:
+
+- `sample_rate` is persisted in the dataset's preprocessing metadata.
+- A training run whose `sample_rate` differs from its dataset's cached rate is
+  rejected with **409** (same pattern as the M14 checkpoint-tier guard) and the
+  UI must offer "re-run preprocessing at N Hz".
+- The checkpoint stores `sample_rate`; resume with a mismatching value is a 409.
+
+**Threading path** — the value must flow through every layer, single source of
+truth being the run config:
+
+| Layer | Component | Responsibility |
+|---|---|---|
+| REST | `server/routes/training.py` — `RunCreateRequest` | accept `sample_rate: int = 48000`; validate against the enum; 409 on dataset/checkpoint mismatch |
+| REST | `server/routes/dataset.py` — preprocess endpoint | accept `sample_rate`; persist it into dataset metadata |
+| Orchestration | `server/tasks.py` — `build_training()`, `run_preprocessing_job()` | read from `model_config`, pass down; never default silently |
+| Features | `dataset/features.py` | resample target, hop length, loudness A-weighting, F0 tracker rate |
+| Dataset | `dataset/loader.py` — `DDSPDataset` | chunk length in samples = `chunk_seconds × sample_rate` |
+| Training | `train/trainer.py` — `TrainingConfig` | STFT scales, spectral loss `sample_rate`, TensorBoard audio logging rate |
+| Model | `model/ddsp_model.py` — `DDSPConfig` | oscillator rate, Nyquist harmonic clamp |
+| Export | `inference/export.py` | wrapper's declared native rate for the host DAW |
+| UI | `TabCore.vue` | sample-rate selector; warn when it differs from the selected dataset's cached rate |
+
+**VRAM impact:** activation memory scales roughly linearly with sample rate for
+a fixed chunk duration. The existing budget table (`§ VRAM budget estimate`) is
+computed at `seq_len = 2 s @ 16 kHz`. At 48 kHz the same 2 s chunk is 3× the
+samples, so the audio-domain terms (forward activations, backward gradients,
+STFT loss) scale ~3×, pushing the ~1.3–2.2 GB baseline toward ~3.5–6 GB.
+`train/gpu.py::estimate_model_vram()` must therefore take `sample_rate` as an
+input and `batch_size_max` must shrink accordingly — otherwise the 6 GB minimum
+target hardware (RTX 3060 Laptop) will OOM at the new default. Until that
+recalculation lands, 48 kHz runs on 6 GB cards require a reduced chunk length
+or batch size.
+
+> ⚠ **Implementation constraint — the rate change and the estimator change are
+> atomic.** Threading `sample_rate` through the pipeline while
+> `estimate_model_vram()` is still calibrated to 16 kHz is not a partial
+> improvement, it is a regression: the feasibility endpoint and `batch_size_max`
+> would under-report by ~3×, so `GET /api/gpu/feasibility` and the wizard would
+> green-light configurations that OOM on the project's declared baseline GPU.
+> Today's 16 kHz default is merely low-quality; a 48 kHz default with a 16 kHz
+> estimator is **broken on the reference hardware**. Either ship both together
+> or keep the default at 16 kHz until the estimator is rate-aware.
+> Mitigation option recorded in `bugs.md` BUG-59: reduce the default chunk
+> length to 1.0 s at 48 kHz (the choice `realtimeDDSP` makes), which keeps the
+> budget close to the 16 kHz 2 s baseline.
+
+**Ordering constraint:** the sample rate and the F0 range (`f0_min_hz` /
+`f0_max_hz`, BUG-60) are both feature-cache keys and both invalidate previously
+extracted features. **BUG-60 lands first** so users re-run preprocessing once
+rather than twice; both bugs also modify the same extraction signatures.
+See `checklist.md` §"Open bugs — milestone linkage" for the full constraint.
+
 ## Model Tier system & Dual-Mode UI (M14)
 
 The training UI supports five **model tiers** that activate progressively more
@@ -391,6 +460,45 @@ data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
 `WOGD_REDIS_URL`, `WOGD_TB_PORT`, `WOGD_SERVER_PORT`; the old
 `WOGD_RUNS_DIR`/`WOGD_DATASETS_DIR` vars are no longer used).
 
+### SPA run-state management: `trainingRunStore` (design decision, BUG-55/56/58)
+
+**Problem:** Multiple views (`TrainingConfigView`, `TrainingDashboardView`,
+`WizardModal`) independently query the backend for run state. This leads to:
+- Stale button states after training starts (BUG-55)
+- Empty-state flash on dashboard remount (BUG-56)
+- No cross-reload recovery for the running job (BUG-54/56)
+- No resume path in the Wizard when stopped runs exist (BUG-58)
+
+**Solution:** A shared Pinia store `useTrainingRunStore` (`webui/src/stores/trainingRun.js`) is the single source of truth for the active run at the SPA level.
+
+```js
+// webui/src/stores/trainingRun.js
+{
+  state: () => ({
+    activeRunId: sessionStorage.getItem('activeRunId') ?? null,
+    activeRunStatus: null,   // 'pending' | 'running' | 'stopped' | 'failed' | 'completed'
+    activeRunError: null,
+    runs: [],                // full run list, shared with dashboard
+    hasLoaded: false,
+  }),
+  actions: {
+    async checkActiveRun(apiClient) { /* GET /api/runs, update state */ },
+    setActiveRun(runId, status, error) { /* update + sessionStorage */ },
+    async stopActiveRun(apiClient) { /* POST /api/runs/{id}/stop */ },
+    restoreFromSession() { /* read sessionStorage.activeRunId */ },
+    persistToSession(runId) { /* write sessionStorage.activeRunId */ },
+  }
+}
+```
+
+**Usage pattern:**
+- `App.vue` → wrap `/training` route in `<KeepAlive>` so `TrainingDashboardView` doesn't unmount on SPA navigation.
+- `TrainingConfigView.vue` → `onMounted`: `checkActiveRun(apiClient)`. Button state is a computed derived from `activeRunStatus`.
+- `TrainingDashboardView.vue` → reads `runs` and `hasLoaded` from the store. `onActivated()` hook: increment `iframeKey` to force TensorBoard iframe reload.
+- `WizardModal.vue` → on mount: call `checkActiveRun(apiClient)`. If stopped/failed runs exist, show Step 0 "Choose Path" before the tier grid.
+
+**Key constraint:** this store MUST remain decoupled from the backend — it communicates only via `apiClient` (REST). No imports from `server/`.
+
 ## Training monitoring (TensorBoard doctrine)
 
 - The UI is a **control panel**: audio upload, hyperparameter config, job
@@ -412,6 +520,12 @@ data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
   is feasible with the techniques below.
 
 ### VRAM budget estimate (batch_size dynamic, seq_len=2s@16kHz, mixed precision)
+
+> ⚠ **Stale assumption (BUG-59):** this table is computed at 16 kHz. The
+> pipeline default is moving to 48 kHz, where the audio-domain terms scale ~3×
+> (see `§ Sample rate pipeline`). `estimate_model_vram()` must take
+> `sample_rate` as an input before 48 kHz becomes the effective default on
+> 6 GB hardware.
 
 | Component | VRAM |
 |---|---|
@@ -462,6 +576,66 @@ for the full analysis):
 | **Neutone FX** (realtime DAW plugin) | `.nm` (TorchScript) | **4** | `constants.MAX_N_PARAMS = 4` — SDK assert, hard limit |
 | **Custom VST** (wogd realtime plugin) | `.pt` (TorchScript) | **16** | custom `param_manifest` embedded in checkpoint state |
 | **API / Offline** | `.pt` | unlimited | params passed as JSON in POST body |
+
+### Realtime export pitch tracker constraint (design decision, BUG-65)
+
+**Decision:** the realtime export wrappers (`NeutoneWrapper`, `CustomVSTWrapper`)
+MUST use a **streaming-compatible autocorrelation pitch tracker (YIN / pYIN)**.
+**CREPE is forbidden in any realtime wrapper.** This is an architectural
+constraint, not a tuning preference.
+
+**Why CREPE cannot be used in a realtime wrapper:**
+
+| Property | CREPE (`torchcrepe`) | YIN / pYIN |
+|---|---|---|
+| Algorithm | 6-layer CNN over a 1024-sample window | autocorrelation / cumulative-mean-normalised difference |
+| Statefulness | needs full-signal context for Viterbi decoding | per-frame, no lookahead |
+| Latency | non-streaming; Viterbi is a whole-sequence dynamic program | single frame in → single f0 out |
+| TorchScript | model is scriptable but the pre/post-processing chain is not | pure tensor ops, fully scriptable |
+| Dependency | ships model weights (~20 MB) | no weights |
+| Realtime cost | CNN forward per frame, high | FFT-based autocorrelation, low |
+
+The decisive point is **Viterbi decoding**: CREPE's accuracy advantage comes
+from smoothing the pitch trajectory across the entire utterance. In a DAW plugin
+the future does not exist yet, so the Viterbi path cannot be computed. Running
+CREPE without Viterbi discards exactly the property that makes it better than
+YIN, while keeping its cost and its non-scriptable pre/post-processing.
+
+**Asymmetry is intentional and correct:**
+
+| Phase | Tracker | Rationale |
+|---|---|---|
+| **Offline preprocessing** (`dataset/features.py`) | CREPE + Viterbi | full signal available; accuracy is what matters; runs once |
+| **Realtime inference** (`inference/*_wrapper.py`) | YIN / pYIN | causal, scriptable, cheap |
+| **Offline inference / API** (`server/routes/inference.py`) | CREPE + Viterbi | not latency-bound; matches training-time feature distribution |
+
+This creates a **train/inference feature mismatch** for realtime exports: the
+model was conditioned on CREPE f0 but receives YIN f0 at runtime. This is
+accepted (it is what the reference Neutone DDSP models do) and mitigated by
+the F0 range constraint (BUG-60) — bounding `f0_min`/`f0_max` to the instrument
+removes the octave errors that are YIN's dominant failure mode.
+
+**`inference/yin.py` specification (new module):**
+
+- Pure PyTorch, **TorchScript-scriptable** — no NumPy, no librosa, no Python
+  control flow that depends on tensor values, no `.item()` calls.
+- Public entry point: `yin_f0(frame, sample_rate, f0_min, f0_max, threshold) -> Tensor`
+  operating on a single frame buffer; shape-stable output so the wrapper's
+  `forward` stays scriptable.
+- `f0_min` / `f0_max` come from the checkpoint (persisted by BUG-60) and are
+  registered as TorchScript buffers, not passed per call — the wrapper must not
+  depend on host-side state.
+- Algorithm: difference function → cumulative mean normalised difference →
+  first local minimum below `threshold` → parabolic interpolation for
+  sub-sample period refinement. Unvoiced frames return `0.0` (the same
+  convention `dataset/features.py` uses) so the decoder's existing
+  voiced/unvoiced handling is unchanged.
+- Search range in lag domain is derived from `f0_min`/`f0_max`, which bounds the
+  compute cost deterministically — required for realtime guarantees.
+- Must be validated against `torchcrepe` on the project's test fixtures:
+  agreement within a tolerance band on voiced frames, plus an explicit
+  TorchScript `torch.jit.script()` smoke test.
+
 
 ### Parameter Manifest (Custom VST + API)
 

@@ -472,3 +472,146 @@ default to `'standard'`._
 - [x] **M17.13** `TabHacks/TabEngine/TabAdvanced.vue` — tier-specific MIDI hints.
 - [x] **M17.14** Vitest coverage — 77/77 all green.
 - [x] Full suite: `ruff check`, `ruff format --check`, `pytest` (361/361), `vitest` (77/77) all green.
+
+## Open bugs — milestone linkage
+
+_Bugs are described in full **only** in [`bugs.md`](./bugs.md); this section is
+the milestone/status view. Granular fix steps: Group A →
+[`implementation/m19-bug-fixes.md`](./implementation/m19-bug-fixes.md);
+Group B → [`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md).
+Binding UI spec for Group B: [`ui-requirements.md`](./ui-requirements.md)
+§"Audio-quality & training-UX controls (BUG-59..67)"._
+
+> **All 16 open bugs were re-verified against the code on 2026-09-03**
+> (ARCHITECT_Openrouter). Several filed claims turned out to be stale or wrong;
+> the corrections are recorded per bug in `bugs.md` and summarised in its
+> §"Open-bug re-analysis". This section reflects the corrected state.
+
+### Group A — SPA / training lifecycle (BUG-52..58, analysed 2026-09-03)
+
+_All seven have full architectural resolution plans in `bugs.md`. Ready for
+implementation. Execution order + granular steps in `m19-bug-fixes.md`._
+
+- [ ] **BUG-53** _(critical, M5)_ — `router.push('/training-dashboard')` targets a
+      non-existent route → full page reload. **Fix first: BUG-54 depends on it.**
+- [ ] **BUG-54** _(major, M5)_ — Page reload resets Pinia store → wizard reopens.
+      Two-layer fix: BUG-53 + sessionStorage backup in `modelConfig.js`.
+- [ ] **BUG-52** _(major, M5)_ — Preprocessing diagnostics unreachable: wrong
+      endpoint call (`/extract-content` → `/preprocess`) + route ordering in
+      `dataset.py` (wildcard shadows `/diagnostics`).
+- [ ] **BUG-55** _(major, M5)_ — Training button lifecycle: Start → Stop → Failed
+      states driven by backend run status, not local `isSubmitting`.
+- [ ] **BUG-56** _(major, M5)_ — Dashboard must survive tab switches:
+      `hasLoaded` ref, `<KeepAlive>` + `onActivated()`, TensorBoard `iframeKey`.
+- [ ] **BUG-58** _(major, M5)_ — Resume path missing in wizard; dashboard needs
+      resume CTA when stopped/failed runs exist.
+- [ ] **BUG-57** _(major, M4→M3)_ — Clean abort: explicit final checkpoint save when
+      the stop event is set. **Single-file fix in `train/trainer.py`** — the
+      "watcher spin" sub-fix was withdrawn on 2026-09-03 (verified non-bug:
+      `server/tasks.py` already breaks out of the loop after `stop_event.set()`),
+      and step M19.7b was removed.
+
+_Shared prerequisite for BUG-54/55/56/58: the `trainingRunStore` Pinia store
+(design documented in `architecture.md` §"SPA run-state management")._
+
+### Group B — Audio quality & training UX (BUG-59..67, filed 2026-09-03)
+
+_From the Colab notebook analysis (`hyakuchiki/realtimeDDSP` reference).
+Granular steps: [`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md).
+Resolution sub-steps in `bugs.md`; architectural decisions for BUG-59 and
+BUG-65 in `architecture.md`; UI spec in `ui-requirements.md`._
+
+- [ ] **BUG-60** _(major, M2)_ — F0 range (`f0_min_hz`/`f0_max_hz`) not configurable
+      **end to end**. Corrected 2026-09-03: both trackers already accept the range;
+      the gap is the threading from REST → `compute_features()` plus the missing UI.
+      Must cover **both** backends (CREPE `fmin`/`fmax`, parselmouth `f0_min`/`f0_max`).
+      Also the mitigation for the YIN mismatch in BUG-65.
+      ⚠ **First bug in the feature-cache batch** — see the ordering constraint below.
+- [ ] **BUG-59** _(major, M2)_ — `sample_rate` effectively 16 kHz; must be
+      user-configurable, default 48 kHz. Corrected 2026-09-03: `dataset/features.py`
+      is already rate-parameterised — the hardcoding lives in `dataset/io.py`,
+      `dataset/loader.py` (`AUDIO_SAMPLES_PER_FRAME`), `server/tasks.py`,
+      `server/routes/dataset.py` and `server/routes/reverb.py`.
+      Sub-steps: (a) threading per the `architecture.md` 9-layer table,
+      (b) **rate-aware** VRAM estimator in `train/gpu.py`, (c) selector in
+      PreprocessingView + read-only display & mismatch guard in `TabCore.vue`.
+      ⚠ **(a)+(b) are atomic** — see the hardware constraint below.
+
+- [ ] **BUG-61** _(minor, M2)_ — F0 Viterbi smoothing flag not exposed; matters for
+      pitch-slide instruments. Corrected 2026-09-03: no `decoder` argument is passed
+      at all (Viterbi is torchcrepe's *default*), and the flag is **CREPE-only**
+      (parselmouth has no equivalent). ⚠ **Also invalidates the feature cache** —
+      belongs in the ordered batch, see constraint 1 below.
+- [ ] **BUG-65** _(major, M3)_ — **in-progress.** Realtime export must use
+      streaming-compatible YIN/pYIN, not CREPE. Sub-steps: (a) `architecture.md`
+      section ✅ done, but the required notes in `m3-model-training.md` and
+      `m17-midi-synth-vst.md` are ⬜ still missing; (b) `inference/yin.py`
+      TorchScript implementation ⬜ open.
+- [ ] **BUG-62** _(minor, M3)_ — No pretrained warm-start checkpoint; limited-range
+      instruments train poorly from random init. Canonical field name
+      `warm_start_checkpoint`; asset delivered by **download-on-first-run**
+      (decision 2026-09-03). Sequenced after BUG-59 (base model must be 48 kHz).
+- [ ] **BUG-66** _(minor, M3)_ — TensorBoard does not log reconstructed audio
+      (`train_orig` vs `train_resyn`) — the primary DDSP quality signal.
+      **Depends on BUG-59** (`config.sample_rate` does not exist yet).
+- [ ] **BUG-63** _(minor, M5)_ — `max_steps` shown without estimated-epochs context.
+      **Depends on BUG-52** (diagnostics reachable) **and BUG-59** (`slice_length`),
+      and needs a backend step first: the diagnostics payload currently returns no
+      `total_chunks`.
+- [ ] **BUG-67** _(minor, M5)_ — No instrument pitch-range reference guide
+      (UX companion to BUG-60; same file → sequential, never parallel).
+- [ ] **BUG-64** _(minor, M15)_ — Export metadata (`author`, `description`,
+      `is_experimental`, `model_version`) missing from `ParamManifest` + export UI;
+      required for Neutone marketplace submission. Fully independent of the
+      feature-cache batch — the only Group-B bug whose analysis needed no correction.
+
+**Execution order for Group B** (see `m20-audio-quality-bugs.md` for the granular
+steps): **BUG-60 → BUG-61 → BUG-59** (the feature-cache batch, strict order) →
+BUG-67 → then, independently, BUG-64, BUG-65, BUG-63, BUG-66, BUG-62.
+
+#### ⚠ Two hard constraints in Group B (not preferences)
+
+**1. BUG-60 → BUG-61 → BUG-59 — feature-cache ordering.**
+All **three** bugs add new keys to the feature-cache metadata and each invalidates
+every previously extracted `.npy` feature set:
+
+| Bug | New cache key(s) | Invalidates existing features? |
+|---|---|---|
+| BUG-60 | `f0_min_hz`, `f0_max_hz` | yes — F0 track re-extracted |
+| BUG-61 | `f0_viterbi` | yes — F0 track re-extracted |
+| BUG-59 | `sample_rate` | yes — audio, F0 **and** loudness re-extracted |
+
+BUG-61 was **missing from this table until the 2026-09-03 re-analysis** — without it
+users would have faced a *third* full re-preprocessing pass. Doing them in the order
+above collapses everything into a single pass. The three bugs also modify the same
+signatures and surfaces (`extract_f0_crepe()`, `extract_f0_parselmouth()`,
+`compute_features()`, `run_preprocessing_job()`, `RunCreateRequest`, `PARAM_KEYS`,
+`PreprocessingView.vue`, `fixtures.js`), so this order also avoids repeated merge
+conflicts. Recorded in `bugs.md` BUG-59 `- sequencing:` / BUG-60 `- blocks:` /
+BUG-61 `- batch:`.
+
+**2. BUG-59 sub-steps (a) and (b) are one atomic change.**
+Sub-step (b) — making `train/gpu.py::estimate_model_vram()` **rate-aware** — is
+**not optional polish**. The stated minimum target hardware is an RTX 3060
+Laptop (6 GB). Merging (a) alone flips the default to 48 kHz while the estimator
+is still calibrated to 16 kHz, so the feasibility check and `batch_size_max`
+under-report by ~3× and the wizard green-lights configurations that OOM on the
+project's own baseline GPU. That is strictly worse than today's state: currently
+the app is merely low-quality; (a)-without-(b) makes it **broken on the reference
+hardware**. Either land (a)+(b) together, or gate the 48 kHz default behind (b).
+Note the corrected premise (2026-09-03): `estimate_model_vram()` holds no
+sample-rate constants at all — only empirical `BASE_ESTIMATE_GB` baselines plus a
+16 kHz docstring — so (b) means "scale the audio-domain terms by `sample_rate/16000`",
+not "recalculate a sample-count table".
+Recorded in `bugs.md` BUG-59 `- resolution:` and `architecture.md`
+§"Sample rate pipeline".
+
+### Group C — Process/quality regressions (found 2026-09-03)
+
+- [ ] **BUG-68** _(minor, M4)_ — `server/tasks.py` is **committed** in an unformatted
+      state, so `ruff format --check` is red on a clean checkout and the
+      Definition-of-Done formatting gate fails before any work starts. Mechanical
+      single-file fix (`ruff format server/tasks.py`), must be delegated as a code
+      edit. `ruff check` alone does not surface it.
+
+

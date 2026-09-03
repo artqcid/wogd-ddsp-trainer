@@ -10,8 +10,8 @@ _See `log.md` for the chronological append-only changelog._
 ---
 
 ## Architecture & Design
-- [`architecture.md`](./architecture.md) - System architecture: DDSP pipeline, dataset prep, model, training loop, web backend + UI, tech stack, M14 model tier system + backend extensions
-- [`ui-requirements.md`](./ui-requirements.md) - UI/product requirements: applies to ALL agents; app shell, 4 view groups, coupling rules, mock-data seam, TensorBoard doctrine, M14 Dual-Mode Training UI (Wizard + Power-User Tabs)
+- [`architecture.md`](./architecture.md) - System architecture: DDSP pipeline, sample-rate pipeline design (48 kHz default), dataset prep, model, training loop, web backend + UI, SPA run-state store, realtime-export pitch tracker constraint (YIN not CREPE), tech stack, M14 model tier system + backend extensions
+- [`ui-requirements.md`](./ui-requirements.md) - UI/product requirements: applies to ALL agents; app shell, 4 view groups, coupling rules, mock-data seam, TensorBoard doctrine, M14 Dual-Mode Training UI (Wizard + Power-User Tabs), M20 audio-quality & training-UX controls (BUG-59..67) incl. the preprocessing-time vs. training-time parameter rule
 - [`parameter-handling.md`](./parameter-handling.md) - Input parameter dynamics: Zwei-Schicht-Modell (Training-Config vs. Inferenz), Neutone hard-limit 4, Custom-VST 16-param, GUI ModelParameterBuilder, tier-spezifische Defaults, ParamManifest-Schema
 - [`coding-standards.md`](./coding-standards.md) - Coding standards: Clean Code Developer (CCD) value system + compliance rule
 
@@ -22,8 +22,8 @@ _See `log.md` for the chronological append-only changelog._
 - [`related-work.md`](./related-work.md) - Reference: DDSP-SVC (real-time voice conversion) and its implications
 
 ## Plans & Roadmap
-- [`plan.md`](./plan.md) - Meta plan: milestones M1-M14, resolved questions/decisions, risks
-- [`checklist.md`](./checklist.md) - Status: open tasks per milestone (short); source of truth for "what's next"
+- [`plan.md`](./plan.md) - Meta plan: milestones M1-M20, resolved questions/decisions, risks
+- [`checklist.md`](./checklist.md) - Status: open tasks per milestone (short) + open-bug milestone linkage (BUG-52..67, Group A/B incl. the 2026-09-03 re-analysis corrections); source of truth for "what's next"
 - [`bugs.md`](./bugs.md) - Canonical bug ledger (single source of truth; `BUG-<id>` entries)
 - [`implementation/m1-scaffold.md`](./implementation/m1-scaffold.md) - M1 granular steps + history
 - [`implementation/m2-dataset-prep.md`](./implementation/m2-dataset-prep.md) - M2 granular steps + history
@@ -43,6 +43,8 @@ _See `log.md` for the chronological append-only changelog._
 - [`implementation/m16-param-builder-ui.md`](./implementation/m16-param-builder-ui.md) - M16 granular steps: ParamCard, ModelParameterBuilder, NeutoneSlotPanel (drag & drop), ModelExportView dual-export, InferencePlaygroundView dynamic N-param sliders
 - [`implementation/m17-midi-synth-vst.md`](./implementation/m17-midi-synth-vst.md) - M17 feasibility analysis + granular steps: MidiSynthWrapper, MIDI-synth export, Usage Mode wizard step, MIDI Preview, tier-specific synth hints
 - [`implementation/m18-rest-api-client.md`](./implementation/m18-rest-api-client.md) - M18 granular steps: RestApiClient, missing backend routes, CORS middleware, swap mock for real client
+- [`implementation/m19-bug-fixes.md`](./implementation/m19-bug-fixes.md) - M19 granular steps: BUG-52..58 SPA/training-lifecycle fix batch (router fix, sessionStorage, shared `trainingRunStore`, preprocessing route order, button lifecycle, dashboard resilience, save-on-stop, wizard resume path)
+- [`implementation/m20-audio-quality-bugs.md`](./implementation/m20-audio-quality-bugs.md) - M20 granular steps: BUG-59..67 audio-quality & training-UX batch (ordered feature-cache batch BUG-60 -> BUG-61 -> BUG-59, atomic 48 kHz + rate-aware VRAM gate, ModelCard, TorchScript YIN, TensorBoard audio, warm-start, epoch/pitch-range UX)
 
 ## Operations & Quality
 - [`handbook.md`](./handbook.md) - User manual (German): training operation only — quick start (standard model), complex models per tier, full parameter reference
