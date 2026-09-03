@@ -63,6 +63,7 @@ def test_variant_keys_not_clamped() -> None:
         stft_scales_max=3,
         mixed_precision="required",
         gradient_checkpointing="enabled",
+        batch_size_max=8,
     )
     params = {
         "hidden_size": 128,

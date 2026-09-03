@@ -110,6 +110,19 @@ def test_propose_parameters_ultra() -> None:
     assert b.gradient_checkpointing == "disabled"
 
 
+def test_propose_batch_size_scales_with_vram() -> None:
+    b2 = propose_parameters(2.0)
+    b6 = propose_parameters(6.0)
+    b12 = propose_parameters(12.0)
+    b24 = propose_parameters(24.0)
+    # batch_size_max = min(128, max(2, int(vram * 32/6)))
+    # 2 GB → int(10.66) = 10, 6 GB → 32, 12 GB → 64, 24 GB → min(128, 128)
+    assert b2.batch_size_max == 10
+    assert b6.batch_size_max == 32
+    assert b12.batch_size_max == 64
+    assert b24.batch_size_max == 128
+
+
 # ---------------------------------------------------------------------------
 # propose_presets — FAST / NORMAL / QUALITY relative to vram
 # ---------------------------------------------------------------------------

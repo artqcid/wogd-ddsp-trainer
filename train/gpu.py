@@ -88,15 +88,19 @@ class ParameterBounds:
         return self.hidden_size_max
 
 
-def _bounds_for_tier(tier: str) -> ParameterBounds:
+def _bounds_for_tier(tier: str, total_vram_gb: float = 6.0) -> ParameterBounds:
     """Return the authoritative bound set for a tier (from architecture.md).
 
-    Table (VRAM, hidden size, STFT scales, checkpointing, mixed precision):
+    ``batch_size_max`` is computed dynamically from ``total_vram_gb``
+    (baseline: ``int(total_vram_gb * 32 / 6)``, i.e. 32 at 6 GB,
+    capped at 128). Table (VRAM, hidden size, STFT scales, checkpointing,
+    mixed precision):
         * low   (<4 GB)    128 or 256        3              enabled  required
         * mid   (4-8 GB)   256 or 512        3              optional required
         * high  (8-12 GB)  512              5              disabled recommended
         * ultra (>=12 GB)  512-1024         5-8            disabled optional
     """
+    batch_size_max = min(128, max(2, int(total_vram_gb * 32 / 6)))
     table: dict[str, ParameterBounds] = {
         "low": ParameterBounds(
             hidden_size_min=128,
@@ -109,7 +113,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="enabled",
-            batch_size_max=8,
+            batch_size_max=batch_size_max,
         ),
         "mid": ParameterBounds(
             hidden_size_min=256,
@@ -122,7 +126,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="optional",
-            batch_size_max=32,
+            batch_size_max=batch_size_max,
         ),
         "high": ParameterBounds(
             hidden_size_min=512,
@@ -135,7 +139,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=5,
             mixed_precision="recommended",
             gradient_checkpointing="disabled",
-            batch_size_max=64,
+            batch_size_max=batch_size_max,
         ),
         "ultra": ParameterBounds(
             hidden_size_min=512,
@@ -148,7 +152,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=8,
             mixed_precision="optional",
             gradient_checkpointing="disabled",
-            batch_size_max=128,
+            batch_size_max=batch_size_max,
         ),
     }
     return table[tier]
@@ -158,10 +162,11 @@ def propose_parameters(total_vram_gb: float) -> ParameterBounds:
     """Propose training parameter bounds for the given total VRAM in GB.
 
     Returns a :class:`ParameterBounds` derived from the VRAM tier that
-    ``total_vram_gb`` falls into.
+    ``total_vram_gb`` falls into. ``batch_size_max`` is computed dynamically
+    from the VRAM value.
     """
     tier = vram_tier(total_vram_gb)
-    return _bounds_for_tier(tier)
+    return _bounds_for_tier(tier, total_vram_gb)
 
 
 def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
