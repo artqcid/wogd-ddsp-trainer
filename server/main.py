@@ -76,6 +76,15 @@ async def lifespan(app: FastAPI):
         )
     conn.close()
 
+    # BUG-38: warn if Redis/Celery broker is unreachable at startup
+    try:
+        import redis as _redis
+        _redis_url = os.environ.get("WOGD_REDIS_URL", "redis://localhost:6379/0")
+        _r = _redis.from_url(_redis_url, socket_connect_timeout=2)
+        _r.ping()
+    except Exception as _exc:
+        logger.warning("Redis broker unreachable at startup: %s — Celery tasks will fail", _exc)
+
     yield
 
     with suppress(Exception):
@@ -112,15 +121,10 @@ app.include_router(reverb.router, prefix="/api")
 
 install_handlers(app)
 
-# When enabled, serve the production frontend build from `webui/dist` (used by
-# the VSCode `start-application-release` task). Disabled during development so
-# Vite (dev server) owns the frontend.
-_SERVE_STATIC = os.environ.get("WOGD_SERVE_STATIC", "0") == "1"
-
-if _SERVE_STATIC and FRONTEND_DIST.is_dir():
-    mount_frontend(app, FRONTEND_DIST)
-
-
+# API endpoints must be registered BEFORE the SPA fallback (mount_frontend),
+# otherwise the wildcard @app.get("/{_:path}") in mount_frontend catches them
+# (e.g. /api/health, /api/tensorboard). BUG-36: moved here from after the
+# _SERVE_STATIC block.
 @app.get("/")
 def root():
     return {"service": "wogd-ddsp-trainer", "status": "ok"}
@@ -139,6 +143,15 @@ def tensorboard():
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return {"url": manager.url, "running": True, "port": manager.port}
+
+
+# When enabled, serve the production frontend build from `webui/dist` (used by
+# the VSCode `start-application-release` task). Disabled during development so
+# Vite (dev server) owns the frontend.
+_SERVE_STATIC = os.environ.get("WOGD_SERVE_STATIC", "0") == "1"
+
+if _SERVE_STATIC and FRONTEND_DIST.is_dir():
+    mount_frontend(app, FRONTEND_DIST)
 
 
 if __name__ == "__main__":

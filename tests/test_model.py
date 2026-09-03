@@ -50,7 +50,7 @@ def test_harmonic_distribution_softmaxes_to_one() -> None:
 
     row_sums = out["harmonic_distribution"].sum(dim=-1)
     expected = torch.ones_like(row_sums)
-    torch.testing.assert_allclose(row_sums, expected, atol=1e-5, rtol=1e-7)
+    torch.testing.assert_close(row_sums, expected, atol=1e-5, rtol=1e-7)
 
 
 def test_deterministic_forward() -> None:

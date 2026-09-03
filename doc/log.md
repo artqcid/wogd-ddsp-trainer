@@ -3,6 +3,65 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — Full Project Analysis: 10 new bugs (BUG-28..37) + 5 feature requests (BUG-38..42)
+
+**Analysis** — ARCHITECT full cross-perspective review (Dev Env, App Tech, DDSP Codebase, UI Usability).
+
+New critical/major bugs:
+- **BUG-28** DDSPDataset returns 4-tuple but Trainer DataLoader unpacks 3 → crashes real training (critical)
+- **BUG-29** PreprocessingView uses `ds.name` instead of `ds.id` as dataset select value → 404 on all preprocessing calls (critical)
+- **BUG-30** No full DDSP preprocessing pipeline endpoint → training always uses synthetic data (critical)
+- **BUG-31** PreprocessingView waveform never loads after dataset selection (minor)
+- **BUG-32** TrainingDashboard shows `undefined` for run epoch/loss/max_epochs (API field mismatch) (major)
+- **BUG-33** Resume button uses status `'idle'` which doesn't exist in backend lifecycle; `'stopped'` runs never show Resume (major)
+- **BUG-34** scripts/sync-wiki.py: 2 ruff E402 violations (minor, but breaks DoD lint-clean claim)
+- **BUG-35** test_losses.py / test_model.py: deprecated `torch.testing.assert_allclose()` FutureWarning (minor)
+- **BUG-36** main.py: duplicate `@app.get("/")` routes + SPA wildcard registered before `/api/health` in release mode (major)
+- **BUG-37** Trainer.load_checkpoint uses `weights_only=False` — inconsistent with BUG-7 fix in DDSPModel (minor)
+
+New feature requests:
+- **BUG-38** Redis health check at startup/health endpoint (FEAT)
+- **BUG-39** Async preprocessing pipeline with status polling (FEAT)
+- **BUG-40** Real training step/epoch progress in DB + dashboard (FEAT)
+- **BUG-41** Preset "rebase" dialog (ui-requirements.md §Preset system compatibility, specified but unimplemented) (FEAT)
+- **BUG-42** Dataset deletion cascade warning when runs reference the dataset (FEAT)
+
+All entries filed in `doc/bugs.md`; `next_id` bumped to 43.
+
+## 2026-09-03 — Full fix session: BUG-28..42 + morph refactor (15 bugs/features closed)
+
+**Bugfix + Feature** — ARCHITECT_Openrouter fixed all 15 open bugs/features from the 2026-09-03 analysis.
+
+**Batch 1 (parallel, 9 subagents):**
+- **BUG-34** `scripts/sync-wiki.py`: added `# noqa: E402` to 2 import lines.
+- **BUG-35** `tests/test_losses.py` + `tests/test_model.py`: `assert_allclose` → `assert_close` (3 calls).
+- **BUG-29+31+25** `PreprocessingView.vue`: `ds.name` → `ds.id` in option values; `loadWaveform` on `@change`; real `resultsText` from API response.
+- **BUG-32+33** `TrainingDashboardView.vue`: fixed undefined epoch/loss/dataset fields → `latest_step`/`config.max_steps`/`error`/`dataset_id`; resume button `'idle'` → `'stopped'`; added `.badge.stopped` CSS.
+- **morph refactor A** `model/ddsp_model.py`: added `DDSPModel.morph()` encapsulating latent-space interpolation.
+- **BUG-40A** `server/db.py`: added `current_step`/`last_loss` columns to runs table + migration + `run_update_progress()` helper.
+- **BUG-36+38** `server/main.py`: moved API routes before SPA wildcard; added Redis ping warning in lifespan.
+- **BUG-37+28** `train/trainer.py`: `weights_only=False` → `True`; 3-tuple unpack → `*_` for 4-tuple DDSPDataset; docstring updated.
+
+**Batch 2 (parallel, 3 subagents):**
+- **morph refactor B + BUG-30/39A + BUG-40B** `server/tasks.py`: `run_morph_job` now calls `model_a.morph()` instead of reaching into internals; added `run_preprocessing_job` Celery task (F0+loudness+audio+split+cache write); `_watch_stop_request` writes `current_step` to DB every 0.5s poll.
+- **BUG-30/39B + BUG-42** `server/routes/dataset.py`: added `POST /datasets/{id}/preprocess` async endpoint; added cascade check to `DELETE /datasets/{id}` (409 if active runs reference it; `?force=true` override).
+- **BUG-40C** `server/routes/training.py`: `current_step`/`last_loss` made explicit in `list_runs` and `get_run` responses.
+
+**Batch 3:**
+- **BUG-41** `webui/src/views/TrainingConfigView.vue`: added tier-mismatch inline warning banner; fixed `handleStartTraining` to use correct validate response shape (`model_tier_mismatch` not `valid`/`errors`); added `_doStartRun`, `handleTierMismatchProceed`, `handleTierMismatchCancel`.
+
+**Verification:** ruff clean, vitest 77/77, pytest 64/64 (fast subset), all targeted API tests pass.
+
+**Bugfix** — four new bugs from MT-A1/MT-A2 manual retest:
+- **BUG-22** Dataset name not persisted (upload_dataset never wrote name.txt) — fixed.
+- **BUG-23** No GET route for dataset audio files (PreprocessingView waveform empty) — fixed.
+- **BUG-24** dataset_summary counted .npy feature files inflating file count — fixed.
+- **BUG-25** Hardcoded placeholder resultsText in PreprocessingView — opened, not fixed.
+- **BUG-27** numba.core.byteflow DEBUG spam fills log file (99.9% noise) — fixed.
+- **systematic-debugging skill** updated: log file check is now mandatory step 2 in Phase 1.
+- **AGENTS.md** external skills table now has a "Load when" column for consistency.
+- Verification: ruff clean, vitest 77/77, pytest 362/1.
+
 ## 2026-09-02 — M18: Frontend-Backend Integration (RestApiClient)
 
 **Feature** — closes the mock-data seam. The UI now calls the real backend via HTTP.

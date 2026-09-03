@@ -162,9 +162,9 @@ onUnmounted(() => {
           <span class="badge" :class="'badge ' + run.status" data-testid="run-status">{{ run.status }}</span>
         </div>
         <div class="run-card-meta">
-          <span>Dataset: {{ run.dataset }}</span>
-          <span>Epoch: {{ run.epoch }} / {{ run.max_epochs }}</span>
-          <span>Loss: {{ run.loss }}</span>
+          <span>Dataset: {{ run.dataset_id || '—' }}</span>
+          <span>Step: {{ run.latest_step ?? '—' }} / {{ run.config?.max_steps ?? '—' }}</span>
+          <span>Error: {{ run.error || '—' }}</span>
         </div>
         <div
           v-if="selectedRunId === run.run_id"
@@ -176,16 +176,16 @@ onUnmounted(() => {
               <strong>Created:</strong> {{ run.created_at }}
             </div>
             <div>
-              <strong>Dataset:</strong> {{ run.dataset }}
+              <strong>Dataset:</strong> {{ run.dataset_id || '—' }}
             </div>
             <div>
-              <strong>Epochs:</strong> {{ run.epoch }} / {{ run.max_epochs }}
+              <strong>Steps:</strong> {{ run.latest_step ?? '—' }} / {{ run.config?.max_steps ?? '—' }}
             </div>
             <div class="epoch-bar" data-testid="epoch-bar">
               <div
                 class="epoch-bar-fill"
                 :style="{
-                  width: run.max_epochs ? ((run.epoch / run.max_epochs) * 100) + '%' : '0%'
+                  width: run.config?.max_steps ? ((run.latest_step / run.config.max_steps) * 100) + '%' : '0%'
                 }"
               />
             </div>
@@ -200,7 +200,7 @@ onUnmounted(() => {
               Stop
             </button>
             <button
-              v-if="run.status === 'idle' || run.status === 'failed'"
+              v-if="run.status === 'stopped' || run.status === 'failed'"
               class="resume"
               data-testid="resume-btn"
               @click.stop="handleResume(run.run_id)"
@@ -259,6 +259,7 @@ onUnmounted(() => {
 .preset-result.err { background: var(--error); color: #fff; }
 .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
 .badge.idle { background: var(--warning); color: #000; }
+.badge.stopped { background: var(--warning); color: #000; }
 .badge.running { background: var(--accent); color: #000; }
 .badge.completed { background: var(--success); color: #000; }
 .badge.failed { background: var(--error); color: #fff; }

@@ -18,6 +18,8 @@ const activeTab = ref('core')
 const showDialog = ref(false)
 const validationResult = ref(null)
 const showWizard = ref(!store.wizardCompleted)
+const showTierMismatchWarning = ref(false)
+const pendingConfig = ref(null)
 
 const TIER_TAB_MAP = {
   standard: ['core', 'component'],
@@ -61,12 +63,16 @@ async function handleStartTraining() {
   const config = store.buildFullConfig()
   try {
     const validation = await apiClient.validateConfig(config)
-    if (validation.valid) {
-      const run = await apiClient.startRun(config)
-      validationResult.value = { ok: true, message: `Training started: ${run.run_id} (${run.status})` }
-    } else {
-      validationResult.value = { ok: false, message: validation.errors.join('; ') }
+    const clamped = validation.clamped_fields || []
+    if (validation.model_tier_mismatch) {
+      pendingConfig.value = config
+      showTierMismatchWarning.value = true
+      if (clamped.length > 0) {
+        validationResult.value = { ok: null, message: `Note: ${clamped.length} param(s) were clamped to hardware bounds.` }
+      }
+      return
     }
+    await _doStartRun(config, clamped)
   } catch (e) {
     validationResult.value = { ok: false, message: e.message || 'Validation failed' }
   }
@@ -77,6 +83,29 @@ onMounted(async () => {
     await store.checkFeasibility(apiClient)
   }
 })
+
+async function _doStartRun(config, clamped) {
+  try {
+    const run = await apiClient.startRun(config)
+    let msg = `Training started: ${run.run_id} (${run.status})`
+    if (clamped && clamped.length > 0) msg += ` — ${clamped.length} param(s) clamped.`
+    validationResult.value = { ok: true, message: msg }
+    showTierMismatchWarning.value = false
+    pendingConfig.value = null
+  } catch (e) {
+    validationResult.value = { ok: false, message: e.message || 'Failed to start run' }
+  }
+}
+
+async function handleTierMismatchProceed() {
+  if (!pendingConfig.value) return
+  await _doStartRun(pendingConfig.value, [])
+}
+
+function handleTierMismatchCancel() {
+  showTierMismatchWarning.value = false
+  pendingConfig.value = null
+}
 </script>
 
 <template>
@@ -126,6 +155,19 @@ onMounted(async () => {
 
       <div class="tab-content">
         <component :is="currentTabComponent" />
+      </div>
+
+      <div
+        v-if="showTierMismatchWarning"
+        class="tier-mismatch-banner"
+        data-testid="tier-mismatch-banner"
+      >
+        <strong>⚠ Tier Mismatch</strong>
+        <p>The selected preset was created with a different model tier than the current configuration. Training may produce unexpected results.</p>
+        <div class="tier-mismatch-actions">
+          <button class="btn btn--primary" data-testid="tier-mismatch-proceed" @click="handleTierMismatchProceed">Proceed anyway</button>
+          <button class="btn btn--ghost" data-testid="tier-mismatch-cancel" @click="handleTierMismatchCancel">Cancel</button>
+        </div>
       </div>
 
       <div class="btn-row">
@@ -178,4 +220,16 @@ onMounted(async () => {
 .midi-hint-content p { color: var(--text-secondary); margin: 0; }
 .hint-link { color: var(--accent); text-decoration: none; }
 .hint-link:hover { text-decoration: underline; }
+
+.tier-mismatch-banner {
+  margin-top: 1rem;
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--tier-hacks);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+.tier-mismatch-banner strong { display: block; margin-bottom: var(--space-1); color: var(--warning); }
+.tier-mismatch-banner p { color: var(--text-secondary); margin: 0 0 var(--space-2); }
+.tier-mismatch-actions { display: flex; gap: 0.5rem; }
 </style>

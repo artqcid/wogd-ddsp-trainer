@@ -284,6 +284,72 @@ class DDSPModel(nn.Module):
             "logvar": logvar,
         }
 
+    def morph(
+        self,
+        other: DDSPModel,
+        f0: torch.Tensor,
+        loudness: torch.Tensor,
+        alpha: float = 0.5,
+    ) -> torch.Tensor:
+        """Morph between this model and `other` in latent space, using `self`'s decoder.
+
+        Both models must have `config.use_latent == True`. In eval mode, encodes
+        `f0`/`loudness` through each model's encoder, interpolates the two latent
+        means by `alpha`, feeds the mixed latent through `self`'s GRU + feature
+        projection + output heads + DDSP core, and returns the raw audio tensor.
+
+        Args:
+            other: the second DDSPModel to morph towards.
+            f0: per-frame fundamental frequency in Hz, shape (B, T_frames).
+            loudness: per-frame log energy, shape (B, T_frames).
+            alpha: interpolation weight on `self`'s latent (0 = `other`, 1 = `self`).
+
+        Returns:
+            Synthesized audio tensor of shape (B, n_samples).
+
+        Raises:
+            ValueError: if either model does not have `use_latent == True`.
+        """
+        if not self.config.use_latent or not other.config.use_latent:
+            raise ValueError(
+                "morph() requires both models to have config.use_latent == True"
+            )
+
+        self.eval()
+        other.eval()
+
+        with torch.no_grad():
+            mu_a, _ = self.encoder(f0, loudness)
+            mu_b, _ = other.encoder(f0, loudness)
+
+            z = alpha * mu_a + (1.0 - alpha) * mu_b
+
+            B, T_frames = f0.shape
+            features = torch.cat(
+                [torch.stack([f0, loudness], dim=-1), z], dim=-1
+            )
+
+            gru_out, _ = self.gru(features)
+            hidden = F.relu(self.feature_proj(gru_out))
+
+            raw_amplitudes = self.amplitude_out(hidden)
+            amplitudes = torch.sigmoid(raw_amplitudes)
+            raw_distribution = self.distribution_out(hidden)
+            harmonic_distribution = F.softmax(raw_distribution, dim=-1)
+            noise_raw = self.noise_magnitudes_out(hidden)
+            magnitudes = torch.sigmoid(noise_raw)
+
+            n_samples = (T_frames - 1) * self.config.frame_size + 1
+            audio = self.ddsp_core(
+                amplitudes=amplitudes,
+                harmonic_distribution=harmonic_distribution,
+                f0=f0,
+                noise_magnitudes=magnitudes,
+                n_samples=n_samples,
+            )
+
+        return audio
+
     def save_checkpoint(self, path: str) -> None:
         state = {
             "model_state_dict": self.state_dict(),

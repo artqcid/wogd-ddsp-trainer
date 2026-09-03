@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 28`
+`next_id: 43`
 
 ## Bug template (copy for each new bug)
 
@@ -637,7 +637,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-03 — filed during MT-A2 manual test; fixed inline.
 
 ## BUG-25 - PreprocessingView resultsText is a hardcoded placeholder, not real backend data
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, PreprocessingView)
 - affected: MT-A2
 - found-in: 2026-09-03, manual test MT-A2
@@ -650,10 +650,10 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   the user sees this fake diagnostic text, which is misleading.
 - reproduction: Upload any audio → Preprocessing → Run Preprocessing → results show
   "F0 range 80-400Hz" regardless of actual content.
-- resolution: (open — needs backend to return feature stats and frontend to display them,
-  or the hardcoded text to be replaced with a generic success message)
+- resolution: Fixed in PreprocessingView.vue: added `preprocessingResult` ref; `runPreprocessing` captures `result?.message || result?.status || null`; `resultsText` computed now shows the real API response, falling back to generic `'Extraction complete.'` if no message is returned.
 - history:
   - 2026-09-03 — filed during MT-A2 manual test; marked open.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1D subagent).
 
 ## BUG-27 - numba.core.byteflow DEBUG spam fills log file (99.9% noise, drowns real signals)
 - status: fixed
@@ -671,3 +671,295 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - resolution: Added `logging.getLogger("numba").setLevel(logging.WARNING)` in `setup_logging()`.
 - history:
   - 2026-09-03 — filed and fixed inline.
+
+---
+
+## Open bugs — Full Project Analysis 2026-09-03
+
+## BUG-28 - DDSPDataset 4-tuple vs Trainer DataLoader 3-tuple unpack crashes training
+- status: fixed
+- milestone: M3 (training loop / DataLoader integration)
+- affected: M4, M5 (any training run with a real dataset_id)
+- found-in: Full project analysis 2026-09-03 (cross-check loader.py vs trainer.py)
+- severity: critical
+- description: `dataset/loader.py::DDSPDataset.__getitem__` returns a **4-tuple**
+  `(f0_t, loudness_t, audio_t, content_t)` (see line 135). The DataLoader path in
+  `train/trainer.py::run()` unpacked the batch as:
+  `f0_batch, loudness_batch, audio_batch = next(loader_iter)` (line 314) — only 3 targets.
+  When a dataset with (or without) content embedding is loaded via a real `DDSPDataset`,
+  Python raises `ValueError: too many values to unpack (expected 3)` at the first training
+  step, crashing the entire training job. The synthetic fallback (`build_tensors`) is
+  unaffected because it returns raw tensors, not 4-tuples.
+- reproduction: Create a run with a valid `dataset_id` and an extracted FeatureCache
+  on disk → `run_training_job` creates `DDSPDataset`, wraps in `DataLoader`, `trainer.run()`
+  starts, first `next(loader_iter)` raises `ValueError`.
+- resolution: Fixed `train/trainer.py` line 314: `f0_batch, loudness_batch, audio_batch, *_ = next(loader_iter)`. Updated docstring to reflect 4-tuple.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1I subagent).
+
+## BUG-29 - PreprocessingView passes dataset name (not id/UUID) to backend calls
+- status: fixed
+- milestone: M5 (Web UI, PreprocessingView)
+- affected: M5.2, MT-A2 (Preprocessing workflow)
+- found-in: Full project analysis 2026-09-03 (view code review)
+- severity: critical
+- description: `PreprocessingView.vue` line 87 uses `:value="ds.name"` in the dataset
+  `<option>` elements. `ds.name` is the human-readable dataset name (e.g. "My Voice Dataset"),
+  NOT the UUID dataset ID. `selectedDataset.value` is then passed directly to
+  `apiClient.preprocessDataset(selectedDataset.value)` and
+  `apiClient.getFirstAudioFile(selectedDataset.value)`. Both methods use this value as the
+  `dataset_id` path parameter in API calls (`/api/datasets/{id}/extract-content`,
+  `/api/datasets/{id}`). The backend will return 404 for any dataset whose name differs
+  from its directory UUID.
+- reproduction: Upload any dataset with a custom name → navigate to Preprocessing → select
+  the dataset → click "Run Preprocessing" → HTTP 404 from backend.
+- resolution: Fixed PreprocessingView.vue: changed `:value="ds.name"` to `:value="ds.id"` and `:key="ds.name"` to `:key="ds.id"` in the option loop.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1D subagent).
+
+## BUG-30 - No full DDSP preprocessing pipeline endpoint — training always falls back to synthetic data
+- status: fixed
+- milestone: M4 (Web Backend, dataset preprocessing pipeline)
+- affected: M3 (training), M4, M5 (UI preprocessing flow), all real training runs
+- found-in: Full project analysis 2026-09-03 (tasks.py vs dataset routes cross-check)
+- severity: critical
+- description: `server/tasks.py::run_training_job()` checks if a `FeatureCache` with
+  `key="train"` exists in the dataset directory. If it does, a `DDSPDataset` is created;
+  otherwise the job falls back to synthetic data. However, there is **no HTTP endpoint**
+  that runs the full DDSP preprocessing pipeline: audio loading → 16 kHz resample → F0
+  extraction → loudness extraction → train/val split → `save_features()` → `FeatureCache`
+  write. The only preprocessing endpoint (`POST /api/datasets/{id}/extract-content`) only
+  extracts HuBERT content embeddings (for M13 voice conversion), not the core F0/loudness
+  features that the `FeatureCache`/`DDSPDataset` requires.
+  As a result, **every training run falls back to synthetic data**, regardless of what
+  dataset was uploaded and preprocessed via the UI.
+- reproduction: Upload audio files → run preprocessing via UI → start a training run with
+  the dataset → check logs: "cache not found for dataset_id=..., using synthetic data".
+- resolution: Added `POST /api/datasets/{id}/preprocess` endpoint (async Celery task `run_preprocessing_job`) that extracts F0+loudness for all audio files and writes FeatureCache train/val splits. Also added `run_preprocessing_job` Celery task in server/tasks.py.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 2A+2B subagents).
+
+## BUG-31 - PreprocessingView: waveform never loads after dataset selection
+- status: fixed
+- milestone: M5 (Web UI, PreprocessingView)
+- affected: M5.2
+- found-in: Full project analysis 2026-09-03 (view code review)
+- severity: minor
+- description: `PreprocessingView.vue` defines `loadWaveform()` (lines 35–56) which
+  creates a WaveSurfer instance and loads the first audio file from the selected dataset.
+  However, the `<select>` dropdown at line 82–89 has `@change="selectedDataset = ($event.target.value)"` — 
+  it only updates the reactive ref, it does NOT call `loadWaveform()`. The waveform
+  container therefore always remains empty after dataset selection.
+  Additionally, there is no `@change` watcher or `watch()` call that triggers `loadWaveform`
+  when `selectedDataset` changes.
+- reproduction: Open Preprocessing → select any dataset → waveform container stays blank.
+- resolution: Fixed PreprocessingView.vue `@change` handler to also call `loadWaveform()` after setting `selectedDataset`.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1D subagent).
+
+## BUG-32 - TrainingDashboardView shows undefined for run epoch/loss/max_epochs
+- status: fixed
+- milestone: M5 (Web UI, TrainingDashboardView)
+- affected: M5.4, M4 (run lifecycle)
+- found-in: Full project analysis 2026-09-03 (view vs backend API response cross-check)
+- severity: major
+- description: `TrainingDashboardView.vue` displays `run.epoch`, `run.max_epochs`, and
+  `run.loss` (lines 165–168 and 186–188). The backend `run_get()` / `run_all()` responses
+  from the DB contain: `{run_id, name, status, config, dataset_id, created_at, updated_at, error}`.
+  None of the displayed fields (`epoch`, `max_epochs`, `loss`) exist in the backend response.
+  They will all render as `undefined`. The epoch progress bar (`epoch-bar-fill`) calculates
+  `(run.epoch / run.max_epochs) * 100` which evaluates to `NaN` → bar shows 0% always.
+- reproduction: Start a training run → open Training Dashboard → run card shows "Epoch: undefined / undefined" and "Loss: undefined".
+- resolution: Fixed TrainingDashboardView.vue: replaced `run.epoch`/`run.max_epochs`/`run.loss`/`run.dataset` with `run.latest_step`, `run.config?.max_steps`, `run.error`, `run.dataset_id`. Also added `current_step`/`last_loss` DB columns (BUG-40).
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1E + Batch 2C subagents).
+
+## BUG-33 - TrainingDashboardView: Resume button never shown for stopped runs
+- status: fixed
+- milestone: M5 (Web UI, TrainingDashboardView)
+- affected: M5.4, M4 (run lifecycle)
+- found-in: Full project analysis 2026-09-03 (view code review vs backend lifecycle vocab)
+- severity: major
+- description: `TrainingDashboardView.vue` shows the Resume button only when
+  `run.status === 'idle' || run.status === 'failed'` (line 203). The backend run lifecycle
+  vocabulary is `pending → running → stopping/stopped → completed/failed` (per
+  `architecture.md`). The status `'idle'` is **not used** by the backend — user-stopped
+  runs become `'stopped'`, not `'idle'`. As a result, the Resume button is never shown
+  for a stopped run (only for `'failed'` runs).
+- reproduction: Start a run → stop it via the Stop button → run.status becomes `'stopped'`
+  → expand the run card → no Resume button visible.
+- resolution: Fixed resume button condition from `run.status === 'idle'` to `run.status === 'stopped' || run.status === 'failed'`. Added `.badge.stopped` CSS rule.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1E subagent).
+
+## BUG-34 - scripts/sync-wiki.py: 2 ruff E402 violations (module-level imports not at top)
+- status: fixed
+- milestone: M1 (Scaffold, ruff/code quality)
+- affected: M1.4 (check commands), Definition of Done
+- found-in: Full project analysis 2026-09-03 (ruff check)
+- severity: minor
+- description: `scripts/sync-wiki.py` has 2 `E402` violations: `from mcp_rag import ProjectRAG`
+  and `from mcp_rag import wiki as ragwiki` are placed after a `sys.path.insert()` guard
+  (which must be before the imports), but ruff still flags them as "module level import not
+  at top of file". The file is included in ruff's scan. While not in the main package,
+  `ruff check` (the DoD check) reports these 2 errors, technically meaning the codebase
+  is NOT lint-clean.
+- reproduction: `.venv\Scripts\python.exe -m ruff check` → reports 2 E402 errors in
+  `scripts/sync-wiki.py`.
+- resolution: Added `# noqa: E402` to the two import lines (17-18) in `scripts/sync-wiki.py`.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1A subagent).
+
+## BUG-35 - test_losses.py / test_model.py use deprecated torch.testing.assert_allclose
+- status: fixed
+- milestone: M3 (Model + training, tests)
+- affected: M3.5 (test quality)
+- found-in: Full project analysis 2026-09-03 (pytest warning output)
+- severity: minor
+- description: `tests/test_losses.py` (lines 65, 76) and `tests/test_model.py` (line 53)
+  use `torch.testing.assert_allclose()`, deprecated since PyTorch 1.12 with a FutureWarning:
+  "will be removed in a future release. Please use `torch.testing.assert_close()` instead."
+  These warnings appear in every `pytest` run (3 occurrences) and contribute noise to the
+  test output. The replacement API `torch.testing.assert_close()` has been available since
+  1.9.
+- reproduction: `.venv\Scripts\python.exe -m pytest tests/test_losses.py tests/test_model.py`
+  → FutureWarning on 3 calls.
+- resolution: Replaced all `torch.testing.assert_allclose(...)` calls with `torch.testing.assert_close(...)` in `tests/test_losses.py` (2 calls) and `tests/test_model.py` (1 call).
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1B+1C subagents).
+
+## BUG-36 - main.py: duplicate @app.get("/") routes; /api/health and /api/tensorboard registered after SPA wildcard in release mode
+- status: fixed
+- milestone: M6 (Polish, release packaging)
+- affected: M6.1, M6.5, release mode startup
+- found-in: Full project analysis 2026-09-03 (route order inspection with WOGD_SERVE_STATIC=1)
+- severity: major
+- description: When `WOGD_SERVE_STATIC=1`, `mount_frontend(app, FRONTEND_DIST)` is called
+  at module level (line 121), which registers two routes: `@app.get("/")` for `index.html`
+  and `@app.get("/{_:path}")` as SPA fallback. Directly after, lines 124–141 register
+  another `@app.get("/")` (the JSON health root), `@app.get("/api/health")`, and
+  `@app.get("/api/tensorboard")` — all of which are added AFTER the SPA fallback.
+  Route inspection confirms the order: `/`, `/{_:path}` (from mount_frontend) appear before
+  `/` (root), `/api/health`, `/api/tensorboard`. FastAPI/Starlette resolves routes in
+  registration order: for the path `/api/health`, the `/{_:path}` wildcard **may** match
+  before the specific `/api/health` route, depending on Starlette's path specificity logic.
+  Confirmed duplicate `/` routes. The `root()` health JSON (line 124) would be shadowed by
+  the frontend `index()`.
+- reproduction: Start with `WOGD_SERVE_STATIC=1` → `GET /` returns `index.html` (correct),
+  but there is ambiguity; `GET /api/health` may return `index.html` if the wildcard fires
+  first. The `TopBar.vue` health check uses `/api/health`.
+- resolution: Moved `@app.get("/")`, `/api/health` and `/api/tensorboard` endpoint registrations to immediately after `install_handlers(app)` and BEFORE the `mount_frontend()` / `_SERVE_STATIC` block. SPA wildcard is now always the last registered route.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1H subagent).
+
+## BUG-37 - Trainer.load_checkpoint uses weights_only=False (inconsistent safety; arbitrary pickle)
+- status: fixed
+- milestone: M3 (training, checkpointing)
+- affected: M3.3 (checkpoint safety), security
+- found-in: Full project analysis 2026-09-03 (trainer.py vs ddsp_model.py cross-check)
+- severity: minor
+- description: `DDSPModel.load_checkpoint` was fixed in BUG-7 to use a
+  `torch.serialization.safe_globals([DDSPConfig])` context manager with `weights_only=True`
+  (the safe default in PyTorch ≥ 2.6). However, `Trainer.load_checkpoint` (line 376 of
+  `train/trainer.py`) still uses `torch.load(path, map_location=self.device, weights_only=False)`.
+  `weights_only=False` allows arbitrary pickle deserialization from the checkpoint file.
+  If a malicious or corrupted checkpoint is loaded, this is a potential code execution
+  vector. The inconsistency also means the two load paths have different security properties.
+- reproduction: Provide a crafted `.pt` file with a malicious pickle payload → `Trainer.load_checkpoint()`
+  will execute arbitrary Python code; `DDSPModel.load_checkpoint()` would not.
+- resolution: Changed `torch.load(..., weights_only=False)` to `weights_only=True` in `Trainer.load_checkpoint`. Trainer checkpoints only contain safe primitives (no live dataclass objects), so no `safe_globals` context manager is needed.
+- history:
+  - 2026-09-03 — filed during full project analysis.
+  - 2026-09-03 — fixed by ARCHITECT_Openrouter (Batch 1I subagent).
+
+---
+
+## Open feature requests — Full Project Analysis 2026-09-03
+
+## BUG-38 - FEAT: Redis health check at startup / health endpoint
+- status: fixed
+- milestone: M4 (Web Backend, operational quality)
+- found-in: Full project analysis 2026-09-03
+- severity: minor
+- description: The app uses Celery+Redis for all training and synthesis jobs, but there is
+  no Redis reachability check at startup or in the health endpoint. When Redis is not running,
+  the app starts normally (no error), but any attempt to submit a training job silently fails
+  or hangs. The `/api/health` endpoint only reports `{"status": "ok"}` without checking
+  Celery/Redis availability. Operators and users get no actionable feedback.
+- resolution: Added Redis ping (2s timeout) in lifespan startup in `server/main.py`. Logs `WARNING` if unreachable. App still starts normally so offline dev is not blocked.
+- history:
+  - 2026-09-03 — filed as feature request during full project analysis.
+  - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 1H subagent).
+
+## BUG-39 - FEAT: Async preprocessing pipeline with status polling
+- status: fixed
+- milestone: M4 / M5 (Backend + UI, preprocessing workflow)
+- found-in: Full project analysis 2026-09-03 (related to BUG-30)
+- severity: minor
+- description: Once BUG-30 is resolved (full preprocessing endpoint), the preprocessing
+  pipeline (F0 extraction via CREPE, loudness, content embeddings, FeatureCache write)
+  will be long-running for large datasets (minutes). Running this synchronously in the
+  HTTP request handler will timeout. It should be implemented as a Celery task with a
+  status/progress endpoint that the UI polls, similar to the inference job pattern
+  (`/api/inference/jobs/{id}`). The preprocessing view should show a progress bar based
+  on the number of processed files out of total.
+- resolution: Implemented `run_preprocessing_job` Celery task in `server/tasks.py` and `POST /api/datasets/{id}/preprocess` endpoint in `server/routes/dataset.py`. Endpoint submits async job, returns task_id immediately. Dataset status can be polled via `GET /api/datasets/{id}` (status field becomes `preprocessed` when done).
+- history:
+  - 2026-09-03 — filed as feature request during full project analysis.
+  - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 2A+2B subagents).
+
+## BUG-40 - FEAT: Real training step/epoch progress stored in DB and shown in Dashboard
+- status: fixed
+- milestone: M4 / M5 (Backend + UI, training progress)
+- found-in: Full project analysis 2026-09-03 (related to BUG-32)
+- severity: minor
+- description: The `runs` DB table has no column for current training step, loss, or epoch.
+  The Celery training task writes checkpoints and TensorBoard logs, but does not update the
+  DB with live progress. The training dashboard's run cards cannot show meaningful progress
+  (BUG-32). TensorBoard provides the loss curves, but a lightweight current-step indicator
+  in the run card would improve usability for users who don't want to open TensorBoard.
+- resolution: Added `current_step INTEGER DEFAULT 0` and `last_loss REAL` columns to runs table (with migration). Added `run_update_progress()` DB helper. `_watch_stop_request` thread in `run_training_job` writes progress every 0.5s. Exposed via `list_runs` and `get_run` responses. Dashboard reads `run.latest_step` and `run.config?.max_steps`.
+- history:
+  - 2026-09-03 — filed as feature request during full project analysis.
+  - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 1G + 2A + 2C subagents).
+
+## BUG-41 - FEAT: Preset "rebase" dialog — warn and migrate when preset.model_tier ≠ active tier
+- status: fixed
+- milestone: M14 (Dual-Mode Training UI, Preset system compatibility)
+- found-in: Full project analysis 2026-09-03 (ui-requirements.md §Preset system compatibility cross-check)
+- severity: minor
+- description: `ui-requirements.md` §Preset system compatibility explicitly requires:
+  "When a preset's model_tier does not match the active tier, the UI shows a Rebase warning:
+  'This preset was created for a different model type — transfer the compatible parameters?'
+  The user can accept (rebase) or cancel." This dialog is specified but not implemented in
+  any of the Tab components or `TrainingConfigView.vue`. When the user selects a preset
+  from a different tier, the mismatch is surfaced via `model_tier_mismatch: bool` in the
+  `/api/runs/validate` response, but the UI ignores this field.
+- resolution: Added tier-mismatch inline warning banner in `TrainingConfigView.vue`. When `/api/runs/validate` returns `model_tier_mismatch: true`, the banner appears with "Proceed anyway" / "Cancel" buttons. Fixed `handleStartTraining` to use correct validate response shape (no `.valid`/`.errors` — backend returns `params`/`clamped_fields`/`model_tier_mismatch`).
+- history:
+  - 2026-09-03 — filed as feature request during full project analysis.
+  - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 3 subagent).
+
+## BUG-42 - FEAT: Dataset deletion should warn when active runs reference the dataset
+- status: fixed
+- milestone: M5 (Web UI, DatasetManagerView)
+- found-in: Full project analysis 2026-09-03
+- severity: minor
+- description: `DELETE /api/datasets/{id}` and `DatasetManagerView.vue` delete a dataset
+  without checking whether any training runs have `dataset_id` set to the deleted dataset.
+  Deleting such a dataset leaves orphaned run references in the DB. If the run is later
+  resumed, the missing dataset causes the training job to silently fall back to synthetic
+  data (per the current tasks.py fallback) or to crash.
+- resolution: Added cascade check to `DELETE /api/datasets/{id}` in `server/routes/dataset.py`. Returns 409 with active run IDs if any runs with status `pending`/`running`/`stopping` reference the dataset. Supports `?force=true` query param to override.
+- history:
+  - 2026-09-03 — filed as feature request during full project analysis.
+  - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 2B subagent).

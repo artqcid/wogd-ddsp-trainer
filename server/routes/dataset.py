@@ -246,12 +246,62 @@ async def extract_content(
     return {"status": "ok", "dataset_id": dataset_id, "files_processed": len(audio_files)}
 
 
+@router.post("/{dataset_id}/preprocess")
+async def preprocess_dataset(dataset_id: str) -> dict:
+    """Submit a full async DDSP preprocessing pipeline job for a dataset.
+
+    Extracts F0, loudness, and raw audio for all audio files; writes results
+    into FeatureCache (train/val splits) so DDSPDataset can load them.
+    Returns immediately with a job reference; poll GET /{dataset_id} for status.
+    """
+    if not dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="dataset not found")
+
+    from server.tasks import run_preprocessing_job
+
+    task = run_preprocessing_job.apply_async(args=[dataset_id])
+
+    logger.info("preprocess_dataset: submitted task_id=%s dataset_id=%s", task.id, dataset_id)
+    return {
+        "status": "queued",
+        "dataset_id": dataset_id,
+        "task_id": task.id,
+    }
+
+
 @router.delete("/{dataset_id}")
-async def delete_dataset(dataset_id: str) -> dict:
-    """Delete a dataset directory and all its contents."""
+async def delete_dataset(dataset_id: str, force: bool = False) -> dict:
+    """Delete a dataset directory and all its contents.
+
+    Returns 409 if active training runs reference this dataset (unless force=True).
+    """
     dataset_path = datasets_dir() / dataset_id
     if not dataset_path.is_dir():
         raise HTTPException(status_code=404, detail="dataset not found")
+
+    # BUG-42: cascade check — warn if active runs reference this dataset
+    if not force:
+        from server.db import connect, run_all
+        conn = connect()
+        try:
+            runs = run_all(conn)
+            active_runs = [
+                r for r in runs
+                if r.get("dataset_id") == dataset_id
+                and r.get("status") in {"pending", "running", "stopping"}
+            ]
+        finally:
+            conn.close()
+        if active_runs:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Dataset is referenced by {len(active_runs)} active run(s): "
+                    f"{[r['run_id'] for r in active_runs]}. "
+                    "Stop all runs first or use ?force=true."
+                ),
+            )
+
     shutil.rmtree(str(dataset_path))
     logger.info("delete_dataset: id=%s path=%s", dataset_id, dataset_path)
     return {"status": "deleted", "dataset_id": dataset_id}

@@ -14,8 +14,8 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from mcp_rag import ProjectRAG
-from mcp_rag import wiki as ragwiki
+from mcp_rag import ProjectRAG  # noqa: E402
+from mcp_rag import wiki as ragwiki  # noqa: E402
 
 DB_PATH = os.path.join(_REPO_ROOT, "wogd_ddsp.db")
 WIKI_PATH = os.path.join(_REPO_ROOT, "doc", "code_wiki.md")

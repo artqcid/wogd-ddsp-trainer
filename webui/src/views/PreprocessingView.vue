@@ -15,6 +15,7 @@ const nVoices = ref(1)
 const showMultiF0 = computed(() => nVoices.value > 1)
 
 const confidence = ref(0.85)
+const preprocessingResult = ref(null)
 
 onMounted(async () => {
   if (!apiClient) return
@@ -60,9 +61,10 @@ const runPreprocessing = async () => {
   isRunning.value = true
   completed.value = false
   try {
-    await apiClient.preprocessDataset(selectedDataset.value)
+    const result = await apiClient.preprocessDataset(selectedDataset.value)
+    preprocessingResult.value = result?.message || result?.status || null
   } catch (e) {
-    // preprocessing failed; keep UI in completed state for mock
+    preprocessingResult.value = null
   }
   isRunning.value = false
   completed.value = true
@@ -70,7 +72,9 @@ const runPreprocessing = async () => {
 
 const resultsText = computed(() => {
   if (!completed.value) return ''
-  return 'Extraction complete: F0 range 80-400Hz, Loudness -20 to -5 dBFS'
+  return preprocessingResult.value
+    ? `Extraction complete: ${preprocessingResult.value}`
+    : 'Extraction complete.'
 })
 </script>
 
@@ -80,10 +84,10 @@ const resultsText = computed(() => {
       class="dataset-select"
       data-testid="dataset-select"
       :value="selectedDataset"
-      @change="selectedDataset = ($event.target.value)"
+      @change="selectedDataset = ($event.target.value); loadWaveform()"
     >
       <option value="">Select a dataset</option>
-      <option v-for="ds in datasets" :key="ds.name" :value="ds.name">
+      <option v-for="ds in datasets" :key="ds.id" :value="ds.id">
         {{ ds.name }}
       </option>
     </select>

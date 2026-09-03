@@ -61,7 +61,9 @@ def init_db(conn: sqlite3.Connection) -> None:
             error TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
-            stop_requested INTEGER NOT NULL DEFAULT 0
+            stop_requested INTEGER NOT NULL DEFAULT 0,
+            current_step INTEGER NOT NULL DEFAULT 0,
+            last_loss REAL
         )
         """
     )
@@ -96,6 +98,8 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
     for table, col, col_def in [
         ("runs", "error", "TEXT"),
         ("synthesis_jobs", "error", "TEXT"),
+        ("runs", "current_step", "INTEGER NOT NULL DEFAULT 0"),
+        ("runs", "last_loss", "REAL"),
     ]:
         with suppress(sqlite3.OperationalError):
             cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
@@ -196,6 +200,8 @@ def _parse_run(row: sqlite3.Row) -> dict:
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "stop_requested": _bool(row, "stop_requested"),
+        "current_step": int(row["current_step"] or 0),
+        "last_loss": row["last_loss"],
     }
 
 
@@ -433,6 +439,21 @@ def run_set_error(conn: sqlite3.Connection, run_id: str, error: str) -> None:
     cur.execute(
         "UPDATE runs SET error = ?, updated_at = datetime('now') WHERE run_id = ?",
         (error, run_id),
+    )
+
+
+def run_update_progress(
+    conn: sqlite3.Connection,
+    run_id: str,
+    current_step: int,
+    last_loss: float | None,
+) -> None:
+    """Update the live training progress columns for a run."""
+    cur: sqlite3.Cursor = conn.cursor()
+    cur.execute(
+        "UPDATE runs SET current_step = ?, last_loss = ?,"
+        " updated_at = datetime('now') WHERE run_id = ?",
+        (current_step, last_loss, run_id),
     )
 
 

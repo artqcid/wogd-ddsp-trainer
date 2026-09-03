@@ -23,7 +23,6 @@ import torchaudio
 from celery import Celery
 from torch.utils.data import DataLoader
 
-from dataset.cache import FeatureCache
 from inference.render import load_model_from_checkpoint, render_to_file
 from model import DDSPConfig, DDSPModel, MultiScaleSpectralLoss
 from model.ddsp.variant import DDSPVariant
@@ -34,6 +33,7 @@ from server.db import (
     run_is_stop_requested,
     run_set_error,
     run_set_status,
+    run_update_progress,
     synth_get,
     synth_update,
 )
@@ -175,11 +175,12 @@ def build_tensors(
     model: DDSPModel, dataset_id: str | None
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     if dataset_id is not None:
+        from dataset.cache import FeatureCache
         from server.paths import datasets_dir
 
         cache = FeatureCache(datasets_dir() / dataset_id)
         if cache.exists("train"):
-            arrays = cache.load("train")  # dict-like
+            arrays, _ = cache.load("train")  # (features_dict, meta)
             f0 = arrays.get("f0_hz") or arrays.get("f0")
             loudness = arrays.get("loudness_db") or arrays.get("loudness")
             audio = arrays.get("audio") or arrays.get("waveform")
@@ -226,9 +227,70 @@ def build_tensors(
     return f0, loudness, target
 
 
-# ---------------------------------------------------------------------------
-# Celery tasks
-# ---------------------------------------------------------------------------
+@celery_app.task(name="server.tasks.run_preprocessing_job")
+def run_preprocessing_job(dataset_id: str) -> dict:
+    """Run full DDSP preprocessing pipeline on a dataset directory.
+
+    Extracts F0 (parselmouth), loudness, and raw audio for every audio file,
+    then writes train/val splits into the FeatureCache so DDSPDataset can load them.
+    Also sets the _preprocessed sentinel file when done.
+    """
+    from server.paths import datasets_dir
+
+    dataset_path = datasets_dir() / dataset_id
+    if not dataset_path.is_dir():
+        return {"ok": False, "error": f"dataset not found: {dataset_id}"}
+
+    import numpy as np
+
+    from dataset.cache import FeatureCache
+    from dataset.features import compute_features
+    from dataset.io import load_audio, normalize_level
+    from dataset.split import split_file_list
+
+    ALLOWED = {".wav", ".flac", ".ogg", ".mp3", ".m4a", ".mp4", ".aiff", ".aif"}
+    audio_files = sorted(
+        str(p) for p in dataset_path.iterdir()
+        if p.is_file() and p.suffix.lower() in ALLOWED
+    )
+
+    if not audio_files:
+        return {"ok": False, "error": "no audio files in dataset"}
+
+    splits = split_file_list(audio_files, seed=42, val_fraction=0.2)
+    cache = FeatureCache(dataset_path)
+
+    for split_key, file_list in splits.items():
+        if not file_list:
+            continue
+        all_audio: list = []
+        all_f0: list = []
+        all_loudness: list = []
+
+        for path in file_list:
+            try:
+                audio, sr = load_audio(path, target_sample_rate=16000)
+                audio = normalize_level(audio)
+                feats = compute_features(audio, sr, f0_extractor_name="parselmouth")
+                all_audio.append(audio)
+                all_f0.append(feats["f0_hz"])
+                all_loudness.append(feats["loudness_db"])
+            except Exception as exc:
+                logging.warning("preprocessing skip %s: %s", path, exc)
+
+        if not all_audio:
+            continue
+
+        merged = {
+            "audio": np.concatenate(all_audio).astype(np.float32),
+            "f0_hz": np.concatenate(all_f0).astype(np.float32),
+            "loudness_db": np.concatenate(all_loudness).astype(np.float32),
+        }
+        cache.save(split_key, merged)
+
+    (dataset_path / "_preprocessed").touch()
+    logging.info("run_preprocessing_job done: dataset_id=%s files=%d", dataset_id, len(audio_files))
+    return {"ok": True, "dataset_id": dataset_id, "files_processed": len(audio_files)}
 
 
 @celery_app.task(name="server.tasks.run_training_job")
@@ -293,6 +355,10 @@ def run_training_job(run_id: str) -> dict:
                 try:
                     my_conn = connect()
                     stop = run_is_stop_requested(my_conn, run_id)
+                    # Write live progress into DB on every poll cycle
+                    current_step = getattr(trainer, "_step", 0)
+                    run_update_progress(my_conn, run_id, current_step, None)
+                    my_conn.commit()
                     my_conn.close()
                 except Exception:
                     stop = False
@@ -409,27 +475,7 @@ def run_morph_job(job_id: str) -> dict:
         loudness = torch.rand(1, 32, dtype=torch.float32).log()
 
         if model_a.config.use_latent and model_b.config.use_latent:
-            model_a.eval()
-            model_b.eval()
-            with torch.no_grad():
-                mu_a, _ = model_a.encoder(f0, loudness)
-                mu_b, _ = model_b.encoder(f0, loudness)
-                z = alpha * mu_a + (1 - alpha) * mu_b
-        else:
-            z = None
-
-        if z is not None:
-            features = torch.cat([torch.stack([f0, loudness], dim=-1), z], dim=-1)
-            gru_out, _ = model_a.gru(features)
-            hidden = torch.relu(model_a.feature_proj(gru_out))
-            n_samples = (f0.shape[1] - 1) * model_a.config.frame_size + 1
-            audio = model_a.ddsp_core(
-                amplitudes=torch.sigmoid(model_a.amplitude_out(hidden)),
-                harmonic_distribution=torch.softmax(model_a.distribution_out(hidden), dim=-1),
-                f0=f0,
-                noise_magnitudes=torch.sigmoid(model_a.noise_magnitudes_out(hidden)),
-                n_samples=n_samples,
-            )
+            audio = model_a.morph(model_b, f0, loudness, alpha=alpha)
         else:
             audio = model_a(f0, loudness)["audio"]
 

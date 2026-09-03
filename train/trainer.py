@@ -258,7 +258,7 @@ class Trainer:
 
         When *data_loader* is provided, the loop iterates over real batches
         from the loader (wrapped with ``itertools.cycle`` so it never
-        exhausts). Each batch is a tuple ``(f0, loudness, audio)`` of
+        exhausts).         Each batch is a tuple ``(f0, loudness, audio, content_embedding)`` of
         tensors shaped ``(1, T)`` as yielded by ``DDSPDataset``, so no
         additional reshaping is required.
 
@@ -311,7 +311,7 @@ class Trainer:
                 if stop_event is not None and stop_event.is_set():
                     break
                 try:
-                    f0_batch, loudness_batch, audio_batch = next(loader_iter)
+                    f0_batch, loudness_batch, audio_batch, *_ = next(loader_iter)
                 except StopIteration:
                     break
                 result = self.train_step(f0_batch, loudness_batch, audio_batch)
@@ -373,7 +373,7 @@ class Trainer:
             The loaded checkpoint dict (includes ``"step"``, plus the raw
             ``model_state_dict`` and ``optimizer_state_dict`` keys).
         """
-        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=True)
 
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
