@@ -87,6 +87,15 @@ watch(
   },
   { immediate: true }
 )
+
+watch(
+  () => store.selectedPreset,
+  (newVal) => {
+    if (newVal) {
+      applyPresetParams()
+    }
+  }
+)
 </script>
 
 <style scoped>
