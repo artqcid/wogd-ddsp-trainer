@@ -62,7 +62,7 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | **Preconditions** | MT-A1 passed, dataset available |
 | **Steps** | 1. Open **Dataset & Preprocessing → Preprocessing**.<br>2. Select the dataset.<br>3. Start feature extraction.<br>4. Wait until progress reaches 100 %. |
 | **Expected** | F0 and loudness features extracted; progress indicators complete; low-`f0_confidence` warning shown only if tracking reliability is low; dataset marked as trainable. |
-| **Result** | FAIL — 2026-09-03 — — Notes: BUG-22 (name not persisted, UUID shown after refresh), BUG-23 (no audio GET route → waveform stays empty), BUG-24 (file_count counted .npy files: 9→19), BUG-25 (resultsText is hardcoded placeholder). BUG-19 (preprocessed status) fixed and verified. |
+| **Result** | FAIL — 2026-09-03 — — Notes: BUG-22 (name not persisted, UUID shown after refresh), BUG-23 (no audio GET route → waveform stays empty), BUG-24 (file_count counted .npy files: 9→19), BUG-25 (resultsText is hardcoded placeholder). BUG-19 (preprocessed status) fixed and verified. BUG-45 (preprocessing result too sparse, wants F0/loudness diagnostics). |
 
 ### MT-A3 — Model Setup Wizard (standard tier)
 
@@ -80,7 +80,7 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | **Preconditions** | MT-A3 passed |
 | **Steps** | 1. In tab **Core** verify: preset shows wizard-chosen value (e.g. NORMAL), learning rate 1e-3, batch size (preset-dependent, e.g. 2 for mid tier NORMAL), epochs (e.g. 100), decoder GRU, reverb on.<br>2. Change **Decoder Type** to **RNN**, then back to **GRU**.<br>3. Change **Enable Reverb** off, then on again.<br>4. Click **▶ Start Training**. |
 | **Expected** | A run is created and starts; run ID and status displayed; training steps progress in the dashboard. |
-| **Result** | PASS / FAIL — Date — Tester — Notes: BUG-44 (preset dropdown shows "-- Select Preset --" after wizard; Built-In optgroup confusing) |
+| **Result** | PASS / FAIL — Date — Tester — Notes: BUG-44 (preset dropdown), BUG-47 (wizard 2.2 GB), BUG-48 (batch size still 1), BUG-49 (HTTP 422 missing name field + no dataset selection + error message overflow) |
 
 ### MT-A5 — Monitoring, stop and resume
 

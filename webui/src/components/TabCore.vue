@@ -4,17 +4,12 @@
       <label class="form-label">Preset</label>
       <div class="preset-row">
         <select class="form-select" v-model="selectedPresetName" data-testid="preset-select">
-          <option value="" v-if="!store.wizardCompleted || !store.selectedPreset">-- Select Preset --</option>
-          <optgroup label="Built-in">
-            <option v-for="p in builtinPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
-          </optgroup>
+          <option value="" v-if="!store.wizardCompleted || !store.selectedPreset">-- select preset --</option>
+          <option v-if="store.wizardCompleted && store.selectedPreset" :value="store.selectedPreset">wizard-generated</option>
           <optgroup label="Custom" v-if="customPresets.length">
             <option v-for="p in customPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
           </optgroup>
         </select>
-        <span v-if="store.wizardCompleted && store.selectedPreset === selectedPresetName" class="wizard-badge">
-          (wizard-generated)
-        </span>
       </div>
     </div>
     <div class="form-group">
@@ -55,7 +50,6 @@ const apiClient = inject('apiClient')
 const presets = ref([])
 const selectedPresetName = ref('')
 
-const builtinPresets = computed(() => presets.value.filter(p => p.is_builtin))
 const customPresets = computed(() => presets.value.filter(p => !p.is_builtin))
 
 onMounted(async () => {
@@ -89,11 +83,6 @@ watch(
 .tab-core { display: flex; flex-direction: column; gap: var(--space-3); }
 .form-group { display: flex; flex-direction: column; gap: var(--space-1); }
 .preset-row { display: flex; align-items: center; }
-.wizard-badge {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-left: 0.5rem;
-}
 .checkbox-label {
   display: flex;
   align-items: center;

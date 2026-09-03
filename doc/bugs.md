@@ -28,7 +28,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
 ## Counter
 
-`next_id: 45`
+`next_id: 50`
 
 ## Bug template (copy for each new bug)
 
@@ -998,3 +998,102 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 - history:
   - 2026-09-03 — filed after MT-A4 manual test.
   - 2026-09-03 — fixed in commit eb4e0e1 (TabCore.vue preset dropdown watch + badge).
+
+## BUG-45 - Preprocessing result shows only file count, no F0/loudness diagnostics
+- status: open
+- milestone: M5 (Web UI, PreprocessingView + Backend extract-content)
+- affected: MT-A2, MT-A4
+- found-in: 2026-09-03, MT-A4 manual test (realized after "Processed 3 audio files" feedback)
+- severity: minor
+- description: The preprocessing result now shows `"Processed 3 audio files"` (BUG-25 fix + BUG-31 follow-up removed the hardcoded fake text). The user wants the rich diagnostic info that was previously hardcoded (F0 range, loudness range) — but computed from real extracted data instead of being fake.
+
+  The backend endpoint `POST /api/datasets/{id}/extract-content` (and the async `POST /api/datasets/{id}/preprocess`) do not compute or return F0/loudness statistics. Computing `min_f0_hz`, `max_f0_hz`, `min_loudness_db`, `max_loudness_db` across all processed files and returning them in the response would allow the frontend to display e.g. `"F0 98–412 Hz · Loudness -22.1 to -4.3 dBFS · 3 files"`.
+
+- reproduction: Upload audio → Preprocessing → Run Preprocessing → result shows only "Processed 3 audio files".
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after user feedback: preprocessing output too sparse, wants F0 + loudness diagnostics back (real stats, not hardcoded).
+
+## BUG-46 - FEAT: Rename "⚙ Reconfigure Model" button to "⚙ Start Config Wizard"
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView)
+- found-in: 2026-09-03, user feedback
+- severity: minor
+- description: The button text `⚙ Reconfigure Model` in TrainingConfigView is misleading — it doesn't reconfigure an existing model (there is none yet at config time). It opens the wizard to (re-)start the model setup process. Should be `⚙ Start Config Wizard` to clearly communicate what it does.
+- reproduction: Open Training Config → see button "⚙ Reconfigure Model" → confusing because no model exists yet.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed as feature request.
+
+## BUG-47 - Wizard shows "fits 2.2 GB" for all tiers — estimate_model_vram ignores non-advanced tier differences
+- status: open
+- milestone: M14 (Dual-Mode Training UI, Backend VRAM estimation)
+- affected: M14.1.1, MT-A4 (wizard tier selection)
+- found-in: 2026-09-03, MT-A4 manual test (wizard shows every tier with "✓ fits 2.2 GB")
+- severity: major
+- description: `train/gpu.py::estimate_model_vram()` at line 256-257 states:
+  "All tiers from 'standard' through 'engine' have the same baseline; 'advanced' activates the optional overhead params."
+
+  This means every tier returns exactly 2.2 GB when called with default params:
+  - `estimate_model_vram("standard")` → 2.2 GB
+  - `estimate_model_vram("component")` → 2.2 GB
+  - `estimate_model_vram("hacks")` → 2.2 GB
+  - `estimate_model_vram("engine")` → 2.2 GB
+  - `estimate_model_vram("advanced")` → 2.2 GB (only changes with addons)
+
+  In reality the tiers add real model components that consume VRAM:
+  - **component** adds component mixer (denormalize layer, balance sliders) → ~+0.1 GB
+  - **hacks** adds variant processing (waveform/FM/phase distortion branches) → ~+0.15 GB
+  - **engine** adds alternative synth backends (sinusoidal, comb-sub, NEWT) → ~+0.2 GB
+  - **advanced** baseline with n_voices=1 should be ~+0.3 GB over standard for the latent/VC plumbing even without addons active
+
+  The wizard calls `estimate_model_vram(t)` for each tier with default params and displays "✓ fits 2.2 GB" for all five — making the feasibility information completely useless and misleading.
+
+- reproduction: Open wizard → step "Select Model Tier" → every card shows "✓ fits 2.2 GB".
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 manual test. Root cause: `estimate_model_vram` needs per-tier baseline deltas beyond the single 2.2 GB constant.
+
+## BUG-48 - Batch Size field still shows 1 despite BUG-43 fix — preset params don't reach coreParams
+- status: open
+- milestone: M3 (training loop / DataLoader / preset system)
+- affected: M5, M14 (all training config UI), MT-A4
+- found-in: 2026-09-03, MT-A4 retest after BUG-43 fix
+- severity: major
+- description: BUG-43 added `batch_size` to `propose_presets()` output, `clamp_params()`, `apply_speed()`, and DataLoader config reading. However the Batch Size input field still shows `1` (the store default) after wizard completion.
+
+  Root causes:
+  1. **Mock fixtures missing batch_size** (`webui/src/mocks/fixtures.js:78-79`): `presetsFixture` built-in presets have params with `hidden_size`, `stft_scales`, `mixed_precision`, `gradient_checkpointing` — but no `batch_size`. When TabCore's watch finds the preset and applies params via `Object.assign(store.coreParams, preset.params)`, `batch_size` is not overwritten. This affects dev/test mode with MockApiClient.
+  2. **Timing gap** in `TabCore.vue` watch: `watch(presets, ..., { immediate: true })` fires immediately with empty array → can't find preset → no params applied. When API data arrives, the second fire should apply params — but if the API response also lacks batch_size (e.g. stale DB seed), the value stays 1.
+
+- reproduction: Complete wizard → Core tab shows Batch Size = 1 even for QUALITY on a 6 GB GPU where preset should suggest batch_size=4.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 retest. User confirms batch_size still shows 1 despite BUG-43 backend changes.
+
+## BUG-49 - Start Training fails with HTTP 422: missing required "name" field; no dataset selection; error message overflows text box
+- status: open
+- milestone: M5 (Web UI, TrainingConfigView + store + WizardModal)
+- affected: MT-A4, any training start
+- found-in: 2026-09-03, MT-A4 training start attempt
+- severity: major
+- description: Three related issues:
+
+  **(a) HTTP 422 on Start Training.** The backend `RunCreateRequest` (`server/routes/training.py:31-32`) requires `name: str` as a mandatory field. The frontend `store.buildFullConfig()` (`webui/src/stores/modelConfig.js:58`) does not include a `name` field. When the user clicks "▶ Start Training", `TrainingConfigView.vue` calls `apiClient.startRun(config)` with the config object — but there's no `name`, so the backend returns 422:
+
+  ```
+  {"detail":[{"type":"missing","loc":["body","name"],"msg":"Field required","input":{...}}]}
+  ```
+
+  The run should either auto-generate a name from the tier/preset (e.g. "standard-NORMAL-realtime") or the UI should ask for a run name. The error is opaque to the user.
+
+  **(b) No dataset selection before training.** The backend `RunCreateRequest` accepts `dataset_id: str | None = None` (optional, falls back to synthetic data), but the frontend never sends a `dataset_id` — `store.buildFullConfig()` has no `dataset_id` field and there is no UI element anywhere (neither in the wizard nor in the Core tab) to select a dataset for training. The user must be able to choose which dataset to train on.
+
+  **Requirement:** Add a dataset dropdown in the wizard (as a new step or integrated into an existing step) and in the Core tab. When the wizard selects a dataset, the Core tab dropdown should be pre-filled with that choice but allow changing to another dataset. When no wizard was used (or no dataset was chosen in the wizard), show "--- Select Dataset ---".
+
+  **(c) Error message overflow.** The validation result `<div>` with class `.validation-result.err` has no `overflow` or `max-height` handling — when the error message is a long JSON 422 string, it grows beyond the red box boundaries or stretches the layout awkwardly. The container should expand vertically with the content (or scroll).
+
+- reproduction: Complete wizard → verify fields → click "▶ Start Training" → HTTP 422 popup shows raw API error in cramped red box. No dataset can be selected anywhere for training.
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 training start attempt.

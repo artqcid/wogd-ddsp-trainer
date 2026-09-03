@@ -137,12 +137,13 @@ def health():
 
 @app.get("/api/tensorboard")
 def tensorboard():
+    manager = get_manager()
     try:
-        manager = get_manager()
         manager.ensure_running()
+        return {"url": manager.url, "running": True, "port": manager.port}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-    return {"url": manager.url, "running": True, "port": manager.port}
+        logger.warning("tensorboard unavailable: %s", exc)
+        return {"url": None, "running": False, "port": None}
 
 
 # When enabled, serve the production frontend build from `webui/dist` (used by

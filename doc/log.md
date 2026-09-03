@@ -3,6 +3,49 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — BUG-49: Start Training fails HTTP 422 missing "name" field; error message overflow
+
+**Creation** — BUG-49 filed after MT-A4 training start attempt. `store.buildFullConfig()` omits required `name` field → backend 422; no dataset selection in wizard or Core tab; validation error red box overflows long messages. Three sub-issues: (a) missing name, (b) missing dataset dropdown, (c) error box overflow. Reference: `doc/bugs.md` BUG-49.
+
+## 2026-09-03 — BUG-48: batch_size still shows 1 despite BUG-43 fix — preset params don't propagate
+
+**Creation** — BUG-48 filed after MT-A4 retest. Mock fixtures missing `batch_size` in preset params; timing gap in TabCore watch may also prevent propagation. Reference: `doc/bugs.md` BUG-48.
+
+## 2026-09-03 — BUG-47: wizard shows "fits 2.2 GB" for all tiers — estimate_model_vram flat
+- status: open
+- milestone: M14 (Dual-Mode Training UI, Backend VRAM estimation)
+- affected: M14.1.1, MT-A4 (wizard tier selection)
+- found-in: 2026-09-03, MT-A4 manual test (wizard shows every tier with "✓ fits 2.2 GB")
+- severity: major
+- description: `train/gpu.py::estimate_model_vram()` at line 256-257 states:
+  "All tiers from 'standard' through 'engine' have the same baseline; 'advanced' activates the optional overhead params."
+
+  This means every tier returns exactly 2.2 GB when called with default params:
+  - `estimate_model_vram("standard")` → 2.2 GB
+  - `estimate_model_vram("component")` → 2.2 GB
+  - `estimate_model_vram("hacks")` → 2.2 GB
+  - `estimate_model_vram("engine")` → 2.2 GB
+  - `estimate_model_vram("advanced")` → 2.2 GB (only changes with addons)
+
+  In reality the tiers add real model components that consume VRAM:
+  - **component** adds component mixer (denormalize layer, balance sliders) → ~+0.1 GB
+  - **hacks** adds variant processing (waveform/FM/phase distortion branches) → ~+0.15 GB
+  - **engine** adds alternative synth backends (sinusoidal, comb-sub, NEWT) → ~+0.2 GB
+  - **advanced** baseline with n_voices=1 should be ~+0.3 GB over standard for the latent/VC plumbing even without addons active
+
+  The wizard calls `estimate_model_vram(t)` for each tier with default params and displays "✓ fits 2.2 GB" for all five — making the feasibility information completely useless and misleading.
+
+- reproduction: Open wizard → step "Select Model Tier" → every card shows "✓ fits 2.2 GB".
+- resolution: (open)
+- history:
+  - 2026-09-03 — filed after MT-A4 manual test. Root cause: `estimate_model_vram` needs per-tier baseline deltas beyond the single 2.2 GB constant.
+
+**Creation** — BUG-46 filed as feature request. Button text misleading — opens wizard, not reconfiguring an existing model. Reference: `doc/bugs.md` BUG-46.
+
+## 2026-09-03 — BUG-45: preprocessing result too sparse, wants F0/loudness diagnostics
+
+**Creation** — BUG-45 filed after user feedback: preprocessing output shows only "Processed 3 audio files" instead of rich diagnostic info (F0 range, loudness range) that was previously hardcoded as fake data. Backend needs to compute and return real F0/loudness statistics. Reference: `doc/bugs.md` BUG-45.
+
 ## 2026-09-03 — BUG-43 + BUG-44 fixes: VRAM-dependent batch_size, preset dropdown after wizard
 
 **Bugfix** — BUG-43 and BUG-44 implemented and verified.
