@@ -1517,7 +1517,7 @@ def estimate_model_vram(
     """Estimate peak VRAM in GB for a given model configuration.
 
     Base figures from architecture.md VRAM budget table
-    (batch_size=1, seq_len=2 s @ 16 kHz, mixed precision, 3-scale STFT):
+    (batch_size per sample baseline, seq_len=2 s @ 16 kHz, mixed precision, 3-scale STFT):
 
         baseline (standard DDSP)        ~2.2 GB
         use_latent (+GRUEncoder/VAE)    +0.15 GB

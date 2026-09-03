@@ -407,7 +407,7 @@ data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
   differentiable DSP, not a Transformer or diffusion model). Training on 6 GB
   is feasible with the techniques below.
 
-### VRAM budget estimate (batch_size=1, seq_len=2s@16kHz, mixed precision)
+### VRAM budget estimate (batch_size baseline: 1 per sample, seq_len=2s@16kHz, mixed precision)
 
 | Component | VRAM |
 |---|---|

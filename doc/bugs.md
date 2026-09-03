@@ -965,7 +965,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   - 2026-09-03 — implemented by ARCHITECT_Openrouter (Batch 2B subagent).
 
 ## BUG-43 - batch_size hardcoded to 1 regardless of VRAM budget — wastes 70-80% of GPU capacity
-- status: open
+- status: fixed
 - milestone: M3 (training loop / DataLoader / preset system)
 - affected: M4, M5, M14 (all training runs), MT-A4
 - found-in: 2026-09-03, MT-A4 manual test (RTX 3060 6.44 GB, QUALITY standard preset)
@@ -977,12 +977,13 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   The VRAM estimation infrastructure (`estimate_model_vram()` in `train/gpu.py`) already computes VRAM per sample. Computing `max_batch_size = floor(free_vram / vram_per_sample)` is straightforward but unimplemented. The speed system (FAST/NORMAL/QUALITY) scales `hidden_size`, `stft_scales`, `mixed_precision`, and `gradient_checkpointing` — never `batch_size`.
 
 - reproduction: Open TrainingConfigView with any preset on a GPU with >4 GB VRAM → Batch Size field shows `1` regardless of selected tier, speed, or available VRAM. Start training → DataLoader runs with `batch_size=1` → GPU utilization is minimal.
-- resolution: (open)
+- resolution: Added `batch_size_max` to `ParameterBounds` (low=2, mid=4, high=8, ultra=16); `propose_presets()` now includes `batch_size` scaled by speed factor; `clamp_params()` clamps it; `apply_speed()` scales it; DataLoader reads from run config. Fixed in commit eb4e0e1.
 - history:
-  - 2026-09-03 — filed after MT-A4 manual test analysis. batch_size should be derived from VRAM budget per-sample, similarly to how hidden_size is scaled by speed.
+  - 2026-09-03 — filed after MT-A4 manual test analysis.
+  - 2026-09-03 — fixed in commit eb4e0e1 (ParameterBounds + propose_presets + clamp_params + apply_speed + tasks.py DataLoader).
 
 ## BUG-44 - Training Config preset dropdown shows "-- Select Preset --" after wizard; "Built-In" optgroup confusing
-- status: open
+- status: fixed
 - milestone: M5 (Web UI, TrainingConfigView / TabCore)
 - affected: MT-A4
 - found-in: 2026-09-03, MT-A4 manual test
@@ -993,6 +994,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
 
   **(b) "Built-In" optgroup is shown but not usable.** The `<optgroup label="Built-in">` lists `FAST/NORMAL/QUALITY` as selectable options, but selecting one does not actually apply the preset's params to the form — the dropdown only updates `selectedPresetName` in TabCore, which is disconnected from the store. The user has no way to know what "Built-In" means or how to use it. The built-in presets are already applied by the wizard and should either be hidden or clearly marked as read-only info.
 - reproduction: Complete wizard → Core tab shows "-- Select Preset --" in the dropdown. Click dropdown → "Built-In" group shows FAST/NORMAL/QUALITY → selecting any of them does nothing visible.
-- resolution: (open)
+- resolution: TabCore.vue: `selectedPresetName` initialized from `store.selectedPreset`; "-- Select Preset --" hidden via v-if when wizard active; selecting built-in options applies params to store via Object.assign; "(wizard-generated)" badge shown. Fixed in commit eb4e0e1.
 - history:
   - 2026-09-03 — filed after MT-A4 manual test.
+  - 2026-09-03 — fixed in commit eb4e0e1 (TabCore.vue preset dropdown watch + badge).
