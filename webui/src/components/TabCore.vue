@@ -75,7 +75,8 @@ function applyPresetParams() {
 onMounted(async () => {
   if (apiClient) {
     datasets.value = await apiClient.listDatasets()
-    presets.value = await apiClient.listPresets()
+    const presetsResponse = await apiClient.listPresets()
+    presets.value = presetsResponse.presets ?? presetsResponse
     applyPresetParams()
   }
 })
