@@ -78,9 +78,9 @@ handbook §2 (quick start) and §4.2 (core config) / §4.7 (inference params).
 | | |
 |---|---|
 | **Preconditions** | MT-A3 passed |
-| **Steps** | 1. In tab **Core** verify: preset shows wizard-chosen value (e.g. NORMAL), learning rate 1e-3, batch size (preset-dependent, e.g. 2 for mid tier NORMAL), epochs (e.g. 100), decoder GRU, reverb on.<br>2. Change **Decoder Type** to **RNN**, then back to **GRU**.<br>3. Change **Enable Reverb** off, then on again.<br>4. Click **▶ Start Training**. |
+| **Steps** | 1. In tab **Core** verify: preset shows wizard-chosen value (e.g. NORMAL), learning rate 1e-3, batch size (preset-dependent, e.g. 16 for mid tier NORMAL on 6 GB), epochs (e.g. 100), decoder GRU, reverb on.<br>2. Change **Decoder Type** to **RNN**, then back to **GRU**.<br>3. Change **Enable Reverb** off, then on again.<br>4. Click **▶ Start Training**. |
 | **Expected** | A run is created and starts; run ID and status displayed; training steps progress in the dashboard. |
-| **Result** | PASS / FAIL — Date — Tester — Notes: BUG-44 (preset dropdown), BUG-47 (wizard 2.2 GB), BUG-48 (batch size still 1), BUG-49 (HTTP 422 missing name field + no dataset selection + error message overflow) |
+| **Result** | PASS / FAIL — Date — Tester — Notes: BUG-44 (preset dropdown), BUG-47 (wizard 2.2 GB), BUG-48 (batch_size now propagates correctly), BUG-49 (HTTP 422 missing name field + no dataset selection + error message overflow) |
 
 ### MT-A5 — Monitoring, stop and resume
 

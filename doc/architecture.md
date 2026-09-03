@@ -147,8 +147,12 @@ def estimate_model_vram(
 ) -> VRAMEstimate:
     """Estimate peak VRAM in GB for a given model configuration.
 
-    Base figures from architecture.md VRAM budget table:
-      baseline (standard DDSP, batch=1, fp16, 3-scale STFT) = 2.2 GB
+    Base per-tier baselines from ``BASE_ESTIMATE_GB``:
+      standard  = 2.2 GB
+      component = 2.25 GB
+      hacks     = 2.3 GB
+      engine    = 2.35 GB
+      advanced  = 2.35 GB (+ optional overheads below)
       use_latent (GRUEncoder + VAE)                          = +0.15 GB
       use_content_encoder (HuBERT-Soft frozen)               = +0.36 GB
       PolyDDSP N voices                                      = baseline × N
@@ -244,9 +248,9 @@ Response:
   "warning": null,
   "tier_feasibility": {
     "standard":  { "fits": true,  "estimated_gb": 2.2, "warning": null },
-    "component": { "fits": true,  "estimated_gb": 2.4, "warning": null },
-    "hacks":     { "fits": true,  "estimated_gb": 2.4, "warning": null },
-    "engine":    { "fits": true,  "estimated_gb": 2.2, "warning": null },
+    "component": { "fits": true,  "estimated_gb": 2.25, "warning": null },
+    "hacks":     { "fits": true,  "estimated_gb": 2.3, "warning": null },
+    "engine":    { "fits": true,  "estimated_gb": 2.35, "warning": null },
     "advanced":  { "fits": false, "estimated_gb": 6.6,
                    "warning": "PolyDDSP N=3 requires ~6.6 GB (8 GB GPU recommended)" }
   }
@@ -407,7 +411,7 @@ data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
   differentiable DSP, not a Transformer or diffusion model). Training on 6 GB
   is feasible with the techniques below.
 
-### VRAM budget estimate (batch_size baseline: 1 per sample, seq_len=2s@16kHz, mixed precision)
+### VRAM budget estimate (batch_size dynamic, seq_len=2s@16kHz, mixed precision)
 
 | Component | VRAM |
 |---|---|
@@ -429,7 +433,7 @@ data root holding `datasets/`, `runs/` and the database), `WOGD_DB_PATH`,
 |---|---|---|
 | **Offline feature extraction** | Preprocessing phase | RMVPE/ContentVec run once before training, save `.npy`. Training loop loads pre-computed tensors — RMVPE GPU usage does not compete with training VRAM. |
 | **Mixed precision (fp16)** | Every training step | `torch.cuda.amp.autocast` + `GradScaler` halves activation memory. |
-| **Batch size = 1** | Always | DDSP has no batch-dependent layers (no BatchNorm in oscillator); batch=1 is the default. |
+| **Batch size = VRAM-dependent** | Always | `batch_size_max = min(128, max(2, int(vram_GB × 32/6)))`. Presets scale: FAST ×0.25, NORMAL ×0.50, QUALITY ×1.00. e.g. 6 GB → max=32, NORMAL=16. |
 | **3-scale STFT loss** | Loss computation | FFT sizes `[512, 1024, 2048]` — 3 instead of the typical 8 scales saves ~300 MB. |
 | **Sequence length ≤ 4 s** | Preprocessing | 64000 samples @ 16 kHz; longer audio is chunked. |
 | **Hidden size 512 (or 256)** | Model config | 256 saves ~40 % activations with minimal quality loss; GPU auto-detection proposes this for < 8 GB. |
@@ -511,7 +515,7 @@ customise names/defaults before export.
 
 M1 (scaffold), M2 (dataset prep), M3 (model + training), M4 (web backend),
 M5 (web UI) and M6 (polish) are implemented and tested. Final check suite:
-ruff/format 0, pytest 151 passed / 1 GPU-skip, vitest 23 passed, build clean.
+ruff/format 0, pytest 49+ passed / 1 GPU-skip (GPU-dependent tests), vitest 7+ passed, build clean.
 M7 (experimental sound design) and M8 (experimental synthesis hacks) are open.
 M14 (Dual-Mode UI + backend tier system) is designed; implementation pending.
 

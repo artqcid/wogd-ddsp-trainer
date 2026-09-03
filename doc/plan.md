@@ -142,10 +142,10 @@ _Roadmap / open questions / risks. Active tasks live in
   analyzes the available GPU and proposes optimal training parameters.
 - **VRAM budget / RTX 3060 6GB:** training MUST fit on 6 GB. Feasibility
   analysis in [`architecture.md`](./architecture.md) (VRAM budget section):
-  baseline budget is ~1.3–2.2 GB per sample with batch_size=1, mixed precision,
+  baseline budget is ~1.3–2.2 GB per sample with mixed precision,
   offline feature extraction, 3-scale STFT loss and hidden_size ≤ 512.
-  batch_size is now VRAM-dependent (ParameterBounds: low=2, mid=4, high=8,
-  ultra=16), scaled by speed factor in built-in presets. These techniques are
+  batch_size is now VRAM-dependent (`batch_size_max = min(128, max(2, int(vram × 32/6)))`),
+  scaled by speed factor (FAST ×0.25, NORMAL ×0.50, QUALITY ×1.00). These techniques are
   built into the core training loop from M1/M3 onward and the preset system.
 - **Real-time vs. offline synthesis:** both - offline batch training and
   rendering plus low-latency realtime model export.

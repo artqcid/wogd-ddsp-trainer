@@ -977,7 +977,7 @@ plans, `log.md`) references bugs only by `BUG-<id>`._
   The VRAM estimation infrastructure (`estimate_model_vram()` in `train/gpu.py`) already computes VRAM per sample. Computing `max_batch_size = floor(free_vram / vram_per_sample)` is straightforward but unimplemented. The speed system (FAST/NORMAL/QUALITY) scales `hidden_size`, `stft_scales`, `mixed_precision`, and `gradient_checkpointing` — never `batch_size`.
 
 - reproduction: Open TrainingConfigView with any preset on a GPU with >4 GB VRAM → Batch Size field shows `1` regardless of selected tier, speed, or available VRAM. Start training → DataLoader runs with `batch_size=1` → GPU utilization is minimal.
-- resolution: Added `batch_size_max` to `ParameterBounds` (low=2, mid=4, high=8, ultra=16); `propose_presets()` now includes `batch_size` scaled by speed factor; `clamp_params()` clamps it; `apply_speed()` scales it; DataLoader reads from run config. Fixed in commit eb4e0e1.
+- resolution: Added `batch_size_max` to `ParameterBounds`, computed dynamically from GPU VRAM via `int(vram * 32/6)`; `propose_presets()` scaled by speed factor (FAST ×0.25, NORMAL ×0.50, QUALITY ×1.00); `clamp_params()` clamps it; `apply_speed()` scales it; DataLoader reads from run config. Fixed in commit eb4e0e1 (initial) + 096d236 (dynamic formula).
 - history:
   - 2026-09-03 — filed after MT-A4 manual test analysis.
   - 2026-09-03 — fixed in commit eb4e0e1 (ParameterBounds + propose_presets + clamp_params + apply_speed + tasks.py DataLoader).
