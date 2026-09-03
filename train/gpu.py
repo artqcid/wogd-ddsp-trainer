@@ -81,6 +81,7 @@ class ParameterBounds:
     stft_scales_max: int
     mixed_precision: str  # one of: required, recommended, optional
     gradient_checkpointing: str  # one of: enabled, optional, disabled
+    batch_size_max: int
 
     @property
     def max_hidden(self) -> int:
@@ -108,6 +109,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="enabled",
+            batch_size_max=2,
         ),
         "mid": ParameterBounds(
             hidden_size_min=256,
@@ -120,6 +122,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="optional",
+            batch_size_max=4,
         ),
         "high": ParameterBounds(
             hidden_size_min=512,
@@ -132,6 +135,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=5,
             mixed_precision="recommended",
             gradient_checkpointing="disabled",
+            batch_size_max=8,
         ),
         "ultra": ParameterBounds(
             hidden_size_min=512,
@@ -144,6 +148,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=8,
             mixed_precision="optional",
             gradient_checkpointing="disabled",
+            batch_size_max=16,
         ),
     }
     return table[tier]
@@ -174,12 +179,13 @@ def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
     Each returned dict contains the keys
     ``hidden_size``, ``stft_scales``, ``mixed_precision``,
     ``gradient_checkpointing``, ``n_harmonics``, ``n_filter_banks``,
-    and ``vram_usage_target``
+    ``batch_size``, and ``vram_usage_target``
     (``0.25``, ``0.50``, or ``1.0``).
     """
     max_hidden = bounds.max_hidden
     min_scales = bounds.stft_scales_min
     max_scales = bounds.stft_scales_max
+    batch_size_max = bounds.batch_size_max
 
     fast: dict = {
         "hidden_size": int(max_hidden * 0.25),
@@ -189,6 +195,7 @@ def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
         "vram_usage_target": 0.25,
         "n_harmonics": bounds.n_harmonics_min,
         "n_filter_banks": bounds.n_filter_banks_min,
+        "batch_size": max(1, int(batch_size_max * 0.25)),
     }
     normal: dict = {
         "hidden_size": int(max_hidden * 0.50),
@@ -198,6 +205,7 @@ def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
         "vram_usage_target": 0.50,
         "n_harmonics": int((bounds.n_harmonics_min + bounds.n_harmonics_max) * 0.5),
         "n_filter_banks": int((bounds.n_filter_banks_min + bounds.n_filter_banks_max) * 0.5),
+        "batch_size": max(1, int(batch_size_max * 0.50)),
     }
     quality: dict = {
         "hidden_size": max_hidden,
@@ -207,6 +215,7 @@ def propose_presets(bounds: ParameterBounds) -> dict[str, dict]:
         "vram_usage_target": 1.0,
         "n_harmonics": bounds.n_harmonics_max,
         "n_filter_banks": bounds.n_filter_banks_max,
+        "batch_size": batch_size_max,
     }
     return {
         "FAST": fast,

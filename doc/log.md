@@ -3,6 +3,15 @@
 _Append-only, newest first. Parseable with `grep "^## "`. Entries use
 `**Creation**`, `**Update**` or `**Deprecation**` prefix + linked concept file._
 
+## 2026-09-03 — BUG-43 + BUG-44 fixes: VRAM-dependent batch_size, preset dropdown after wizard
+
+**Bugfix** — BUG-43 and BUG-44 implemented and verified.
+
+- **BUG-43** `batch_size` is now VRAM-dependent: added `batch_size_max` to `ParameterBounds` (low=2, mid=4, high=8, ultra=16); `propose_presets()` scales batch_size by speed factor; `clamp_params()` clamps it; `apply_speed()` scales it like hidden_size; DataLoader reads batch_size from run config instead of hardcoded 1.
+- **BUG-44** TabCore preset dropdown fixed: wizard-chosen preset shows as selected; "-- Select Preset --" hidden when wizard active; selecting built-in options applies their params to store; "(wizard-generated)" badge shown.
+
+Verification: 77/77 vitest, 53/53 pytest (1 GPU-skip), ruff clean.
+
 ## 2026-09-03 — BUG-44: preset dropdown shows "-- Select Preset --" after wizard; Built-In optgroup confusing
 
 **Creation** — BUG-44 filed after MT-A4 manual test. Two UI problems in TabCore preset dropdown: (a) "-- Select Preset --" displayed after wizard completion instead of showing the wizard-chosen preset; (b) "Built-In" optgroup visible but selecting it does nothing. Reference: `doc/bugs.md` BUG-44.

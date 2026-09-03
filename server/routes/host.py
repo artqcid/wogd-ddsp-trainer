@@ -35,6 +35,9 @@ def apply_speed(params: dict, speed: str, bounds: ParameterBounds) -> dict:
     if "hidden_size" in result:
         result["hidden_size"] = int(result["hidden_size"] * factor["hidden"])
 
+    if "batch_size" in result:
+        result["batch_size"] = max(1, int(result["batch_size"] * factor["hidden"]))
+
     if factor["scales"] == "min":
         result["stft_scales"] = bounds.stft_scales_min
     # "keep" leaves stft_scales unchanged

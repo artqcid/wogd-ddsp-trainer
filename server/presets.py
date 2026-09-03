@@ -169,6 +169,23 @@ def clamp_params(params: dict, bounds: ParameterBounds) -> tuple[dict, list[str]
     else:
         pass
 
+    if "batch_size" in clamped:
+        try:
+            value = int(clamped["batch_size"])
+        except (ValueError, TypeError):
+            value = 1
+            flags.append("batch_size")
+        else:
+            if value < 1:
+                value = 1
+                flags.append("batch_size")
+            elif value > bounds.batch_size_max:
+                value = bounds.batch_size_max
+                flags.append("batch_size")
+            clamped["batch_size"] = value
+    else:
+        pass
+
     if "stft_scales" in clamped:
         try:
             value = int(clamped["stft_scales"])

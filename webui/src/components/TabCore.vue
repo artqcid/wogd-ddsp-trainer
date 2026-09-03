@@ -2,15 +2,20 @@
   <div class="tab-core" data-testid="tab-core">
     <div class="form-group">
       <label class="form-label">Preset</label>
-      <select class="form-select" v-model="selectedPresetName" data-testid="preset-select">
-        <option value="">-- Select Preset --</option>
-        <optgroup label="Built-in">
-          <option v-for="p in builtinPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
-        </optgroup>
-        <optgroup label="Custom" v-if="customPresets.length">
-          <option v-for="p in customPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
-        </optgroup>
-      </select>
+      <div class="preset-row">
+        <select class="form-select" v-model="selectedPresetName" data-testid="preset-select">
+          <option value="" v-if="!store.wizardCompleted || !store.selectedPreset">-- Select Preset --</option>
+          <optgroup label="Built-in">
+            <option v-for="p in builtinPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
+          </optgroup>
+          <optgroup label="Custom" v-if="customPresets.length">
+            <option v-for="p in customPresets" :key="p.id" :value="p.name">{{ p.name }}</option>
+          </optgroup>
+        </select>
+        <span v-if="store.wizardCompleted && store.selectedPreset === selectedPresetName" class="wizard-badge">
+          (wizard-generated)
+        </span>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Learning Rate</label>
@@ -41,6 +46,7 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import { computed, inject, onMounted, ref } from 'vue'
 import { useModelConfigStore } from '../stores/modelConfig.js'
 
@@ -57,10 +63,37 @@ onMounted(async () => {
     presets.value = await apiClient.listPresets()
   }
 })
+
+// Initialize selectedPresetName from wizard-chosen preset and apply params
+// once presets are loaded (async). Uses watch with immediate to handle both
+// the initial empty state and the async load completion.
+watch(
+  presets,
+  () => {
+    if (store.wizardCompleted && store.selectedPreset) {
+      selectedPresetName.value = store.selectedPreset
+    }
+    // Apply params when presets are actually available
+    if (selectedPresetName.value) {
+      const preset = presets.value.find(p => p.name === selectedPresetName.value)
+      if (preset?.params) {
+        Object.assign(store.coreParams, preset.params)
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
 .tab-core { display: flex; flex-direction: column; gap: var(--space-3); }
+.form-group { display: flex; flex-direction: column; gap: var(--space-1); }
+.preset-row { display: flex; align-items: center; }
+.wizard-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
 .checkbox-label {
   display: flex;
   align-items: center;

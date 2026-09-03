@@ -339,7 +339,8 @@ def run_training_job(run_id: str) -> dict:
                 from dataset.loader import DDSPDataset
 
                 ds = DDSPDataset(str(cache_path), key="train", seq_len=64000)
-                data_loader = DataLoader(ds, batch_size=1, shuffle=True)
+                bs = int(run.get("config", {}).get("batch_size", 1))
+                data_loader = DataLoader(ds, batch_size=bs, shuffle=True)
             else:
                 f0, loudness, target = build_tensors(model, dataset_id)
         else:
