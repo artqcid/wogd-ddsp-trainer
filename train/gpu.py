@@ -109,7 +109,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="enabled",
-            batch_size_max=2,
+            batch_size_max=8,
         ),
         "mid": ParameterBounds(
             hidden_size_min=256,
@@ -122,7 +122,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=3,
             mixed_precision="required",
             gradient_checkpointing="optional",
-            batch_size_max=4,
+            batch_size_max=32,
         ),
         "high": ParameterBounds(
             hidden_size_min=512,
@@ -135,7 +135,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=5,
             mixed_precision="recommended",
             gradient_checkpointing="disabled",
-            batch_size_max=8,
+            batch_size_max=64,
         ),
         "ultra": ParameterBounds(
             hidden_size_min=512,
@@ -148,7 +148,7 @@ def _bounds_for_tier(tier: str) -> ParameterBounds:
             stft_scales_max=8,
             mixed_precision="optional",
             gradient_checkpointing="disabled",
-            batch_size_max=16,
+            batch_size_max=128,
         ),
     }
     return table[tier]
